@@ -3359,7 +3359,12 @@ function buildCardSectionsFromDimension(rows = []) {
       if (nome && nome !== item.nome) item.nome = nome;
       if (!item.icon && meta.icon) item.icon = meta.icon;
       if (meta.metric) item.metric = meta.metric;
-      if (meta.peso != null) item.peso = meta.peso;
+      // Usa MAX do peso quando há múltiplos registros para o mesmo indicador
+      if (meta.peso != null) {
+        const pesoAtual = Number(item.peso) || 0;
+        const pesoNovo = Number(meta.peso) || 0;
+        item.peso = Math.max(pesoAtual, pesoNovo);
+      }
       if (meta.hiddenInCards != null) item.hiddenInCards = meta.hiddenInCards;
       if (meta.order != null) item.order = meta.order;
       if (meta.forceEmptySubIndicators) item.forceEmptySubIndicators = true;
@@ -3539,7 +3544,7 @@ function buildCardSectionsFromDimension(rows = []) {
 function applyCardSections(sections = []) {
   CARD_SECTIONS_DEF = sections;
   INDICATOR_STRUCTURE_OVERRIDES = {};
-
+console.log(sections);
   sections.forEach(section => {
     section.items.forEach(item => {
       if (item.forceEmptySubIndicators) {
@@ -4536,6 +4541,17 @@ function formatPoints(value, { withUnit = false } = {}) {
   const n = Math.round(toNumber(value));
   const formatted = fmtINT.format(n);
   return withUnit ? `${formatted} pts` : formatted;
+}
+
+function formatPeso(value) {
+  const n = toNumber(value);
+  if (!Number.isFinite(n)) return "0";
+  // Para valores menores que 1, preserva até 2 casas decimais
+  if (n < 1 && n > 0) {
+    return n.toFixed(2);
+  }
+  // Para valores maiores ou iguais a 1, arredonda normalmente
+  return fmtINT.format(Math.round(n));
 }
 
 function formatMetricFull(metric, value){
@@ -11065,7 +11081,12 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
         agg.nome = item.nome || agg.nome;
         agg.icon = item.icon || agg.icon;
         agg.metrica = item.metrica || agg.metrica || item.metric || agg.metric;
-        if (item.peso != null) agg.peso = item.peso;
+        // Usa MAX do peso quando há múltiplos registros para o mesmo indicador
+        if (item.peso != null) {
+          const pesoAtual = Number(agg.peso) || 0;
+          const pesoNovo = Number(item.peso) || 0;
+          agg.peso = Math.max(pesoAtual, pesoNovo);
+        }
         agg.secaoId = sec.id;
         agg.secaoLabel = sec.label;
         agg.familiaId = familiaInfo?.id || agg.familiaId;
@@ -11170,8 +11191,13 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
     agg.realizadoTotal += realizadoValor;
     agg.variavelMeta += Number(row.variavelMeta) || 0;
     agg.variavelReal += Number(row.variavelReal) || 0;
-    const pesoLinha = Number(row.peso) || agg.peso;
-    agg.pesoTotal += pesoLinha;
+    const pesoLinha = Number(row.peso) || agg.peso || 0;
+    // Usa MAX do peso quando há múltiplos registros para o mesmo indicador
+    agg.pesoTotal = Math.max(agg.pesoTotal || 0, pesoLinha);
+    // Atualiza o peso do agregado também com MAX
+    if (pesoLinha > 0) {
+      agg.peso = Math.max(agg.peso || 0, pesoLinha);
+    }
     if (metaValor > 0 && realizadoValor >= metaValor) {
       agg.pesoAtingido += pesoLinha;
     }
@@ -11790,7 +11816,7 @@ function renderFamilias(sections, summary){
 
           <div class="prod-card__meta">
             <span class="pill">Pontos: ${formatPoints(pontosReal)} / ${formatPoints(pontosMeta)}</span>
-            <span class="pill">Peso: ${formatPoints(pontosMeta)}</span>
+            <span class="pill">Peso: ${formatPeso(pontosMeta)}</span>
             <span class="pill">${metricaCapitalizada}</span>
           </div>
 
