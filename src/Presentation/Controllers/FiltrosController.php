@@ -30,7 +30,7 @@ class FiltrosController
         }
 
         try {
-            $service = $this->container->get('App\Application\UseCase\FiltrosService');
+            $service = $this->container->get('App\Application\UseCase\FiltrosUseCase');
             $result = $service->getFiltroByNivel($nivelStr);
             
             $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');

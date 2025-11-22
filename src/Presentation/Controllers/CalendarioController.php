@@ -17,7 +17,7 @@ class CalendarioController
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\CalendarioService');
+        $service = $this->container->get('App\Application\UseCase\CalendarioUseCase');
         $result = $service->getAllCalendario();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');

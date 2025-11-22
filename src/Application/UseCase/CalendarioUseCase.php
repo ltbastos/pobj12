@@ -2,18 +2,18 @@
 
 namespace App\Application\UseCase;
 
-use App\Infrastructure\Persistence\LeadsRepository;
+use App\Infrastructure\Persistence\CalendarioRepository;
 
-class LeadsService
+class CalendarioUseCase
 {
     private $repository;
 
-    public function __construct(LeadsRepository $repository)
+    public function __construct(CalendarioRepository $repository)
     {
         $this->repository = $repository;
     }
 
-    public function getAllLeads(): array
+    public function getAllCalendario(): array
     {
         return $this->repository->findAllAsArray();
     }

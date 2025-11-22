@@ -2,18 +2,18 @@
 
 namespace App\Application\UseCase;
 
-use App\Infrastructure\Persistence\OmegaUsersRepository;
+use App\Infrastructure\Persistence\RealizadoRepository;
 
-class OmegaUsersService
+class RealizadoUseCase
 {
     private $repository;
 
-    public function __construct(OmegaUsersRepository $repository)
+    public function __construct(RealizadoRepository $repository)
     {
         $this->repository = $repository;
     }
 
-    public function getAllUsers(): array
+    public function getAllRealizados(): array
     {
         return $this->repository->findAllAsArray();
     }

@@ -4,7 +4,7 @@ namespace App\Application\UseCase;
 
 use App\Infrastructure\Persistence\OmegaStructureRepository;
 
-class OmegaStructureService
+class OmegaStructureUseCase
 {
     private $repository;
 

@@ -4,7 +4,7 @@ namespace App\Application\UseCase;
 
 use App\Infrastructure\Helpers\KnowledgeHelper;
 
-class AgentService
+class AgentUseCase
 {
     public function processQuestion(array $payload): array
     {

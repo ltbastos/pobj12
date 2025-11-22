@@ -2,18 +2,18 @@
 
 namespace App\Application\UseCase;
 
-use App\Infrastructure\Persistence\HistoricoRepository;
+use App\Infrastructure\Persistence\CampanhasRepository;
 
-class HistoricoService
+class CampanhasUseCase
 {
     private $repository;
 
-    public function __construct(HistoricoRepository $repository)
+    public function __construct(CampanhasRepository $repository)
     {
         $this->repository = $repository;
     }
 
-    public function getAllHistorico(): array
+    public function getAllCampanhas(): array
     {
         return $this->repository->findAllAsArray();
     }

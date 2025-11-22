@@ -18,7 +18,7 @@ class OmegaStructureController
     public function handle(Request $request, Response $response): Response
     {
         try {
-            $service = $this->container->get('App\Application\UseCase\OmegaStructureService');
+            $service = $this->container->get('App\Application\UseCase\OmegaStructureUseCase');
             $result = $service->getStructure();
             
             $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');

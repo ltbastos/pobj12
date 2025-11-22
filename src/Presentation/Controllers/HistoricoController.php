@@ -17,7 +17,7 @@ class HistoricoController
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\HistoricoService');
+        $service = $this->container->get('App\Application\UseCase\HistoricoUseCase');
         $result = $service->getAllHistorico();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');

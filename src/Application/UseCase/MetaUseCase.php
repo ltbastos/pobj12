@@ -2,18 +2,18 @@
 
 namespace App\Application\UseCase;
 
-use App\Infrastructure\Persistence\CampanhasRepository;
+use App\Infrastructure\Persistence\MetaRepository;
 
-class CampanhasService
+class MetaUseCase
 {
     private $repository;
 
-    public function __construct(CampanhasRepository $repository)
+    public function __construct(MetaRepository $repository)
     {
         $this->repository = $repository;
     }
 
-    public function getAllCampanhas(): array
+    public function getAllMetas(): array
     {
         return $this->repository->findAllAsArray();
     }

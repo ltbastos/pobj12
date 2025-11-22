@@ -18,7 +18,7 @@ class OmegaStatusController
     public function handle(Request $request, Response $response): Response
     {
         try {
-            $service = $this->container->get('App\Application\UseCase\OmegaStatusService');
+            $service = $this->container->get('App\Application\UseCase\OmegaStatusUseCase');
             $result = $service->getAllStatus();
             
             $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');

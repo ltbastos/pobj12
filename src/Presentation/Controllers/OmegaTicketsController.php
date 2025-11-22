@@ -18,7 +18,7 @@ class OmegaTicketsController
     public function handle(Request $request, Response $response): Response
     {
         try {
-            $service = $this->container->get('App\Application\UseCase\OmegaTicketsService');
+            $service = $this->container->get('App\Application\UseCase\OmegaTicketsUseCase');
             $result = $service->getAllTickets();
             
             $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');

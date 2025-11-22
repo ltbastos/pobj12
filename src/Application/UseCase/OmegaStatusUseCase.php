@@ -2,18 +2,18 @@
 
 namespace App\Application\UseCase;
 
-use App\Infrastructure\Persistence\DetalhesRepository;
+use App\Infrastructure\Persistence\OmegaStatusRepository;
 
-class DetalhesService
+class OmegaStatusUseCase
 {
     private $repository;
 
-    public function __construct(DetalhesRepository $repository)
+    public function __construct(OmegaStatusRepository $repository)
     {
         $this->repository = $repository;
     }
 
-    public function getAllDetalhes(): array
+    public function getAllStatus(): array
     {
         return $this->repository->findAllAsArray();
     }

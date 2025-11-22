@@ -5,7 +5,7 @@ namespace App\Application\UseCase;
 use App\Infrastructure\Persistence\RealizadoRepository;
 use App\Infrastructure\Persistence\MetaRepository;
 
-class ResumoService
+class ResumoUseCase
 {
     private $realizadoRepository;
     private $metaRepository;

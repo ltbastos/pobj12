@@ -2,18 +2,18 @@
 
 namespace App\Application\UseCase;
 
-use App\Infrastructure\Persistence\MetaRepository;
+use App\Infrastructure\Persistence\OmegaUsersRepository;
 
-class MetaService
+class OmegaUsersUseCase
 {
     private $repository;
 
-    public function __construct(MetaRepository $repository)
+    public function __construct(OmegaUsersRepository $repository)
     {
         $this->repository = $repository;
     }
 
-    public function getAllMetas(): array
+    public function getAllUsers(): array
     {
         return $this->repository->findAllAsArray();
     }

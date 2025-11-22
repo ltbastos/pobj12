@@ -6,7 +6,7 @@ use App\Domain\ValueObject\FiltroNivel;
 use App\Infrastructure\Persistence\EstruturaRepository;
 use App\Infrastructure\Persistence\StatusIndicadoresRepository;
 
-class FiltrosService
+class FiltrosUseCase
 {
     private $estruturaRepository;
     private $statusRepository;

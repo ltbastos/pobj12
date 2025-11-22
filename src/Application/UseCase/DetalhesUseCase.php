@@ -2,18 +2,18 @@
 
 namespace App\Application\UseCase;
 
-use App\Infrastructure\Persistence\RealizadoRepository;
+use App\Infrastructure\Persistence\DetalhesRepository;
 
-class RealizadoService
+class DetalhesUseCase
 {
     private $repository;
 
-    public function __construct(RealizadoRepository $repository)
+    public function __construct(DetalhesRepository $repository)
     {
         $this->repository = $repository;
     }
 
-    public function getAllRealizados(): array
+    public function getAllDetalhes(): array
     {
         return $this->repository->findAllAsArray();
     }

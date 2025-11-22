@@ -17,7 +17,7 @@ class LeadsController
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\LeadsService');
+        $service = $this->container->get('App\Application\UseCase\LeadsUseCase');
         $result = $service->getAllLeads();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');

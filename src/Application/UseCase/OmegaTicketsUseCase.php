@@ -4,7 +4,7 @@ namespace App\Application\UseCase;
 
 use App\Infrastructure\Persistence\OmegaTicketsRepository;
 
-class OmegaTicketsService
+class OmegaTicketsUseCase
 {
     private $repository;
 

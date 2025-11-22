@@ -4,7 +4,7 @@ namespace App\Application\UseCase;
 
 use App\Infrastructure\Persistence\ProdutoRepository;
 
-class ProdutoService
+class ProdutoUseCase
 {
     private $repository;
 

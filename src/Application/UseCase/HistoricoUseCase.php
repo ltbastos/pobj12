@@ -2,18 +2,18 @@
 
 namespace App\Application\UseCase;
 
-use App\Infrastructure\Persistence\CalendarioRepository;
+use App\Infrastructure\Persistence\HistoricoRepository;
 
-class CalendarioService
+class HistoricoUseCase
 {
     private $repository;
 
-    public function __construct(CalendarioRepository $repository)
+    public function __construct(HistoricoRepository $repository)
     {
         $this->repository = $repository;
     }
 
-    public function getAllCalendario(): array
+    public function getAllHistorico(): array
     {
         return $this->repository->findAllAsArray();
     }

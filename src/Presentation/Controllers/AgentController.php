@@ -29,7 +29,7 @@ class AgentController
         }
 
         try {
-            $service = $this->container->get('App\Application\UseCase\AgentService');
+            $service = $this->container->get('App\Application\UseCase\AgentUseCase');
             $result = $service->processQuestion($payload ?: []);
             
             $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');

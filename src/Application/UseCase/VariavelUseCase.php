@@ -2,18 +2,18 @@
 
 namespace App\Application\UseCase;
 
-use App\Infrastructure\Persistence\OmegaStatusRepository;
+use App\Infrastructure\Persistence\VariavelRepository;
 
-class OmegaStatusService
+class VariavelUseCase
 {
     private $repository;
 
-    public function __construct(OmegaStatusRepository $repository)
+    public function __construct(VariavelRepository $repository)
     {
         $this->repository = $repository;
     }
 
-    public function getAllStatus(): array
+    public function getAllVariaveis(): array
     {
         return $this->repository->findAllAsArray();
     }

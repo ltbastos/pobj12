@@ -4,7 +4,7 @@ namespace App\Application\UseCase;
 
 use App\Infrastructure\Persistence\EstruturaRepository;
 
-class EstruturaService
+class EstruturaUseCase
 {
     private $repository;
 

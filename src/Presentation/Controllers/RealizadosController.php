@@ -17,7 +17,7 @@ class RealizadosController
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\RealizadoService');
+        $service = $this->container->get('App\Application\UseCase\RealizadoUseCase');
         $result = $service->getAllRealizados();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');

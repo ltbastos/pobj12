@@ -4,7 +4,7 @@ namespace App\Application\UseCase;
 
 use App\Infrastructure\Persistence\OmegaMesuRepository;
 
-class OmegaMesuService
+class OmegaMesuUseCase
 {
     private $repository;
 

@@ -2,18 +2,18 @@
 
 namespace App\Application\UseCase;
 
-use App\Infrastructure\Persistence\VariavelRepository;
+use App\Infrastructure\Persistence\LeadsRepository;
 
-class VariavelService
+class LeadsUseCase
 {
     private $repository;
 
-    public function __construct(VariavelRepository $repository)
+    public function __construct(LeadsRepository $repository)
     {
         $this->repository = $repository;
     }
 
-    public function getAllVariaveis(): array
+    public function getAllLeads(): array
     {
         return $this->repository->findAllAsArray();
     }

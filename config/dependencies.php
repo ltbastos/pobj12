@@ -82,117 +82,117 @@ return function ($container) {
         return new \App\Infrastructure\Persistence\OmegaMesuRepository($c->get(PDO::class));
     };
 
-    // Use Cases (Services)
-    $container['App\Application\UseCase\FiltrosService'] = function ($c) {
-        return new \App\Application\UseCase\FiltrosService(
+    // Use Cases
+    $container['App\Application\UseCase\FiltrosUseCase'] = function ($c) {
+        return new \App\Application\UseCase\FiltrosUseCase(
             $c->get('App\Infrastructure\Persistence\EstruturaRepository'),
             $c->get('App\Infrastructure\Persistence\StatusIndicadoresRepository')
         );
     };
 
-    $container['App\Application\UseCase\ResumoService'] = function ($c) {
-        return new \App\Application\UseCase\ResumoService(
+    $container['App\Application\UseCase\ResumoUseCase'] = function ($c) {
+        return new \App\Application\UseCase\ResumoUseCase(
             $c->get('App\Infrastructure\Persistence\RealizadoRepository'),
             $c->get('App\Infrastructure\Persistence\MetaRepository')
         );
     };
 
-    $container['App\Application\UseCase\StatusIndicadoresService'] = function ($c) {
-        return new \App\Application\UseCase\StatusIndicadoresService(
+    $container['App\Application\UseCase\StatusIndicadoresUseCase'] = function ($c) {
+        return new \App\Application\UseCase\StatusIndicadoresUseCase(
             $c->get('App\Infrastructure\Persistence\StatusIndicadoresRepository')
         );
     };
 
-    $container['App\Application\UseCase\AgentService'] = function ($c) {
-        return new \App\Application\UseCase\AgentService();
+    $container['App\Application\UseCase\AgentUseCase'] = function ($c) {
+        return new \App\Application\UseCase\AgentUseCase();
     };
 
-    $container['App\Application\UseCase\OmegaUsersService'] = function ($c) {
-        return new \App\Application\UseCase\OmegaUsersService(
+    $container['App\Application\UseCase\OmegaUsersUseCase'] = function ($c) {
+        return new \App\Application\UseCase\OmegaUsersUseCase(
             $c->get('App\Infrastructure\Persistence\OmegaUsersRepository')
         );
     };
 
-    $container['App\Application\UseCase\OmegaStatusService'] = function ($c) {
-        return new \App\Application\UseCase\OmegaStatusService(
+    $container['App\Application\UseCase\OmegaStatusUseCase'] = function ($c) {
+        return new \App\Application\UseCase\OmegaStatusUseCase(
             $c->get('App\Infrastructure\Persistence\OmegaStatusRepository')
         );
     };
 
-    $container['App\Application\UseCase\OmegaStructureService'] = function ($c) {
-        return new \App\Application\UseCase\OmegaStructureService(
+    $container['App\Application\UseCase\OmegaStructureUseCase'] = function ($c) {
+        return new \App\Application\UseCase\OmegaStructureUseCase(
             $c->get('App\Infrastructure\Persistence\OmegaStructureRepository')
         );
     };
 
-    $container['App\Application\UseCase\OmegaTicketsService'] = function ($c) {
-        return new \App\Application\UseCase\OmegaTicketsService(
+    $container['App\Application\UseCase\OmegaTicketsUseCase'] = function ($c) {
+        return new \App\Application\UseCase\OmegaTicketsUseCase(
             $c->get('App\Infrastructure\Persistence\OmegaTicketsRepository')
         );
     };
 
-    $container['App\Application\UseCase\OmegaMesuService'] = function ($c) {
-        return new \App\Application\UseCase\OmegaMesuService(
+    $container['App\Application\UseCase\OmegaMesuUseCase'] = function ($c) {
+        return new \App\Application\UseCase\OmegaMesuUseCase(
             $c->get('App\Infrastructure\Persistence\OmegaMesuRepository')
         );
     };
 
-    $container['App\Application\UseCase\DetalhesService'] = function ($c) {
-        return new \App\Application\UseCase\DetalhesService(
+    $container['App\Application\UseCase\DetalhesUseCase'] = function ($c) {
+        return new \App\Application\UseCase\DetalhesUseCase(
             $c->get('App\Infrastructure\Persistence\DetalhesRepository')
         );
     };
 
-    $container['App\Application\UseCase\EstruturaService'] = function ($c) {
-        return new \App\Application\UseCase\EstruturaService(
+    $container['App\Application\UseCase\EstruturaUseCase'] = function ($c) {
+        return new \App\Application\UseCase\EstruturaUseCase(
             $c->get('App\Infrastructure\Persistence\EstruturaRepository')
         );
     };
 
-    $container['App\Application\UseCase\LeadsService'] = function ($c) {
-        return new \App\Application\UseCase\LeadsService(
+    $container['App\Application\UseCase\LeadsUseCase'] = function ($c) {
+        return new \App\Application\UseCase\LeadsUseCase(
             $c->get('App\Infrastructure\Persistence\LeadsRepository')
         );
     };
 
-    $container['App\Application\UseCase\RealizadoService'] = function ($c) {
-        return new \App\Application\UseCase\RealizadoService(
+    $container['App\Application\UseCase\RealizadoUseCase'] = function ($c) {
+        return new \App\Application\UseCase\RealizadoUseCase(
             $c->get('App\Infrastructure\Persistence\RealizadoRepository')
         );
     };
 
-    $container['App\Application\UseCase\VariavelService'] = function ($c) {
-        return new \App\Application\UseCase\VariavelService(
+    $container['App\Application\UseCase\VariavelUseCase'] = function ($c) {
+        return new \App\Application\UseCase\VariavelUseCase(
             $c->get('App\Infrastructure\Persistence\VariavelRepository')
         );
     };
 
-    $container['App\Application\UseCase\CampanhasService'] = function ($c) {
-        return new \App\Application\UseCase\CampanhasService(
+    $container['App\Application\UseCase\CampanhasUseCase'] = function ($c) {
+        return new \App\Application\UseCase\CampanhasUseCase(
             $c->get('App\Infrastructure\Persistence\CampanhasRepository')
         );
     };
 
-    $container['App\Application\UseCase\ProdutoService'] = function ($c) {
-        return new \App\Application\UseCase\ProdutoService(
+    $container['App\Application\UseCase\ProdutoUseCase'] = function ($c) {
+        return new \App\Application\UseCase\ProdutoUseCase(
             $c->get('App\Infrastructure\Persistence\ProdutoRepository')
         );
     };
 
-    $container['App\Application\UseCase\MetaService'] = function ($c) {
-        return new \App\Application\UseCase\MetaService(
+    $container['App\Application\UseCase\MetaUseCase'] = function ($c) {
+        return new \App\Application\UseCase\MetaUseCase(
             $c->get('App\Infrastructure\Persistence\MetaRepository')
         );
     };
 
-    $container['App\Application\UseCase\HistoricoService'] = function ($c) {
-        return new \App\Application\UseCase\HistoricoService(
+    $container['App\Application\UseCase\HistoricoUseCase'] = function ($c) {
+        return new \App\Application\UseCase\HistoricoUseCase(
             $c->get('App\Infrastructure\Persistence\HistoricoRepository')
         );
     };
 
-    $container['App\Application\UseCase\CalendarioService'] = function ($c) {
-        return new \App\Application\UseCase\CalendarioService(
+    $container['App\Application\UseCase\CalendarioUseCase'] = function ($c) {
+        return new \App\Application\UseCase\CalendarioUseCase(
             $c->get('App\Infrastructure\Persistence\CalendarioRepository')
         );
     };

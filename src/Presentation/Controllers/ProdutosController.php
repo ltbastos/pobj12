@@ -17,7 +17,7 @@ class ProdutosController
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\ProdutoService');
+        $service = $this->container->get('App\Application\UseCase\ProdutoUseCase');
         $result = $service->getAllProdutos();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');

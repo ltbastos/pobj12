@@ -18,7 +18,7 @@ class OmegaUsersController
     public function handle(Request $request, Response $response): Response
     {
         try {
-            $service = $this->container->get('App\Application\UseCase\OmegaUsersService');
+            $service = $this->container->get('App\Application\UseCase\OmegaUsersUseCase');
             $result = $service->getAllUsers();
             
             $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');

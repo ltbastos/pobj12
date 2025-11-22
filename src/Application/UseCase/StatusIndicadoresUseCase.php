@@ -4,7 +4,7 @@ namespace App\Application\UseCase;
 
 use App\Infrastructure\Persistence\StatusIndicadoresRepository;
 
-class StatusIndicadoresService
+class StatusIndicadoresUseCase
 {
     private $statusRepository;
 

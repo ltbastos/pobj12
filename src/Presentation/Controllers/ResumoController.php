@@ -23,7 +23,7 @@ class ResumoController
                 $request->getParsedBody() ?: []
             );
             
-            $service = $this->container->get('App\Application\UseCase\ResumoService');
+            $service = $this->container->get('App\Application\UseCase\ResumoUseCase');
             $result = $service->getResumo($params);
             
             $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');

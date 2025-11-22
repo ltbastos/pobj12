@@ -17,7 +17,7 @@ class VariavelController
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\VariavelService');
+        $service = $this->container->get('App\Application\UseCase\VariavelUseCase');
         $result = $service->getAllVariaveis();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');

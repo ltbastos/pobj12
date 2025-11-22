@@ -17,7 +17,7 @@ class DetalhesController
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\DetalhesService');
+        $service = $this->container->get('App\Application\UseCase\DetalhesUseCase');
         $result = $service->getAllDetalhes();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');

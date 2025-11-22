@@ -17,7 +17,7 @@ class EstruturaController
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\EstruturaService');
+        $service = $this->container->get('App\Application\UseCase\EstruturaUseCase');
         $result = $service->getAllEstrutura();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
