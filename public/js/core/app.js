@@ -2758,6 +2758,9 @@ async function loadBaseData(){
   showLoader("Carregando dados…");
   try {
     if (DATA_SOURCE === "sql") {
+      // Limpa o cache de meta do card antes de carregar novos dados
+      GLOBAL_INDICATOR_META.clear();
+      
       const [
         estruturaData,
         status,
@@ -4841,6 +4844,7 @@ async function getData(){
 
       const base = {
         registroId: row.registroId,
+        metaRegistroId: meta.registroId, // Preserva o registroId da meta para evitar duplicação na agregação
         segmento: row.segmento,
         segmentoId: segmentoId || row.segmentoId,
         segmento_id: segmentoId || row.segmentoId,
@@ -10978,6 +10982,7 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
   const productMeta = new Map();
   const aggregated = new Map();
   const processedRegistros = new Map(); // Rastreia registro_id já processados por produto para evitar duplicação
+  const processedMetaRegistros = new Map(); // Rastreia metaRegistroId já processados por produto para evitar duplicação de metas
 
   CARD_SECTIONS_DEF.forEach(sec => {
     const familiaMeta = FAMILIA_BY_ID.get(sec.id);
@@ -11138,7 +11143,24 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
 
     const metaValor = Number(row.meta) || 0;
     const realizadoValor = Number(row.realizado) || 0;
-    agg.metaTotal += metaValor;
+    const metaRegistroId = row.metaRegistroId || ""; // ID único da meta para evitar duplicação
+    
+    // Evita duplicação de metas: verifica se esta meta (metaRegistroId) já foi contada para este produto
+    if (metaValor > 0 && metaRegistroId) {
+      if (!processedMetaRegistros.has(resolvedId)) {
+        processedMetaRegistros.set(resolvedId, new Set());
+      }
+      const metaRegistrosSet = processedMetaRegistros.get(resolvedId);
+      if (!metaRegistrosSet.has(metaRegistroId)) {
+        // Esta meta ainda não foi contada, adiciona ao total
+        agg.metaTotal += metaValor;
+        metaRegistrosSet.add(metaRegistroId);
+      }
+      // Se a meta já foi contada, não soma novamente (mas ainda processa o realizado)
+    } else {
+      // Se não há metaRegistroId, soma normalmente (fallback para compatibilidade)
+      agg.metaTotal += metaValor;
+    }
     agg.realizadoTotal += realizadoValor;
     agg.variavelMeta += Number(row.variavelMeta) || 0;
     agg.variavelReal += Number(row.variavelReal) || 0;
@@ -11188,7 +11210,20 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
         };
         agg.children.set(unknownKey, childEntry);
       }
-      childEntry.meta += metaValor;
+      // Para children desconhecidos, também evita duplicação de meta usando metaRegistroId
+      if (metaValor > 0 && metaRegistroId) {
+        const childKey = `${resolvedId}|unknown|${unknownKey}`;
+        if (!processedMetaRegistros.has(childKey)) {
+          processedMetaRegistros.set(childKey, new Set());
+        }
+        const childMetaRegistrosSet = processedMetaRegistros.get(childKey);
+        if (!childMetaRegistrosSet.has(metaRegistroId)) {
+          childEntry.meta += metaValor;
+          childMetaRegistrosSet.add(metaRegistroId);
+        }
+      } else {
+        childEntry.meta += metaValor;
+      }
       childEntry.realizado += realizadoValor;
       childEntry.variavelMeta += Number(row.variavelMeta) || 0;
       childEntry.variavelReal += Number(row.variavelReal) || 0;
@@ -11225,7 +11260,19 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
         agg.subIndicators.set(subIndicadorSlug, subEntry);
       }
       if (!subEntry.metric && row.metric) subEntry.metric = String(row.metric).toLowerCase();
-      subEntry.meta += metaValor;
+      // Para subindicadores, também evita duplicação de meta usando metaRegistroId
+      if (metaValor > 0 && metaRegistroId) {
+        if (!processedMetaRegistros.has(`${resolvedId}|sub|${subIndicadorSlug}`)) {
+          processedMetaRegistros.set(`${resolvedId}|sub|${subIndicadorSlug}`, new Set());
+        }
+        const subMetaRegistrosSet = processedMetaRegistros.get(`${resolvedId}|sub|${subIndicadorSlug}`);
+        if (!subMetaRegistrosSet.has(metaRegistroId)) {
+          subEntry.meta += metaValor;
+          subMetaRegistrosSet.add(metaRegistroId);
+        }
+      } else {
+        subEntry.meta += metaValor;
+      }
       subEntry.realizado += realizadoValor;
       subEntry.variavelMeta += Number(row.variavelMeta) || 0;
       subEntry.variavelReal += Number(row.variavelReal) || 0;
@@ -11255,7 +11302,20 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
           childMap.set(lpSlug, childEntry);
         }
         if (!childEntry.metric && row.metric) childEntry.metric = String(row.metric).toLowerCase();
-        childEntry.meta += metaValor;
+        // Para children de subindicadores, também evita duplicação de meta usando metaRegistroId
+        if (metaValor > 0 && metaRegistroId) {
+          const childKey = `${resolvedId}|sub|${subIndicadorSlug}|child|${lpSlug}`;
+          if (!processedMetaRegistros.has(childKey)) {
+            processedMetaRegistros.set(childKey, new Set());
+          }
+          const childMetaRegistrosSet = processedMetaRegistros.get(childKey);
+          if (!childMetaRegistrosSet.has(metaRegistroId)) {
+            childEntry.meta += metaValor;
+            childMetaRegistrosSet.add(metaRegistroId);
+          }
+        } else {
+          childEntry.meta += metaValor;
+        }
         childEntry.realizado += realizadoValor;
         childEntry.variavelMeta += Number(row.variavelMeta) || 0;
         childEntry.variavelReal += Number(row.variavelReal) || 0;
@@ -11292,7 +11352,21 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
           agg.children.set(childKey, child);
         }
         if (!child.metric && row.metric) child.metric = String(row.metric).toLowerCase();
-        child.meta += metaValor;
+        // Para children de subprodutos, também evita duplicação de meta usando metaRegistroId
+        const subprodutoChildKey = simplificarTexto(subprodutoTexto) || subprodutoTexto.toLowerCase();
+        if (metaValor > 0 && metaRegistroId) {
+          const metaKey = `${resolvedId}|child|${subprodutoChildKey}`;
+          if (!processedMetaRegistros.has(metaKey)) {
+            processedMetaRegistros.set(metaKey, new Set());
+          }
+          const childMetaRegistrosSet = processedMetaRegistros.get(metaKey);
+          if (!childMetaRegistrosSet.has(metaRegistroId)) {
+            child.meta += metaValor;
+            childMetaRegistrosSet.add(metaRegistroId);
+          }
+        } else {
+          child.meta += metaValor;
+        }
         child.realizado += realizadoValor;
         child.variavelMeta += Number(row.variavelMeta) || 0;
         child.variavelReal += Number(row.variavelReal) || 0;
@@ -12281,16 +12355,52 @@ function resolveExecLabelForKey(row, key, fallback = "") {
 
 function execAggBy(rows, key){
   const map = new Map();
+  // Map para rastrear metas já contadas por grupo, evitando duplicação
+  // Usa uma chave única baseada nos campos que identificam uma meta
+  const metaKeysByGroup = new Map();
+  
   rows.forEach(r=>{
     const groupKey = key === "__total__" ? "__total__" : resolveExecValueForKey(r, key, "—");
     const current = map.get(groupKey) || { key: groupKey, label: "", real_mens:0, meta_mens:0, real_acum:0, meta_acum:0, qtd:0 };
     const labelCandidate = resolveExecLabelForKey(r, key, current.label || groupKey);
     if (labelCandidate && !current.label) current.label = labelCandidate;
+    
+    // Soma realizados normalmente (podem ser múltiplos)
     current.real_mens += (r.real_mens ?? r.realizado ?? 0);
-    current.meta_mens += (r.meta_mens ?? r.meta ?? 0);
     current.real_acum += (r.real_acum ?? r.realizado ?? 0);
-    current.meta_acum += (r.meta_acum ?? r.meta ?? 0);
     current.qtd       += (r.qtd ?? 0);
+    
+    // Para metas, cria uma chave única baseada no registroId da meta (se disponível) ou nos campos que identificam uma meta única
+    // Isso evita que a mesma meta seja somada múltiplas vezes quando há vários realizados correspondentes
+    const metaValue = r.meta_mens ?? r.meta ?? 0;
+    if (metaValue > 0) {
+      // Prioriza usar o registroId da meta se disponível (mais preciso)
+      // Caso contrário, usa uma combinação de campos que identificam uma meta única
+      const metaKey = r.metaRegistroId 
+        ? `meta_id|${r.metaRegistroId}`
+        : [
+            r.agencia_id ?? r.agencia ?? "",
+            r.produtoId ?? r.id_indicador ?? "",
+            r.competencia ?? (r.data ? r.data.slice(0, 7) + "-01" : ""),
+            r.segmentoId ?? r.segmento ?? "",
+            r.diretoria_id ?? r.diretoriaId ?? r.diretoria ?? "",
+            r.gerencia_id ?? r.gerenciaId ?? r.gerenciaRegional ?? "",
+            metaValue
+          ].join("|");
+      
+      if (!metaKeysByGroup.has(groupKey)) {
+        metaKeysByGroup.set(groupKey, new Set());
+      }
+      const metaKeysSet = metaKeysByGroup.get(groupKey);
+      
+      // Soma a meta apenas se ainda não foi contada para esta combinação única
+      if (!metaKeysSet.has(metaKey)) {
+        current.meta_mens += metaValue;
+        current.meta_acum += (r.meta_acum ?? r.meta ?? metaValue);
+        metaKeysSet.add(metaKey);
+      }
+    }
+    
     map.set(groupKey, current);
   });
   return [...map.values()].map(x=>{
