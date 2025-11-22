@@ -1010,7 +1010,6 @@ function buildResumoHierarchyFromProducts(rows = []) {
         if (!cardId) return null;
         const indicadorMeta = INDICATOR_CARD_INDEX.get(cardId) || {};
         const nome = item.nome || indicadorMeta.nome || cardId;
-        const metric = item.metric || indicadorMeta.metric || "valor";
 
         const aliases = new Set();
         const addAlias = (value) => {
@@ -1028,18 +1027,18 @@ function buildResumoHierarchyFromProducts(rows = []) {
         const slug = simplificarTexto(cardId) || simplificarTexto(nome) || cardId;
         const forcedEmpty = FORCED_EMPTY_SUBINDICADORES.has(cardId)
           || FORCED_EMPTY_SUBINDICADORES.has(slug);
-        const subDefs = forcedEmpty ? [] : (SUBINDICADORES_BY_INDICADOR.get(cardId) || []);
-        const subindicadores = cloneSubIndicatorTree(subDefs, metric);
-
         const pesoBase = Number(item.peso);
         const peso = Number.isFinite(pesoBase) ? pesoBase : Number(indicadorMeta.peso) || 0;
+        const metrica = item.metrica || item.metric || indicadorMeta.metrica || indicadorMeta.metric || "valor";
+        const subDefs = forcedEmpty ? [] : (SUBINDICADORES_BY_INDICADOR.get(cardId) || []);
+        const subindicadores = cloneSubIndicatorTree(subDefs, metrica);
 
         return {
           id: cardId,
           slug,
           nome,
           cardId,
-          metric,
+          metrica,
           peso,
           aliases: Array.from(aliases),
           subindicadores,
@@ -2183,6 +2182,7 @@ function montarCatalogoDeProdutos(dimRows){
           id: sub.id,
           nome: sub.nome || sub.id,
           metric: sub.metric || item.metric || 'valor',
+          metrica: sub.metrica || sub.metric || item.metrica || item.metric || 'valor',
           peso: Number(sub.peso) || 1,
           aliases: Array.isArray(sub.aliases) ? sub.aliases.filter(Boolean).map(alias => limparTexto(alias)) : undefined,
           children: Array.isArray(sub.children)
@@ -2190,12 +2190,14 @@ function montarCatalogoDeProdutos(dimRows){
                 id: child.id,
                 nome: child.nome || child.id,
                 metric: child.metric || sub.metric || item.metric || 'valor',
+                metrica: child.metrica || child.metric || sub.metrica || sub.metric || item.metrica || item.metric || 'valor',
                 peso: Number(child.peso) || 1,
                 children: Array.isArray(child.children)
                   ? child.children.map(grand => ({
                       id: grand.id,
                       nome: grand.nome || grand.id,
                       metric: grand.metric || child.metric || sub.metric || item.metric || 'valor',
+                      metrica: grand.metrica || grand.metric || child.metrica || child.metric || sub.metrica || sub.metric || item.metrica || item.metric || 'valor',
                       peso: Number(grand.peso) || 1,
                       children: []
                     }))
@@ -3345,7 +3347,7 @@ function buildCardSectionsFromDimension(rows = []) {
         nome: nome || meta.nome || safeId,
         icon: meta.icon || DEFAULT_CARD_ICON,
         peso: meta.peso != null ? meta.peso : 1,
-        metric: meta.metric || "valor",
+        metrica: meta.metrica || meta.metric || "valor",
         hiddenInCards: Boolean(meta.hiddenInCards),
         order: meta.order ?? Number.MAX_SAFE_INTEGER,
         aliases: Array.isArray(meta.aliases) ? [...meta.aliases] : undefined,
@@ -3378,13 +3380,13 @@ function buildCardSectionsFromDimension(rows = []) {
     const entry = current || {
       id: safeSubId,
       nome: subNome || subMeta.nome || safeSubId,
-      metric: subMeta.metric || item.metric || "valor",
+      metrica: subMeta.metrica || item.metrica || item.metric || "valor",
       peso: Number(subMeta.peso) || 1,
       order: subMeta.order ?? Number.MAX_SAFE_INTEGER,
       aliases: current?.aliases ? new Set(current.aliases) : new Set()
     };
     if (subNome && subNome !== entry.nome) entry.nome = subNome;
-    if (subMeta.metric) entry.metric = subMeta.metric;
+    if (subMeta.metrica) entry.metrica = subMeta.metrica;
     if (subMeta.peso != null) entry.peso = Number(subMeta.peso) || entry.peso;
     if (subMeta.order != null) entry.order = subMeta.order;
     const aliasSet = entry.aliases instanceof Set ? entry.aliases : new Set();
@@ -3433,7 +3435,7 @@ function buildCardSectionsFromDimension(rows = []) {
     const indicadorId = row.indicadorId || row.id_indicador || "";
     const indicadorNome = row.indicadorNome || row.ds_indicador || row.indicador || "";
     const peso = toNumber(row.peso) || 0;
-    const metric = row.metric || "valor";
+    const metrica = row.metrica || row.metric || "valor";
     const icon = row.icon || DEFAULT_CARD_ICON;
     const order = toNumber(row.order) || Number.MAX_SAFE_INTEGER;
     
@@ -3447,7 +3449,7 @@ function buildCardSectionsFromDimension(rows = []) {
       nome: indicadorNome,
       icon: icon,
       peso: peso,
-      metric: metric,
+      metrica: metrica,
       order: order
     };
     const item = ensureItem(section, indicadorId, indicadorNome, itemMeta);
@@ -3457,12 +3459,12 @@ function buildCardSectionsFromDimension(rows = []) {
       const subId = row.subId || row.id_subindicador || "";
       const subNome = row.subNome || row.subindicador || "";
       const subPeso = toNumber(row.subPeso) || peso;
-      const subMetric = row.subMetric || metric;
+      const subMetrica = row.subMetrica || row.metrica || metrica;
       const subOrder = toNumber(row.subOrder) || Number.MAX_SAFE_INTEGER;
       const subMeta = {
         nome: subNome,
         peso: subPeso,
-        metric: subMetric,
+        metrica: subMetrica,
         order: subOrder
       };
       registerSubIndicator(item, subId, subNome, subMeta, row);
@@ -3500,7 +3502,7 @@ function buildCardSectionsFromDimension(rows = []) {
         nome: item.nome || item.id,
         icon: item.icon || DEFAULT_CARD_ICON,
         peso: item.peso != null ? item.peso : 1,
-        metric: item.metric || "valor",
+        metrica: item.metrica || item.metric || "valor",
         hiddenInCards: Boolean(item.hiddenInCards)
       };
 
@@ -3580,7 +3582,7 @@ function applyCardSections(sections = []) {
         sectionLabel: section.label,
         name: item.nome,
         icon: item.icon,
-        metric: item.metric,
+        metrica: item.metrica || item.metric,
         peso: item.peso,
       });
     });
@@ -10387,7 +10389,7 @@ function buildResumoLegacySections(sections = []) {
   const diasRestantes = Math.max(0, diasTotais - diasDecorridos);
 
   const normalizeNodeMetrics = (node = {}, fallbackMetric = "valor") => {
-    const metric = typeof node.metric === "string" && node.metric ? node.metric.toLowerCase() : fallbackMetric;
+    const metrica = typeof node.metrica === "string" && node.metrica ? node.metrica.toLowerCase() : (typeof node.metric === "string" && node.metric ? node.metric.toLowerCase() : fallbackMetric);
     const metaVal = Number(node.meta) || 0;
     const realVal = Number(node.realizado) || 0;
     const variavelMetaVal = Number(node.variavelMeta) || 0;
@@ -10419,7 +10421,7 @@ function buildResumoLegacySections(sections = []) {
       : (diasDecorridos > 0 ? (realVal / Math.max(diasDecorridos, 1)) * diasTotais : realVal);
     return {
       ...node,
-      metric,
+      metrica,
       meta: metaVal,
       realizado: realVal,
       variavelMeta: variavelMetaVal,
@@ -10454,7 +10456,7 @@ function buildResumoLegacySections(sections = []) {
         id: def.id,
         nome: def.nome,
         label: def.nome,
-        metric: def.metric || fallbackMetric,
+        metrica: def.metrica || def.metric || fallbackMetric,
         meta: 0,
         realizado: 0,
         variavelMeta: 0,
@@ -10467,19 +10469,19 @@ function buildResumoLegacySections(sections = []) {
         metaDiariaNecessaria: 0,
         projecao: 0,
         ultimaAtualizacao: ""
-      }, def.metric || fallbackMetric);
+      }, def.metrica || def.metric || fallbackMetric);
       baseNode.id = baseNode.id || def.id || key || baseNode.nome;
       baseNode.nome = def.nome || baseNode.nome;
       baseNode.label = baseNode.nome;
       const childDefs = Array.isArray(def.children) ? def.children : [];
       const existingChildren = existingNode?.children || [];
-      baseNode.children = alignChildrenToDefinition(childDefs, existingChildren, baseNode.metric);
+      baseNode.children = alignChildrenToDefinition(childDefs, existingChildren, baseNode.metrica || fallbackMetric);
       if (childDefs.length > 0 && !baseNode.children.length) {
         baseNode.children = childDefs.map(child => normalizeNodeMetrics({
           id: child.id,
           nome: child.nome,
           label: child.nome,
-          metric: child.metric || baseNode.metric,
+          metrica: child.metrica || child.metric || baseNode.metrica || fallbackMetric,
           meta: 0,
           realizado: 0,
           variavelMeta: 0,
@@ -10492,10 +10494,10 @@ function buildResumoLegacySections(sections = []) {
           metaDiariaNecessaria: 0,
           projecao: 0,
           ultimaAtualizacao: ""
-        }, child.metric || baseNode.metric));
+        }, child.metrica || child.metric || baseNode.metrica || fallbackMetric));
         baseNode.children = baseNode.children.map(childNode => ({
           ...childNode,
-          children: Array.isArray(child.children) ? alignChildrenToDefinition(child.children, [], childNode.metric) : []
+          children: Array.isArray(child.children) ? alignChildrenToDefinition(child.children, [], childNode.metrica || fallbackMetric) : []
         }));
       }
       baseNode.hasChildren = childDefs.length > 0 || nodeHasChildren(baseNode) ? 1 : normalizeHasChildrenFlag(baseNode.hasChildren);
@@ -10560,10 +10562,10 @@ function buildResumoLegacySections(sections = []) {
             augmented.ultimaAtualizacao = totals.ultimaAtualizacao;
           }
         }
-        return normalizeNodeMetrics(augmented, augmented.metric || fallbackMetric);
+        return normalizeNodeMetrics(augmented, augmented.metrica || fallbackMetric);
       });
     } else {
-      result = result.map(node => normalizeNodeMetrics(node, node.metric || fallbackMetric));
+      result = result.map(node => normalizeNodeMetrics(node, node.metrica || fallbackMetric));
     }
     if (allowOrphans) {
       leftover.forEach(child => {
@@ -10572,7 +10574,7 @@ function buildResumoLegacySections(sections = []) {
           nome: child.nome || child.label || child.id,
           label: child.nome || child.label || child.id,
           children: Array.isArray(child.children) ? child.children : []
-        }, child.metric || fallbackMetric);
+        }, child.metrica || child.metric || fallbackMetric);
         fallback.children = alignChildrenToDefinition([], fallback.children, fallback.metric);
         ensureHierarchyHasChildren(fallback);
         result.push(fallback);
@@ -10992,7 +10994,7 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
         id: item.id,
         nome: item.nome,
         icon: item.icon,
-        metric: item.metric,
+        metrica: item.metrica || item.metric,
         peso: item.peso,
         hiddenInCards: item.hiddenInCards,
         sectionId: sec.id,
@@ -11036,7 +11038,7 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
           id: item.id,
           nome: item.nome,
           icon: item.icon || DEFAULT_CARD_ICON,
-          metric: item.metric || "valor",
+          metrica: item.metrica || item.metric || "valor",
           peso: item.peso != null ? item.peso : 1,
           hiddenInCards: Boolean(item.hiddenInCards),
           secaoId: sec.id,
@@ -11062,7 +11064,7 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
         if (item.nome && !agg.aliases?.has(item.nome)) agg.aliases?.add(item.nome);
         agg.nome = item.nome || agg.nome;
         agg.icon = item.icon || agg.icon;
-        agg.metric = item.metric || agg.metric;
+        agg.metrica = item.metrica || agg.metrica || item.metric || agg.metric;
         if (item.peso != null) agg.peso = item.peso;
         agg.secaoId = sec.id;
         agg.secaoLabel = sec.label;
@@ -11093,7 +11095,7 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
         id: resolvedId,
         nome: meta.nome || row.produtoNome || row.produto || (isUnknown ? "Desconhecido" : resolvedId),
         icon: meta.icon || (isUnknown ? "ti ti-help" : "ti ti-dots"),
-        metric: meta.metric || row.metric || "valor",
+        metrica: meta.metrica || row.metrica || meta.metric || row.metric || "valor",
         peso: meta.peso || row.peso || 1,
         hiddenInCards: !!meta.hiddenInCards,
         secaoId,
@@ -11124,6 +11126,10 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
       }
       if ((!agg.secaoLabel || agg.secaoLabel === agg.secaoId) && secaoLabel) {
         agg.secaoLabel = secaoLabel;
+      }
+      // Preserva o metrica do indicador principal, não sobrescreve com metrica do subindicador
+      if (!agg.metrica && (meta.metrica || row.metrica)) {
+        agg.metrica = meta.metrica || row.metrica || meta.metric || row.metric || "valor";
       }
     }
 
@@ -11247,7 +11253,7 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
         subEntry = {
           id: limparTexto(subIndicadorOriginal) || subIndicadorSlug,
           label: limparTexto(subIndicadorNome) || subIndicadorSlug,
-          metric: typeof row.metric === "string" ? row.metric.toLowerCase() : (typeof agg.metric === "string" ? agg.metric.toLowerCase() : "valor"),
+          metrica: typeof row.metrica === "string" ? row.metrica.toLowerCase() : (typeof agg.metrica === "string" ? agg.metrica.toLowerCase() : (typeof row.metric === "string" ? row.metric.toLowerCase() : (typeof agg.metric === "string" ? agg.metric.toLowerCase() : "valor"))),
           meta: 0,
           realizado: 0,
           variavelMeta: 0,
@@ -11259,7 +11265,9 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
         };
         agg.subIndicators.set(subIndicadorSlug, subEntry);
       }
-      if (!subEntry.metric && row.metric) subEntry.metric = String(row.metric).toLowerCase();
+      if (!subEntry.metrica && row.metrica) subEntry.metrica = String(row.metrica).toLowerCase();
+      if (!subEntry.metrica && agg.metrica) subEntry.metrica = String(agg.metrica).toLowerCase();
+      if (!subEntry.metrica && row.metric) subEntry.metrica = String(row.metric).toLowerCase();
       // Para subindicadores, também evita duplicação de meta usando metaRegistroId
       if (metaValor > 0 && metaRegistroId) {
         if (!processedMetaRegistros.has(`${resolvedId}|sub|${subIndicadorSlug}`)) {
@@ -11389,7 +11397,7 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
         id,
         nome: meta.nome || id,
         icon: meta.icon || DEFAULT_CARD_ICON,
-        metric: meta.metric || "valor",
+        metrica: meta.metrica || meta.metric || "valor",
         peso: meta.peso != null ? meta.peso : 1,
         hiddenInCards: Boolean(meta.hiddenInCards),
         secaoId: meta.sectionId,
@@ -11418,7 +11426,8 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
         if (meta.nome) aliasSet.add(meta.nome);
         agg.aliases = aliasSet;
       }
-      if (!agg.metric && meta.metric) agg.metric = meta.metric;
+      if (!agg.metrica && meta.metrica) agg.metrica = meta.metrica;
+      if (!agg.metrica && meta.metric) agg.metrica = meta.metric;
       if (!agg.secaoId && meta.sectionId) agg.secaoId = meta.sectionId;
       if ((!agg.secaoLabel || agg.secaoLabel === agg.secaoId) && meta.sectionLabel) agg.secaoLabel = meta.sectionLabel;
       if (!agg.familiaId && meta.familiaId) agg.familiaId = meta.familiaId;
@@ -11454,7 +11463,7 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
         id: agg.id,
         nome: agg.nome,
         icon: agg.icon,
-        metric: agg.metric,
+        metrica: agg.metrica || agg.metric || "valor",
         peso: item.peso,
         secaoId: sec.id,
         secaoLabel: sec.label,
@@ -11752,10 +11761,12 @@ function renderFamilias(sections, summary){
       const badgeTxt   = pct >= 100 ? `${Math.round(pct)}%` : `${pct.toFixed(1)}%`;
       const narrowStyle= badgeTxt.length >= 5 ? 'style="font-size:11px"' : '';
 
-      const realizadoTxt = formatByMetric(f.metric, f.realizado);
-      const metaTxt      = formatByMetric(f.metric, f.meta);
-      const realizadoFull = formatMetricFull(f.metric, f.realizado);
-      const metaFull      = formatMetricFull(f.metric, f.meta);
+      const metrica = f.metrica || f.metric || "valor";
+      const metricaCapitalizada = metrica ? metrica.charAt(0).toUpperCase() + metrica.slice(1).toLowerCase() : "Valor";
+      const realizadoTxt = formatByMetric(metrica, f.realizado);
+      const metaTxt      = formatByMetric(metrica, f.meta);
+      const realizadoFull = formatMetricFull(metrica, f.realizado);
+      const metaFull      = formatMetricFull(metrica, f.meta);
 
       const pontosMeta = pontosMetaItem;
       const pontosReal = pontosRealItem;
@@ -11780,7 +11791,7 @@ function renderFamilias(sections, summary){
           <div class="prod-card__meta">
             <span class="pill">Pontos: ${formatPoints(pontosReal)} / ${formatPoints(pontosMeta)}</span>
             <span class="pill">Peso: ${formatPoints(pontosMeta)}</span>
-            <span class="pill">${f.metric === "valor" ? "Valor" : f.metric === "qtd" ? "Quantidade" : "Percentual"}</span>
+            <span class="pill">${metricaCapitalizada}</span>
           </div>
 
           <div class="prod-card__kpis">

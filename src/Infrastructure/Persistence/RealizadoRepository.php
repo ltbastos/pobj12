@@ -51,6 +51,7 @@ class RealizadoRepository
                     AND u.id_diretoria = r.diretoria_id
                     AND u.id_regional = r.gerencia_regional_id
                     AND u.id_agencia = r.agencia_id
+                    AND u.funcional = r.funcional
                 LEFT JOIN d_produtos p ON p.id_indicador = r.indicador_id
                     AND (p.id_subindicador = r.subindicador_id OR (p.id_subindicador IS NULL AND r.subindicador_id IS NULL))
                 ORDER BY r.data_realizado DESC, r.id";

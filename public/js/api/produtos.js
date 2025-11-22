@@ -53,6 +53,7 @@ function normalizarDimProdutos(rows){
       indicadorCodigo,
       indicadorId: gerarId(indicadorCodigo, indicadorNome),
       indicadorNome,
+      metrica: raw.metrica || "valor",
       peso: toNumber(raw.peso) || 0
     };
     
@@ -104,7 +105,7 @@ function processProdutosData(produtosDimRaw = []) {
 
   globalMaps.forEach(map => {
     if (map instanceof Map) {
-      map.clear();
+    map.clear();
       dimensionAliases.forEach(({ key, value }) => map.set(key, value));
     }
   });
