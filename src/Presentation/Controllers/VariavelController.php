@@ -2,23 +2,22 @@
 
 namespace App\Presentation\Controllers;
 
+use App\Application\UseCase\VariavelUseCase;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Container;
 
 class VariavelController
 {
-    protected $container;
+    private $variavelUseCase;
 
-    public function __construct(Container $container)
+    public function __construct(VariavelUseCase $variavelUseCase)
     {
-        $this->container = $container;
+        $this->variavelUseCase = $variavelUseCase;
     }
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\VariavelUseCase');
-        $result = $service->getAllVariaveis();
+        $result = $this->variavelUseCase->getAllVariaveis();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
         $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));

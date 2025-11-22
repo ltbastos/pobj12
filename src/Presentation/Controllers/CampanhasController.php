@@ -2,23 +2,22 @@
 
 namespace App\Presentation\Controllers;
 
+use App\Application\UseCase\CampanhasUseCase;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Container;
 
 class CampanhasController
 {
-    protected $container;
+    private $campanhasUseCase;
 
-    public function __construct(Container $container)
+    public function __construct(CampanhasUseCase $campanhasUseCase)
     {
-        $this->container = $container;
+        $this->campanhasUseCase = $campanhasUseCase;
     }
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\CampanhasUseCase');
-        $result = $service->getAllCampanhas();
+        $result = $this->campanhasUseCase->getAllCampanhas();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
         $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));

@@ -2,23 +2,22 @@
 
 namespace App\Presentation\Controllers;
 
+use App\Application\UseCase\RealizadoUseCase;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Container;
 
 class RealizadosController
 {
-    protected $container;
+    private $realizadoUseCase;
 
-    public function __construct(Container $container)
+    public function __construct(RealizadoUseCase $realizadoUseCase)
     {
-        $this->container = $container;
+        $this->realizadoUseCase = $realizadoUseCase;
     }
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\RealizadoUseCase');
-        $result = $service->getAllRealizados();
+        $result = $this->realizadoUseCase->getAllRealizados();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
         $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));

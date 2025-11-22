@@ -2,23 +2,22 @@
 
 namespace App\Presentation\Controllers;
 
+use App\Application\UseCase\HistoricoUseCase;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Container;
 
 class HistoricoController
 {
-    protected $container;
+    private $historicoUseCase;
 
-    public function __construct(Container $container)
+    public function __construct(HistoricoUseCase $historicoUseCase)
     {
-        $this->container = $container;
+        $this->historicoUseCase = $historicoUseCase;
     }
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\HistoricoUseCase');
-        $result = $service->getAllHistorico();
+        $result = $this->historicoUseCase->getAllHistorico();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
         $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));

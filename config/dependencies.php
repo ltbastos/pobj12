@@ -1,7 +1,14 @@
 <?php
 
 return function ($container) {
-    // Database Connection
+    registerDatabase($container);
+    registerRepositories($container);
+    registerUseCases($container);
+    registerControllers($container);
+};
+
+function registerDatabase($container)
+{
     $container[PDO::class] = function ($c) {
         $settings = $c->get('settings')['db'];
         $dsn = sprintf(
@@ -16,8 +23,10 @@ return function ($container) {
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         ]);
     };
+}
 
-    // Repositories
+function registerRepositories($container)
+{
     $container['App\Infrastructure\Persistence\EstruturaRepository'] = function ($c) {
         return new \App\Infrastructure\Persistence\EstruturaRepository($c->get(PDO::class));
     };
@@ -81,8 +90,10 @@ return function ($container) {
     $container['App\Infrastructure\Persistence\OmegaMesuRepository'] = function ($c) {
         return new \App\Infrastructure\Persistence\OmegaMesuRepository($c->get(PDO::class));
     };
+}
 
-    // Use Cases
+function registerUseCases($container)
+{
     $container['App\Application\UseCase\FiltrosUseCase'] = function ($c) {
         return new \App\Application\UseCase\FiltrosUseCase(
             $c->get('App\Infrastructure\Persistence\EstruturaRepository'),
@@ -196,90 +207,131 @@ return function ($container) {
             $c->get('App\Infrastructure\Persistence\CalendarioRepository')
         );
     };
+}
 
-    // Controllers
+function registerControllers($container)
+{
     $container['App\Presentation\Controllers\HealthController'] = function ($c) {
-        return new \App\Presentation\Controllers\HealthController($c);
+        return new \App\Presentation\Controllers\HealthController($c->get(PDO::class));
     };
 
     $container['App\Presentation\Controllers\AgentController'] = function ($c) {
-        return new \App\Presentation\Controllers\AgentController($c);
+        return new \App\Presentation\Controllers\AgentController(
+            $c->get('App\Application\UseCase\AgentUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\CalendarioController'] = function ($c) {
-        return new \App\Presentation\Controllers\CalendarioController($c);
+        return new \App\Presentation\Controllers\CalendarioController(
+            $c->get('App\Application\UseCase\CalendarioUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\CampanhasController'] = function ($c) {
-        return new \App\Presentation\Controllers\CampanhasController($c);
+        return new \App\Presentation\Controllers\CampanhasController(
+            $c->get('App\Application\UseCase\CampanhasUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\DetalhesController'] = function ($c) {
-        return new \App\Presentation\Controllers\DetalhesController($c);
+        return new \App\Presentation\Controllers\DetalhesController(
+            $c->get('App\Application\UseCase\DetalhesUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\EstruturaController'] = function ($c) {
-        return new \App\Presentation\Controllers\EstruturaController($c);
+        return new \App\Presentation\Controllers\EstruturaController(
+            $c->get('App\Application\UseCase\EstruturaUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\FiltrosController'] = function ($c) {
-        return new \App\Presentation\Controllers\FiltrosController($c);
+        return new \App\Presentation\Controllers\FiltrosController(
+            $c->get('App\Application\UseCase\FiltrosUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\HistoricoController'] = function ($c) {
-        return new \App\Presentation\Controllers\HistoricoController($c);
+        return new \App\Presentation\Controllers\HistoricoController(
+            $c->get('App\Application\UseCase\HistoricoUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\LeadsController'] = function ($c) {
-        return new \App\Presentation\Controllers\LeadsController($c);
+        return new \App\Presentation\Controllers\LeadsController(
+            $c->get('App\Application\UseCase\LeadsUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\MetasController'] = function ($c) {
-        return new \App\Presentation\Controllers\MetasController($c);
+        return new \App\Presentation\Controllers\MetasController(
+            $c->get('App\Application\UseCase\MetaUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\RealizadosController'] = function ($c) {
-        return new \App\Presentation\Controllers\RealizadosController($c);
+        return new \App\Presentation\Controllers\RealizadosController(
+            $c->get('App\Application\UseCase\RealizadoUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\ProdutosController'] = function ($c) {
-        return new \App\Presentation\Controllers\ProdutosController($c);
+        return new \App\Presentation\Controllers\ProdutosController(
+            $c->get('App\Application\UseCase\ProdutoUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\ResumoController'] = function ($c) {
-        return new \App\Presentation\Controllers\ResumoController($c);
+        return new \App\Presentation\Controllers\ResumoController(
+            $c->get('App\Application\UseCase\ResumoUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\StatusIndicadoresController'] = function ($c) {
-        return new \App\Presentation\Controllers\StatusIndicadoresController($c);
+        return new \App\Presentation\Controllers\StatusIndicadoresController(
+            $c->get('App\Application\UseCase\StatusIndicadoresUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\VariavelController'] = function ($c) {
-        return new \App\Presentation\Controllers\VariavelController($c);
+        return new \App\Presentation\Controllers\VariavelController(
+            $c->get('App\Application\UseCase\VariavelUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\MesuController'] = function ($c) {
-        return new \App\Presentation\Controllers\MesuController($c);
+        return new \App\Presentation\Controllers\MesuController(
+            $c->get('App\Application\UseCase\OmegaMesuUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\OmegaMesuController'] = function ($c) {
-        return new \App\Presentation\Controllers\OmegaMesuController($c);
+        return new \App\Presentation\Controllers\OmegaMesuController(
+            $c->get('App\Application\UseCase\OmegaMesuUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\OmegaStatusController'] = function ($c) {
-        return new \App\Presentation\Controllers\OmegaStatusController($c);
+        return new \App\Presentation\Controllers\OmegaStatusController(
+            $c->get('App\Application\UseCase\OmegaStatusUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\OmegaStructureController'] = function ($c) {
-        return new \App\Presentation\Controllers\OmegaStructureController($c);
+        return new \App\Presentation\Controllers\OmegaStructureController(
+            $c->get('App\Application\UseCase\OmegaStructureUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\OmegaTicketsController'] = function ($c) {
-        return new \App\Presentation\Controllers\OmegaTicketsController($c);
+        return new \App\Presentation\Controllers\OmegaTicketsController(
+            $c->get('App\Application\UseCase\OmegaTicketsUseCase')
+        );
     };
 
     $container['App\Presentation\Controllers\OmegaUsersController'] = function ($c) {
-        return new \App\Presentation\Controllers\OmegaUsersController($c);
+        return new \App\Presentation\Controllers\OmegaUsersController(
+            $c->get('App\Application\UseCase\OmegaUsersUseCase')
+        );
     };
-};
-
+}

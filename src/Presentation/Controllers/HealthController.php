@@ -5,15 +5,14 @@ namespace App\Presentation\Controllers;
 use PDO;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Container;
 
 class HealthController
 {
-    protected $container;
+    private $pdo;
 
-    public function __construct(Container $container)
+    public function __construct(PDO $pdo)
     {
-        $this->container = $container;
+        $this->pdo = $pdo;
     }
 
     public function check(Request $request, Response $response): Response
@@ -25,9 +24,7 @@ class HealthController
         ];
 
         try {
-            $pdo = $this->container->get(PDO::class);
-            
-            $stmt = $pdo->query('SELECT 1 as test');
+            $stmt = $this->pdo->query('SELECT 1 as test');
             $result = $stmt->fetch();
             
             if ($result === false || !isset($result['test'])) {
@@ -45,14 +42,6 @@ class HealthController
             $response->getBody()->write(json_encode($status, JSON_UNESCAPED_UNICODE));
             return $response;
         } catch (\Throwable $e) {
-            if ($this->container->has('logger')) {
-                $logger = $this->container->get('logger');
-                $logger->error('Health check failed', [
-                    'endpoint' => 'health',
-                    'error' => $e->getMessage(),
-                ]);
-            }
-            
             $status['status'] = 'error';
             $status['database'] = 'error';
             $status['message'] = 'Não foi possível conectar ao banco de dados';
