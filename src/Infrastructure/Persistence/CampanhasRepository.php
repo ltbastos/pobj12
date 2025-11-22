@@ -5,7 +5,6 @@ namespace App\Infrastructure\Persistence;
 use PDO;
 use App\Domain\DTO\CampanhasDTO;
 use App\Infrastructure\Helpers\DateFormatter;
-use App\Infrastructure\Helpers\RowMapper;
 
 class CampanhasRepository
 {
@@ -83,13 +82,24 @@ class CampanhasRepository
                 isset($row['carteira']) ? $row['carteira'] : null,
                 $dataIso,
                 $dataIso,
-                RowMapper::toFloat(isset($row['linhas']) ? $row['linhas'] : null),
-                RowMapper::toFloat(isset($row['cash']) ? $row['cash'] : null),
-                RowMapper::toFloat(isset($row['conquista']) ? $row['conquista'] : null),
+                $this->toFloat(isset($row['linhas']) ? $row['linhas'] : null),
+                $this->toFloat(isset($row['cash']) ? $row['cash'] : null),
+                $this->toFloat(isset($row['conquista']) ? $row['conquista'] : null),
                 isset($row['atividade']) ? $row['atividade'] : null
             );
             
             return $dto->toArray();
         }, $results);
+    }
+    
+    private function toFloat($value)
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (is_numeric($value)) {
+            return (float)$value;
+        }
+        return null;
     }
 }

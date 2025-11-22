@@ -2,17 +2,17 @@
 
 namespace App\Presentation\Controllers;
 
+use App\Application\UseCase\ResumoUseCase;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Container;
 
 class ResumoController
 {
-    protected $container;
+    private $resumoUseCase;
 
-    public function __construct(Container $container)
+    public function __construct(ResumoUseCase $resumoUseCase)
     {
-        $this->container = $container;
+        $this->resumoUseCase = $resumoUseCase;
     }
 
     public function handle(Request $request, Response $response): Response
@@ -23,8 +23,7 @@ class ResumoController
                 $request->getParsedBody() ?: []
             );
             
-            $service = $this->container->get('App\Application\UseCase\ResumoService');
-            $result = $service->getResumo($params);
+            $result = $this->resumoUseCase->getResumo($params);
             
             $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
             $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));

@@ -6,7 +6,6 @@ namespace App\Infrastructure\Persistence;
 use PDO;
 use App\Domain\DTO\HistoricoDTO;
 use App\Infrastructure\Helpers\DateFormatter;
-use App\Infrastructure\Helpers\RowMapper;
 
 class HistoricoRepository
 {
@@ -69,13 +68,24 @@ class HistoricoRepository
                 isset($row['gerente_nome']) ? $row['gerente_nome'] : null,
                 isset($row['participantes']) ? $row['participantes'] : null,
                 isset($row['rank']) ? $row['rank'] : null,
-                RowMapper::toFloat(isset($row['pontos']) ? $row['pontos'] : null),
-                RowMapper::toFloat(isset($row['realizado']) ? $row['realizado'] : null),
-                RowMapper::toFloat(isset($row['meta']) ? $row['meta'] : null)
+                $this->toFloat(isset($row['pontos']) ? $row['pontos'] : null),
+                $this->toFloat(isset($row['realizado']) ? $row['realizado'] : null),
+                $this->toFloat(isset($row['meta']) ? $row['meta'] : null)
             );
             
             return $dto->toArray();
         }, $results);
+    }
+    
+    private function toFloat($value)
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (is_numeric($value)) {
+            return (float)$value;
+        }
+        return null;
     }
 }
 

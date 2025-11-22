@@ -2,23 +2,22 @@
 
 namespace App\Presentation\Controllers;
 
+use App\Application\UseCase\DetalhesUseCase;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Container;
 
 class DetalhesController
 {
-    protected $container;
+    private $detalhesUseCase;
 
-    public function __construct(Container $container)
+    public function __construct(DetalhesUseCase $detalhesUseCase)
     {
-        $this->container = $container;
+        $this->detalhesUseCase = $detalhesUseCase;
     }
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\DetalhesService');
-        $result = $service->getAllDetalhes();
+        $result = $this->detalhesUseCase->getAllDetalhes();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
         $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));

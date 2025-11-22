@@ -2,23 +2,22 @@
 
 namespace App\Presentation\Controllers;
 
+use App\Application\UseCase\OmegaMesuUseCase;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Container;
 
 class MesuController
 {
-    protected $container;
+    private $omegaMesuUseCase;
 
-    public function __construct(Container $container)
+    public function __construct(OmegaMesuUseCase $omegaMesuUseCase)
     {
-        $this->container = $container;
+        $this->omegaMesuUseCase = $omegaMesuUseCase;
     }
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\OmegaMesuService');
-        $result = $service->getMesuData();
+        $result = $this->omegaMesuUseCase->getMesuData();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
         $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));

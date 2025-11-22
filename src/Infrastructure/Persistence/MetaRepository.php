@@ -6,7 +6,6 @@ namespace App\Infrastructure\Persistence;
 use PDO;
 use App\Domain\DTO\MetaDTO;
 use App\Infrastructure\Helpers\DateFormatter;
-use App\Infrastructure\Helpers\RowMapper;
 
 class MetaRepository
 {
@@ -89,36 +88,44 @@ class MetaRepository
         return array_map(function ($row) {
             $dataIso = DateFormatter::toIsoDate(isset($row['data']) ? $row['data'] : null);
             
+            $registroId = isset($row['registro_id']) ? $row['registro_id'] : null;
+            $segmentoId = isset($row['segmento_id']) ? $row['segmento_id'] : null;
+            $diretoriaId = isset($row['diretoria_id']) ? $row['diretoria_id'] : null;
+            $gerenciaRegionalId = isset($row['gerencia_regional_id']) ? $row['gerencia_regional_id'] : null;
+            $agenciaId = isset($row['agencia_id']) ? $row['agencia_id'] : null;
+            $familiaId = isset($row['familia_id']) ? $row['familia_id'] : null;
+            $indicadorId = isset($row['indicador_id']) ? $row['indicador_id'] : null;
+            
             $dto = new MetaDTO(
-                RowMapper::toString(isset($row['registro_id']) ? $row['registro_id'] : null),
+                $registroId !== null ? (string)$registroId : null,
                 isset($row['segmento']) ? $row['segmento'] : null,
-                RowMapper::toString(isset($row['segmento_id']) ? $row['segmento_id'] : null),
-                RowMapper::toString(isset($row['diretoria_id']) ? $row['diretoria_id'] : null),
+                $segmentoId !== null ? (string)$segmentoId : null,
+                $diretoriaId !== null ? (string)$diretoriaId : null,
                 isset($row['diretoria_nome']) ? $row['diretoria_nome'] : null,
-                RowMapper::toString(isset($row['gerencia_regional_id']) ? $row['gerencia_regional_id'] : null),
+                $gerenciaRegionalId !== null ? (string)$gerenciaRegionalId : null,
                 isset($row['gerencia_regional_nome']) ? $row['gerencia_regional_nome'] : null,
                 isset($row['regional_nome']) ? $row['regional_nome'] : null,
-                RowMapper::toString(isset($row['agencia_id']) ? $row['agencia_id'] : null),
+                $agenciaId !== null ? (string)$agenciaId : null,
                 isset($row['agencia_nome']) ? $row['agencia_nome'] : null,
                 isset($row['gerente_gestao_id']) ? $row['gerente_gestao_id'] : null,
                 isset($row['gerente_gestao_nome']) ? $row['gerente_gestao_nome'] : null,
                 isset($row['gerente_id']) ? $row['gerente_id'] : null,
                 isset($row['gerente_nome']) ? $row['gerente_nome'] : null,
-                RowMapper::toString(isset($row['familia_id']) ? $row['familia_id'] : null),
+                $familiaId !== null ? (string)$familiaId : null,
                 isset($row['familia_nome']) ? $row['familia_nome'] : null,
                 isset($row['id_indicador']) ? $row['id_indicador'] : null,
                 isset($row['ds_indicador']) ? $row['ds_indicador'] : null,
                 isset($row['subproduto']) ? $row['subproduto'] : null,
                 isset($row['id_subindicador']) ? $row['id_subindicador'] : null,
-                RowMapper::toString(isset($row['familia_id']) ? $row['familia_id'] : null),
-                RowMapper::toString(isset($row['indicador_id']) ? $row['indicador_id'] : null),
+                $familiaId !== null ? (string)$familiaId : null,
+                $indicadorId !== null ? (string)$indicadorId : null,
                 null,
                 null,
                 null,
                 null,
                 $dataIso,
                 $dataIso,
-                RowMapper::toFloat(isset($row['meta_mensal']) ? $row['meta_mensal'] : null),
+                $this->toFloat(isset($row['meta_mensal']) ? $row['meta_mensal'] : null),
                 null,
                 null,
                 null
@@ -126,6 +133,17 @@ class MetaRepository
             
             return $dto->toArray();
         }, $results);
+    }
+    
+    private function toFloat($value)
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (is_numeric($value)) {
+            return (float)$value;
+        }
+        return null;
     }
 }
 

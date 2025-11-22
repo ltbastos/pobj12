@@ -2,23 +2,22 @@
 
 namespace App\Presentation\Controllers;
 
+use App\Application\UseCase\StatusIndicadoresUseCase;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Container;
 
 class StatusIndicadoresController
 {
-    protected $container;
+    private $statusIndicadoresUseCase;
 
-    public function __construct(Container $container)
+    public function __construct(StatusIndicadoresUseCase $statusIndicadoresUseCase)
     {
-        $this->container = $container;
+        $this->statusIndicadoresUseCase = $statusIndicadoresUseCase;
     }
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\StatusIndicadoresService');
-        $result = $service->getAllStatus();
+        $result = $this->statusIndicadoresUseCase->getAllStatus();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
         $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));

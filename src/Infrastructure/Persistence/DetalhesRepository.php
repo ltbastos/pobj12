@@ -5,7 +5,6 @@ namespace App\Infrastructure\Persistence;
 use PDO;
 use App\Domain\DTO\DetalhesDTO;
 use App\Infrastructure\Helpers\DateFormatter;
-use App\Infrastructure\Helpers\RowMapper;
 
 class DetalhesRepository
 {
@@ -91,15 +90,26 @@ class DetalhesRepository
                 isset($row['modalidade_pagamento']) ? $row['modalidade_pagamento'] : null,
                 $dataIso,
                 $competenciaIso,
-                RowMapper::toFloat(isset($row['valor_meta']) ? $row['valor_meta'] : null),
-                RowMapper::toFloat(isset($row['valor_realizado']) ? $row['valor_realizado'] : null),
-                RowMapper::toFloat(isset($row['quantidade']) ? $row['quantidade'] : null),
-                RowMapper::toFloat(isset($row['peso']) ? $row['peso'] : null),
-                RowMapper::toFloat(isset($row['pontos']) ? $row['pontos'] : null),
+                $this->toFloat(isset($row['valor_meta']) ? $row['valor_meta'] : null),
+                $this->toFloat(isset($row['valor_realizado']) ? $row['valor_realizado'] : null),
+                $this->toFloat(isset($row['quantidade']) ? $row['quantidade'] : null),
+                $this->toFloat(isset($row['peso']) ? $row['peso'] : null),
+                $this->toFloat(isset($row['pontos']) ? $row['pontos'] : null),
                 isset($row['status_id']) ? $row['status_id'] : null
             );
             
             return $dto->toArray();
         }, $results);
+    }
+    
+    private function toFloat($value)
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (is_numeric($value)) {
+            return (float)$value;
+        }
+        return null;
     }
 }

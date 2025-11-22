@@ -2,23 +2,22 @@
 
 namespace App\Presentation\Controllers;
 
+use App\Application\UseCase\MetaUseCase;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use Slim\Container;
 
 class MetasController
 {
-    protected $container;
+    private $metaUseCase;
 
-    public function __construct(Container $container)
+    public function __construct(MetaUseCase $metaUseCase)
     {
-        $this->container = $container;
+        $this->metaUseCase = $metaUseCase;
     }
 
     public function handle(Request $request, Response $response): Response
     {
-        $service = $this->container->get('App\Application\UseCase\MetaService');
-        $result = $service->getAllMetas();
+        $result = $this->metaUseCase->getAllMetas();
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
         $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));

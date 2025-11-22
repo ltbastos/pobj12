@@ -6,7 +6,6 @@ namespace App\Infrastructure\Persistence;
 use PDO;
 use App\Domain\DTO\LeadsDTO;
 use App\Infrastructure\Helpers\DateFormatter;
-use App\Infrastructure\Helpers\RowMapper;
 
 class LeadsRepository
 {
@@ -83,7 +82,7 @@ class LeadsRepository
                 isset($row['gerente_gestao_cliente_id']) ? $row['gerente_gestao_cliente_id'] : null,
                 isset($row['gerente_cliente']) ? $row['gerente_cliente'] : null,
                 isset($row['gerente_cliente_id']) ? $row['gerente_cliente_id'] : null,
-                RowMapper::toString(isset($row['credito_pre_aprovado']) ? $row['credito_pre_aprovado'] : null),
+                (($credito = isset($row['credito_pre_aprovado']) ? $row['credito_pre_aprovado'] : null) !== null) ? (string)$credito : null,
                 isset($row['origem_lead']) ? $row['origem_lead'] : null
             );
             
