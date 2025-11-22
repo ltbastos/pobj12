@@ -2738,7 +2738,6 @@ function processBaseDataSources({
     dimProdutosPorSegmento: produtosProcessed.dimProdutosPorSegmento || {},
     status: typeof STATUS_INDICADORES_DATA !== "undefined" ? STATUS_INDICADORES_DATA : [],
     dados: typeof FACT_REALIZADOS !== "undefined" ? FACT_REALIZADOS : [],
-    realizados: typeof FACT_REALIZADOS !== "undefined" ? FACT_REALIZADOS : [],
     metas: typeof FACT_METAS !== "undefined" ? FACT_METAS : [],
     variavel: typeof FACT_VARIAVEL !== "undefined" ? FACT_VARIAVEL : [],
     campanhas: typeof FACT_CAMPANHAS !== "undefined" ? FACT_CAMPANHAS : [],
@@ -10978,6 +10977,7 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
   SUBPRODUTO_TO_INDICADOR.clear();
   const productMeta = new Map();
   const aggregated = new Map();
+  const processedRegistros = new Map(); // Rastreia registro_id já processados por produto para evitar duplicação
 
   CARD_SECTIONS_DEF.forEach(sec => {
     const familiaMeta = FAMILIA_BY_ID.get(sec.id);
@@ -11120,6 +11120,20 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
       if ((!agg.secaoLabel || agg.secaoLabel === agg.secaoId) && secaoLabel) {
         agg.secaoLabel = secaoLabel;
       }
+    }
+
+    // Evita duplicação: verifica se este registro_id já foi processado para este produto
+    const registroId = row.registroId || row.registro_id || "";
+    if (registroId) {
+      if (!processedRegistros.has(resolvedId)) {
+        processedRegistros.set(resolvedId, new Set());
+      }
+      const registrosSet = processedRegistros.get(resolvedId);
+      if (registrosSet.has(registroId)) {
+        // Este registro já foi processado, pula para evitar duplicação
+        return;
+      }
+      registrosSet.add(registroId);
     }
 
     const metaValor = Number(row.meta) || 0;
