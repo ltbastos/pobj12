@@ -9,6 +9,8 @@ return function ($container) {
 
 function registerDatabase($container)
 {
+    // O Pimple gerencia singletons por padrão - esta função será executada apenas uma vez por requisição
+    // Cada chamada a $c->get(PDO::class) retornará a mesma instância dentro da mesma requisição
     $container[PDO::class] = function ($c) {
         $settings = $c->get('settings')['db'];
         $dsn = sprintf(
@@ -18,10 +20,40 @@ function registerDatabase($container)
             $settings['database'],
             $settings['charset']
         );
-        return new PDO($dsn, $settings['username'], $settings['password'], [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        ]);
+        
+        try {
+            // Criar instância PDO com opções otimizadas para reduzir conexões desnecessárias
+            $pdo = new PDO($dsn, $settings['username'], $settings['password'], [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_PERSISTENT => false, // Não usar conexões persistentes para evitar problemas com limites
+                PDO::ATTR_EMULATE_PREPARES => false, // Usar prepared statements nativos do MySQL (mais eficiente)
+                PDO::ATTR_STRINGIFY_FETCHES => false,
+                PDO::ATTR_TIMEOUT => 5, // Timeout de conexão de 5 segundos
+            ]);
+            
+            return $pdo;
+        } catch (\PDOException $e) {
+            // Tratamento específico para erro de limite de conexões
+            if ($e->getCode() == 1226 || strpos($e->getMessage(), 'max_connections_per_hour') !== false) {
+                error_log(sprintf(
+                    'ERRO: Limite de conexões por hora excedido. Código: %s, Mensagem: %s',
+                    $e->getCode(),
+                    $e->getMessage()
+                ));
+                
+                // Lançar exceção com mensagem mais clara
+                throw new \PDOException(
+                    'Limite de conexões ao banco de dados excedido. Por favor, tente novamente em alguns minutos. ' .
+                    'Se o problema persistir, entre em contato com o administrador do sistema.',
+                    1226,
+                    $e
+                );
+            }
+            
+            // Re-lançar outras exceções PDO
+            throw $e;
+        }
     };
 }
 
