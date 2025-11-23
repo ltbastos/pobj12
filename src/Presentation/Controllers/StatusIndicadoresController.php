@@ -6,7 +6,10 @@ use App\Application\UseCase\StatusIndicadoresUseCase;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
-class StatusIndicadoresController
+/**
+ * Controller para operações relacionadas a status de indicadores
+ */
+class StatusIndicadoresController extends ControllerBase
 {
     private $statusIndicadoresUseCase;
 
@@ -17,11 +20,9 @@ class StatusIndicadoresController
 
     public function handle(Request $request, Response $response): Response
     {
-        $result = $this->statusIndicadoresUseCase->getAllStatus();
+        $result = $this->statusIndicadoresUseCase->handle();
         
-        $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
-        $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));
-        return $response;
+        return $this->success($response, $result);
     }
 }
 

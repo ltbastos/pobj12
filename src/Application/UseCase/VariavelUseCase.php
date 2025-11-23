@@ -11,5 +11,5 @@ class VariavelUseCase extends AbstractUseCase
     {
         parent::__construct($repository);
     }
-}
+} 
 

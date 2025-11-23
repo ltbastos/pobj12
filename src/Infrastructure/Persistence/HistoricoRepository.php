@@ -2,25 +2,33 @@
 
 namespace App\Infrastructure\Persistence;
 
-// Removed Connection dependency
 use PDO;
 use App\Domain\DTO\FilterDTO;
 use App\Domain\DTO\HistoricoDTO;
 use App\Domain\Enum\Tables;
 use App\Infrastructure\Helpers\DateFormatter;
+use App\Infrastructure\Helpers\ValueFormatter;
 
-class HistoricoRepository
+/**
+ * Repositório para buscar todos os registros de histórico com filtros opcionais
+ */
+class HistoricoRepository extends BaseRepository
 {
-    private $pdo;
-
+    /**
+     * @param PDO $pdo
+     */
     public function __construct(PDO $pdo)
     {
-        $this->pdo = $pdo;
+        parent::__construct($pdo, HistoricoDTO::class);
     }
 
-    public function findAllAsArray(FilterDTO $filters = null): array
+    /**
+     * Retorna o SELECT completo da consulta
+     * @return string
+     */
+    public function baseSelect(): string
     {
-        $sql = "SELECT 
+        return "SELECT 
                     nivel,
                     ano,
                     `database` AS data,
@@ -43,82 +51,95 @@ class HistoricoRepository
                     meta
                 FROM " . Tables::F_HISTORICO_RANKING_POBJ . "
                 WHERE 1=1";
-        
+    }
+
+    /**
+     * Constrói os filtros WHERE baseado no FilterDTO
+     * @param FilterDTO|null $filters
+     * @return array ['sql' => string, 'params' => array]
+     */
+    public function builderFilter(FilterDTO $filters = null): array
+    {
+        $sql = "";
         $params = [];
         
-        if ($filters !== null && $filters->hasAnyFilter()) {
+        if ($filters === null || !$filters->hasAnyFilter()) {
+            return ['sql' => $sql, 'params' => $params];
+        }
+
             if ($filters->segmento !== null) {
                 $sql .= " AND segmento_id = :segmento";
                 $params[':segmento'] = $filters->segmento;
             }
+
             if ($filters->diretoria !== null) {
                 $sql .= " AND diretoria = :diretoria";
                 $params[':diretoria'] = $filters->diretoria;
             }
+
             if ($filters->regional !== null) {
                 $sql .= " AND gerencia_regional = :regional";
                 $params[':regional'] = $filters->regional;
             }
+
             if ($filters->agencia !== null) {
                 $sql .= " AND agencia = :agencia";
                 $params[':agencia'] = $filters->agencia;
             }
+
             if ($filters->gerenteGestao !== null) {
                 $sql .= " AND gerente_gestao = :gerente_gestao";
                 $params[':gerente_gestao'] = $filters->gerenteGestao;
             }
+
             if ($filters->gerente !== null) {
                 $sql .= " AND gerente = :gerente";
                 $params[':gerente'] = $filters->gerente;
             }
-        }
-        
-        $sql .= " ORDER BY `database` DESC, nivel, ano";
-        
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        return array_map(function ($row) {
-            $dataIso = DateFormatter::toIsoDate(isset($row['data']) ? $row['data'] : null);
-            
-            $dto = new HistoricoDTO(
-                isset($row['nivel']) ? $row['nivel'] : null,
-                isset($row['ano']) ? $row['ano'] : null,
-                $dataIso,
-                $dataIso,
-                isset($row['segmento']) ? $row['segmento'] : null,
-                isset($row['segmento_id']) ? $row['segmento_id'] : null,
-                isset($row['diretoria']) ? $row['diretoria'] : null,
-                isset($row['diretoria_nome']) ? $row['diretoria_nome'] : null,
-                isset($row['gerencia_regional']) ? $row['gerencia_regional'] : null,
-                isset($row['gerencia_regional_nome']) ? $row['gerencia_regional_nome'] : null,
-                isset($row['agencia']) ? $row['agencia'] : null,
-                isset($row['agencia_nome']) ? $row['agencia_nome'] : null,
-                isset($row['gerente_gestao']) ? $row['gerente_gestao'] : null,
-                isset($row['gerente_gestao_nome']) ? $row['gerente_gestao_nome'] : null,
-                isset($row['gerente']) ? $row['gerente'] : null,
-                isset($row['gerente_nome']) ? $row['gerente_nome'] : null,
-                isset($row['participantes']) ? $row['participantes'] : null,
-                isset($row['rank']) ? $row['rank'] : null,
-                $this->toFloat(isset($row['pontos']) ? $row['pontos'] : null),
-                $this->toFloat(isset($row['realizado']) ? $row['realizado'] : null),
-                $this->toFloat(isset($row['meta']) ? $row['meta'] : null)
-            );
-            
-            return $dto->toArray();
-        }, $results);
+
+        return ['sql' => $sql, 'params' => $params];
     }
-    
-    private function toFloat($value)
+
+    /**
+     * Retorna a cláusula ORDER BY
+     * @return string
+     */
+    protected function getOrderBy(): string
     {
-        if ($value === null || $value === '') {
-            return null;
-        }
-        if (is_numeric($value)) {
-            return (float)$value;
-        }
-        return null;
+        return "ORDER BY `database` DESC, nivel, ano";
+    }
+
+    /**
+     * Mapeia um array de resultados para HistoricoDTO
+     * @param array $row
+     * @return HistoricoDTO
+     */
+    public function mapToDto(array $row): HistoricoDTO
+    {
+        $dataIso = DateFormatter::toIsoDate($row['data'] ?? null);
+            
+        return new HistoricoDTO(
+            $row['nivel'] ?? null,                                    // nivel
+            $row['ano'] ?? null,                                     // ano
+            $dataIso,                                                 // data
+            $dataIso,                                                 // competencia
+            $row['segmento'] ?? null,                                 // segmento
+            $row['segmento_id'] ?? null,                              // segmentoId
+            $row['diretoria'] ?? null,                                // diretoriaId (usando diretoria como ID)
+            $row['diretoria_nome'] ?? null,                           // diretoriaNome
+            $row['gerencia_regional'] ?? null,                        // gerenciaId (usando gerencia_regional como ID)
+            $row['gerencia_regional_nome'] ?? null,                   // gerenciaNome
+            $row['agencia'] ?? null,                                  // agenciaId (usando agencia como ID)
+            $row['agencia_nome'] ?? null,                             // agenciaNome
+            $row['gerente_gestao'] ?? null,                           // gerenteGestaoId (usando gerente_gestao como ID)
+            $row['gerente_gestao_nome'] ?? null,                      // gerenteGestaoNome
+            $row['gerente'] ?? null,                                  // gerenteId (usando gerente como ID)
+            $row['gerente_nome'] ?? null,                             // gerenteNome
+            $row['participantes'] ?? null,                            // participantes
+            $row['rank'] ?? null,                                     // rank
+            ValueFormatter::toFloat($row['pontos'] ?? null),         // pontos
+            ValueFormatter::toFloat($row['realizado'] ?? null),      // realizadoMensal
+            ValueFormatter::toFloat($row['meta'] ?? null)             // metaMensal
+        );
     }
 }
-

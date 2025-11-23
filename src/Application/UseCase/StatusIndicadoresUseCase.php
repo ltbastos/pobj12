@@ -4,6 +4,9 @@ namespace App\Application\UseCase;
 
 use App\Infrastructure\Persistence\StatusIndicadoresRepository;
 
+/**
+ * UseCase para operações relacionadas a status de indicadores
+ */
 class StatusIndicadoresUseCase
 {
     private $statusRepository;
@@ -13,9 +16,12 @@ class StatusIndicadoresUseCase
         $this->statusRepository = $statusRepository;
     }
 
-    public function getAllStatus(): array
+    /**
+     * Retorna todos os status de indicadores
+     * @return array
+     */
+    public function handle(): array
     {
         return $this->statusRepository->findAllAsArray();
     }
 }
-

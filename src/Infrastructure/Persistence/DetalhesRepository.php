@@ -73,55 +73,55 @@ class DetalhesRepository extends BaseRepository
     {
         $sql = "";
         $params = [];
-
+        
         if ($filters === null || !$filters->hasAnyFilter()) {
             return ['sql' => $sql, 'params' => $params];
         }
 
-        if ($filters->segmento !== null) {
-            $sql .= " AND segmento_id = :segmento";
-            $params[':segmento'] = $filters->segmento;
-        }
+            if ($filters->segmento !== null) {
+                $sql .= " AND segmento_id = :segmento";
+                $params[':segmento'] = $filters->segmento;
+            }
 
-        if ($filters->diretoria !== null) {
-            $sql .= " AND diretoria_id = :diretoria";
-            $params[':diretoria'] = $filters->diretoria;
-        }
+            if ($filters->diretoria !== null) {
+                $sql .= " AND diretoria_id = :diretoria";
+                $params[':diretoria'] = $filters->diretoria;
+            }
 
-        if ($filters->regional !== null) {
-            $sql .= " AND gerencia_regional_id = :regional";
-            $params[':regional'] = $filters->regional;
-        }
+            if ($filters->regional !== null) {
+                $sql .= " AND gerencia_regional_id = :regional";
+                $params[':regional'] = $filters->regional;
+            }
 
-        if ($filters->agencia !== null) {
-            $sql .= " AND agencia_id = :agencia";
-            $params[':agencia'] = $filters->agencia;
-        }
+            if ($filters->agencia !== null) {
+                $sql .= " AND agencia_id = :agencia";
+                $params[':agencia'] = $filters->agencia;
+            }
 
-        if ($filters->gerenteGestao !== null) {
-            $sql .= " AND gerente_gestao_id = :gerente_gestao";
-            $params[':gerente_gestao'] = $filters->gerenteGestao;
-        }
+            if ($filters->gerenteGestao !== null) {
+                $sql .= " AND gerente_gestao_id = :gerente_gestao";
+                $params[':gerente_gestao'] = $filters->gerenteGestao;
+            }
 
-        if ($filters->gerente !== null) {
-            $sql .= " AND gerente_id = :gerente";
-            $params[':gerente'] = $filters->gerente;
-        }
+            if ($filters->gerente !== null) {
+                $sql .= " AND gerente_id = :gerente";
+                $params[':gerente'] = $filters->gerente;
+            }
 
-        if ($filters->familia !== null) {
-            $sql .= " AND familia_id = :familia";
-            $params[':familia'] = $filters->familia;
-        }
+            if ($filters->familia !== null) {
+                $sql .= " AND familia_id = :familia";
+                $params[':familia'] = $filters->familia;
+            }
 
-        if ($filters->indicador !== null) {
-            $sql .= " AND id_indicador = :indicador";
-            $params[':indicador'] = $filters->indicador;
-        }
+            if ($filters->indicador !== null) {
+                $sql .= " AND id_indicador = :indicador";
+                $params[':indicador'] = $filters->indicador;
+            }
 
-        if ($filters->subindicador !== null) {
-            $sql .= " AND id_subindicador = :subindicador";
-            $params[':subindicador'] = $filters->subindicador;
-        }
+            if ($filters->subindicador !== null) {
+                $sql .= " AND id_subindicador = :subindicador";
+                $params[':subindicador'] = $filters->subindicador;
+            }
 
         return ['sql' => $sql, 'params' => $params];
     }
@@ -144,7 +144,7 @@ class DetalhesRepository extends BaseRepository
     {
         $dataIso = DateFormatter::toIsoDate($row['data'] ?? null);
         $competenciaIso = DateFormatter::toIsoDate($row['competencia'] ?? null);
-
+            
         return new DetalhesDTO(
             $row['registro_id'] ?? null,
             $row['segmento'] ?? null,
@@ -173,14 +173,14 @@ class DetalhesRepository extends BaseRepository
             $row['canal_venda'] ?? null,
             $row['tipo_venda'] ?? null,
             $row['modalidade_pagamento'] ?? null,
-            $dataIso,
-            $competenciaIso,
+                $dataIso,
+                $competenciaIso,
             ValueFormatter::toFloat($row['valor_meta'] ?? null),
             ValueFormatter::toFloat($row['valor_realizado'] ?? null),
             ValueFormatter::toFloat($row['quantidade'] ?? null),
             ValueFormatter::toFloat($row['peso'] ?? null),
             ValueFormatter::toFloat($row['pontos'] ?? null),
             $row['status_id'] ?? null
-        );
+            );
     }
 }

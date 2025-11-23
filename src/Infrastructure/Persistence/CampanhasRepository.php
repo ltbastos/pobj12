@@ -4,22 +4,31 @@ namespace App\Infrastructure\Persistence;
 
 use PDO;
 use App\Domain\DTO\FilterDTO;
-use App\Domain\Entity\FCampanhas;
+use App\Domain\DTO\CampanhasDTO;
 use App\Domain\Enum\Tables;
 use App\Infrastructure\Helpers\DateFormatter;
+use App\Infrastructure\Helpers\ValueFormatter;
 
-class CampanhasRepository
+/**
+ * Repositório para buscar todos os registros de campanhas com filtros opcionais
+ */
+class CampanhasRepository extends BaseRepository
 {
-    private $pdo;
-
+    /**
+     * @param PDO $pdo
+     */
     public function __construct(PDO $pdo)
     {
-        $this->pdo = $pdo;
+        parent::__construct($pdo, CampanhasDTO::class);
     }
 
-    public function findAllAsArray(FilterDTO $filters = null): array
+    /**
+     * Retorna o SELECT completo da consulta
+     * @return string
+     */
+    public function baseSelect(): string
     {
-        $sql = "SELECT 
+        return "SELECT 
                     campanha_id,
                     sprint_id,
                     segmento,
@@ -50,81 +59,118 @@ class CampanhasRepository
                     atividade
                 FROM " . Tables::F_CAMPANHAS . "
                 WHERE 1=1";
-        
+    }
+
+    /**
+     * Constrói os filtros WHERE baseado no FilterDTO
+     * @param FilterDTO|null $filters
+     * @return array ['sql' => string, 'params' => array]
+     */
+    public function builderFilter(FilterDTO $filters = null): array
+    {
+        $sql = "";
         $params = [];
         
-        if ($filters !== null && $filters->hasAnyFilter()) {
+        if ($filters === null || !$filters->hasAnyFilter()) {
+            return ['sql' => $sql, 'params' => $params];
+        }
+
             if ($filters->segmento !== null) {
                 $sql .= " AND segmento_id = :segmento";
                 $params[':segmento'] = $filters->segmento;
             }
+
             if ($filters->diretoria !== null) {
                 $sql .= " AND diretoria_id = :diretoria";
                 $params[':diretoria'] = $filters->diretoria;
             }
+
             if ($filters->regional !== null) {
                 $sql .= " AND gerencia_regional_id = :regional";
                 $params[':regional'] = $filters->regional;
             }
+
             if ($filters->agencia !== null) {
                 $sql .= " AND agencia_id = :agencia";
                 $params[':agencia'] = $filters->agencia;
             }
+
             if ($filters->gerenteGestao !== null) {
                 $sql .= " AND gerente_gestao_id = :gerente_gestao";
                 $params[':gerente_gestao'] = $filters->gerenteGestao;
             }
+
             if ($filters->gerente !== null) {
                 $sql .= " AND gerente_id = :gerente";
                 $params[':gerente'] = $filters->gerente;
             }
+
             if ($filters->familia !== null) {
                 $sql .= " AND familia_id = :familia";
                 $params[':familia'] = $filters->familia;
             }
+
             if ($filters->indicador !== null) {
                 $sql .= " AND id_indicador = :indicador";
                 $params[':indicador'] = $filters->indicador;
             }
+
             if ($filters->subindicador !== null) {
                 $sql .= " AND id_subindicador = :subindicador";
                 $params[':subindicador'] = $filters->subindicador;
             }
-        }
-        
-        $sql .= " ORDER BY data DESC";
-        
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        return array_map(function ($row) {
-            $dataIso = DateFormatter::toIsoDate(isset($row['data']) ? $row['data'] : null);
-            $row['data'] = $dataIso;
-            
-            if (isset($row['linhas'])) {
-                $row['linhas'] = $this->toFloat($row['linhas']);
-            }
-            if (isset($row['cash'])) {
-                $row['cash'] = $this->toFloat($row['cash']);
-            }
-            if (isset($row['conquista'])) {
-                $row['conquista'] = $this->toFloat($row['conquista']);
-            }
-            
-            $entity = FCampanhas::fromArray($row);
-            return $entity->toDTO()->toArray();
-        }, $results);
+
+        return ['sql' => $sql, 'params' => $params];
     }
-    
-    private function toFloat($value)
+
+    /**
+     * Retorna a cláusula ORDER BY
+     * @return string
+     */
+    protected function getOrderBy(): string
     {
-        if ($value === null || $value === '') {
-            return null;
-        }
-        if (is_numeric($value)) {
-            return (float)$value;
-        }
-        return null;
+        return "ORDER BY data DESC";
+    }
+
+    /**
+     * Mapeia um array de resultados para CampanhasDTO
+     * @param array $row
+     * @return CampanhasDTO
+     */
+    public function mapToDto(array $row): CampanhasDTO
+    {
+        $dataIso = DateFormatter::toIsoDate($row['data'] ?? null);
+
+        return new CampanhasDTO(
+            $row['campanha_id'] ?? null,                      // campanhaId
+            $row['sprint_id'] ?? null,                        // sprintId
+            $row['segmento'] ?? null,                          // segmento
+            $row['segmento_id'] ?? null,                        // segmentoId
+            $row['diretoria_id'] ?? null,                      // diretoriaId
+            $row['diretoria_nome'] ?? null,                    // diretoriaNome
+            $row['gerencia_regional_id'] ?? null,               // gerenciaRegionalId
+            $row['regional_nome'] ?? null,                     // regionalNome
+            $row['agencia_id'] ?? null,                        // agenciaId
+            $row['agencia_nome'] ?? null,                      // agenciaNome
+            $row['gerente_gestao_id'] ?? null,                 // gerenteGestaoId
+            $row['gerente_gestao_nome'] ?? null,               // gerenteGestaoNome
+            $row['gerente_id'] ?? null,                        // gerenteId
+            $row['gerente_nome'] ?? null,                      // gerenteNome
+            $row['familia_id'] ?? null,                         // familiaId
+            $row['id_indicador'] ?? null,                      // idIndicador
+            $row['ds_indicador'] ?? null,                      // dsIndicador
+            $row['subproduto'] ?? null,                        // subproduto
+            $row['id_subindicador'] ?? null,                   // idSubindicador
+            $row['subindicador_codigo'] ?? null,               // subindicadorCodigo
+            $row['familia_codigo'] ?? null,                     // familiaCodigo
+            $row['indicador_codigo'] ?? null,                  // indicadorCodigo
+            $row['carteira'] ?? null,                          // carteira
+            $dataIso,                                          // data
+            $dataIso,                                          // competencia
+            ValueFormatter::toFloat($row['linhas'] ?? null),   // linhas
+            ValueFormatter::toFloat($row['cash'] ?? null),     // cash
+            ValueFormatter::toFloat($row['conquista'] ?? null), // conquista
+            $row['atividade'] ?? null                          // atividade
+        );
     }
 }

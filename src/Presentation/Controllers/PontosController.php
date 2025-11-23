@@ -18,9 +18,9 @@ class PontosController extends ControllerBase
 
     public function handle(Request $request, Response $response): Response
     {
-        $queryParams = $request->getQueryParams();
-        $filters = new FilterDTO($queryParams);
-        
+            $queryParams = $request->getQueryParams();
+            $filters = new FilterDTO($queryParams);
+            
         $result = $this->pontosUseCase->handle($filters);
         
         return $this->success($response, $result);

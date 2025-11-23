@@ -175,10 +175,7 @@ class MetasRepository extends BaseRepository
             null,                                        // modalidadePagamento
             $dataIso,                                    // data
             $dataIso,                                    // competencia
-            ValueFormatter::toFloat($row['meta_mensal'] ?? null),
-            null,                                        // metaAcumulada
-            null,                                        // variavelMeta
-            null                                         // peso
+            ValueFormatter::toFloat($row['meta_mensal'] ?? null)                                       // peso
         );
     }
 }

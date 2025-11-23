@@ -30,7 +30,7 @@ class ProdutoRepository extends BaseRepository
     {
         return "SELECT 
                     id,
-                    id_familia,
+                    id_familia, 
                     familia,
                     id_indicador,
                     indicador,
@@ -56,20 +56,20 @@ class ProdutoRepository extends BaseRepository
             return ['sql' => $sql, 'params' => $params];
         }
 
-        if ($filters->familia !== null) {
-            $sql .= " AND id_familia = :familia";
-            $params[':familia'] = $filters->familia;
-        }
+            if ($filters->familia !== null) {
+                $sql .= " AND id_familia = :familia";
+                $params[':familia'] = $filters->familia;
+            }
 
-        if ($filters->indicador !== null) {
-            $sql .= " AND id_indicador = :indicador";
-            $params[':indicador'] = $filters->indicador;
-        }
+            if ($filters->indicador !== null) {
+                $sql .= " AND id_indicador = :indicador";
+                $params[':indicador'] = $filters->indicador;
+            }
 
-        if ($filters->subindicador !== null) {
-            $sql .= " AND id_subindicador = :subindicador";
-            $params[':subindicador'] = $filters->subindicador;
-        }
+            if ($filters->subindicador !== null) {
+                $sql .= " AND id_subindicador = :subindicador";
+                $params[':subindicador'] = $filters->subindicador;
+            }
 
         return ['sql' => $sql, 'params' => $params];
     }
@@ -93,13 +93,38 @@ class ProdutoRepository extends BaseRepository
     }
 
     /**
+     * Retorna o SQL base para contar registros
+     * Para queries com GROUP BY, conta os grupos resultantes
+     * @return string
+     */
+    protected function baseCountSelect(): string
+    {
+        $baseSelect = $this->baseSelect();
+        $fromPos = stripos($baseSelect, 'FROM');
+        if ($fromPos === false) {
+            return "SELECT COUNT(*) as total";
+        }
+        
+        // Para GROUP BY, precisamos contar os grupos resultantes
+        // Usa subquery para contar após o GROUP BY
+        $sql = "SELECT COUNT(*) as total FROM (" . $baseSelect;
+        $orderBy = $this->getOrderBy();
+        if ($orderBy !== "") {
+            $sql .= " " . $orderBy;
+        }
+        $sql .= ") as grouped_results";
+        
+        return $sql;
+    }
+
+    /**
      * Mapeia um array de resultados para ProdutoDTO
      * @param array $row
      * @return ProdutoDTO
      */
     public function mapToDto(array $row): ProdutoDTO
     {
-        $entity = DProduto::fromArray($row);
+            $entity = DProduto::fromArray($row);
         return $entity->toDTO();
     }
 }

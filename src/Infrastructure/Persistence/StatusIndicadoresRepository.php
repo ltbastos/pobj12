@@ -3,49 +3,100 @@
 namespace App\Infrastructure\Persistence;
 
 use PDO;
+use App\Domain\DTO\FilterDTO;
 use App\Domain\Enum\Tables;
-use App\Domain\ValueObject\StatusIndicador;
+use App\Domain\Enum\StatusIndicador;
 
-class StatusIndicadoresRepository
+/**
+ * Repositório para buscar todos os registros de status de indicadores
+ */
+class StatusIndicadoresRepository extends BaseRepository
 {
-    private $pdo;
-
+    /**
+     * @param PDO $pdo
+     */
     public function __construct(PDO $pdo)
     {
-        $this->pdo = $pdo;
+        // Não usa DTO, então passamos null e retornamos array diretamente
+        parent::__construct($pdo, null);
     }
 
+    /**
+     * Retorna o SELECT completo da consulta
+     * @return string
+     */
+    public function baseSelect(): string
+    {
+        return "SELECT 
+                    id,
+                    status AS label
+                FROM " . Tables::D_STATUS_INDICADORES . "
+                WHERE 1=1";
+    }
+
+    /**
+     * Constrói os filtros WHERE baseado no FilterDTO
+     * StatusIndicadores não utiliza filtros, então sempre retorna vazio
+     * @param FilterDTO|null $filters
+     * @return array ['sql' => string, 'params' => array]
+     */
+    public function builderFilter(FilterDTO $filters = null): array
+    {
+        // StatusIndicadores não utiliza filtros
+        return ['sql' => '', 'params' => []];
+    }
+
+    /**
+     * Retorna a cláusula ORDER BY
+     * @return string
+     */
+    protected function getOrderBy(): string
+    {
+        return "ORDER BY id ASC";
+    }
+
+    /**
+     * Mapeia um array de resultados para array simples
+     * @param array $row
+     * @return array
+     */
+    public function mapToDto(array $row): array
+    {
+        return [
+            'id' => $row['id'] ?? null,
+            'label' => $row['label'] ?? null,
+        ];
+    }
+
+    /**
+     * Busca todos os status de indicadores
+     * @return array
+     */
     public function findAllAsArray(): array
     {
-        $sql = "SELECT id, status AS label
-                FROM " . Tables::D_STATUS_INDICADORES . "
-                ORDER BY id ASC";
+        $result = $this->fetch(null);
         
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute();
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        if (empty($results)) {
+        // Se não houver resultados, retorna os defaults
+        if (empty($result)) {
             return StatusIndicador::getDefaults();
         }
-
-        return $results;
+        
+        return $result;
     }
 
+    /**
+     * Busca todos os status de indicadores para filtros
+     * @return array
+     */
     public function findAllForFilter(): array
     {
-        $sql = "SELECT id, status AS label
-                FROM " . Tables::D_STATUS_INDICADORES . "
-                ORDER BY id ASC";
+        $result = $this->fetch(null);
         
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute();
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        if (empty($results)) {
+        // Se não houver resultados, retorna os defaults
+        if (empty($result)) {
             return StatusIndicador::getDefaultsForFilter();
         }
-
-        return $results;
+        
+        return $result;
     }
 }
