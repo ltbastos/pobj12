@@ -39,7 +39,7 @@ class Cargo
         }
     }
 
-    public static function tryFromId(int $id): ?self
+    public static function tryFromId(int $id): self|null
     {
         if (in_array($id, self::$validValues, true)) {
             return new self($id);

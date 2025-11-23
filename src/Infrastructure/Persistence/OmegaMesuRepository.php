@@ -4,7 +4,9 @@ namespace App\Infrastructure\Persistence;
 
 // Removed Connection dependency
 use PDO;
+use App\Domain\DTO\FilterDTO;
 use App\Domain\DTO\OmegaMesuDTO;
+use App\Domain\Enum\Tables;
 
 class OmegaMesuRepository
 {
@@ -15,7 +17,7 @@ class OmegaMesuRepository
         $this->pdo = $pdo;
     }
 
-    public function findAll(): array
+    public function findAll(FilterDTO $filters = null): array
     {
         $sql = "SELECT DISTINCT
                     segmento AS segmento,
@@ -30,12 +32,42 @@ class OmegaMesuRepository
                     funcional AS gerente_gestao_id,
                     nome AS gerente,
                     funcional AS gerente_id
-                FROM d_estrutura
-                WHERE segmento IS NOT NULL
-                ORDER BY segmento, diretoria, regional, agencia";
+                FROM " . Tables::D_ESTRUTURA . "
+                WHERE segmento IS NOT NULL";
+        
+        $params = [];
+        
+        if ($filters !== null && $filters->hasAnyFilter()) {
+            if ($filters->segmento !== null) {
+                $sql .= " AND id_segmento = :segmento";
+                $params[':segmento'] = $filters->segmento;
+            }
+            if ($filters->diretoria !== null) {
+                $sql .= " AND id_diretoria = :diretoria";
+                $params[':diretoria'] = $filters->diretoria;
+            }
+            if ($filters->regional !== null) {
+                $sql .= " AND id_regional = :regional";
+                $params[':regional'] = $filters->regional;
+            }
+            if ($filters->agencia !== null) {
+                $sql .= " AND id_agencia = :agencia";
+                $params[':agencia'] = $filters->agencia;
+            }
+            if ($filters->gerenteGestao !== null) {
+                $sql .= " AND funcional = :gerente_gestao";
+                $params[':gerente_gestao'] = $filters->gerenteGestao;
+            }
+            if ($filters->gerente !== null) {
+                $sql .= " AND funcional = :gerente";
+                $params[':gerente'] = $filters->gerente;
+            }
+        }
+        
+        $sql .= " ORDER BY segmento, diretoria, regional, agencia";
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute();
+        $stmt->execute($params);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         return array_map(function ($row) {

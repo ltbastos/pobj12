@@ -2,6 +2,7 @@
 
 namespace App\Application\UseCase;
 
+use App\Domain\DTO\FilterDTO;
 use App\Infrastructure\Persistence\MetaRepository;
 
 class MetaUseCase
@@ -13,9 +14,9 @@ class MetaUseCase
         $this->repository = $repository;
     }
 
-    public function getAllMetas(): array
+    public function getAllMetas(FilterDTO $filters = null): array
     {
-        return $this->repository->findAllAsArray();
+        return $this->repository->findAllAsArray($filters);
     }
 }
 

@@ -2,6 +2,7 @@
 
 namespace App\Application\UseCase;
 
+use App\Domain\DTO\FilterDTO;
 use App\Infrastructure\Persistence\OmegaMesuRepository;
 
 class OmegaMesuUseCase
@@ -13,9 +14,9 @@ class OmegaMesuUseCase
         $this->repository = $repository;
     }
 
-    public function getMesuData(): array
+    public function getMesuData(FilterDTO $filters = null): array
     {
-        return $this->repository->findAll();
+        return $this->repository->findAll($filters);
     }
 }
 

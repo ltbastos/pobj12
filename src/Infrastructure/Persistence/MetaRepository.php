@@ -4,7 +4,9 @@ namespace App\Infrastructure\Persistence;
 
 // Removed Connection dependency
 use PDO;
+use App\Domain\DTO\FilterDTO;
 use App\Domain\DTO\MetaDTO;
+use App\Domain\Enum\Tables;
 use App\Infrastructure\Helpers\DateFormatter;
 
 class MetaRepository
@@ -16,7 +18,7 @@ class MetaRepository
         $this->pdo = $pdo;
     }
 
-    public function findAllAsArray(): array
+    public function findAllAsArray(FilterDTO $filters = null): array
     {
         $sql = "SELECT DISTINCT
                     m.id AS registro_id,
@@ -45,18 +47,61 @@ class MetaRepository
                     COALESCE(p.indicador, '') AS ds_indicador,
                     COALESCE(p.subindicador, '') AS subproduto,
                     COALESCE(CAST(p.id_subindicador AS CHAR), '0') AS id_subindicador
-                FROM f_meta m
-                LEFT JOIN d_estrutura u ON u.id_segmento = m.segmento_id
+                FROM " . Tables::F_META . " m
+                LEFT JOIN " . Tables::D_ESTRUTURA . " u ON u.id_segmento = m.segmento_id
                     AND u.id_diretoria = m.diretoria_id
                     AND u.id_regional = m.gerencia_regional_id
                     AND u.id_agencia = m.agencia_id
                     AND u.funcional = m.funcional
-                LEFT JOIN d_produtos p ON p.id_indicador = m.id_indicador
+                LEFT JOIN " . Tables::D_PRODUTOS . " p ON p.id_indicador = m.id_indicador
                     AND (p.id_subindicador = m.id_subindicador OR (p.id_subindicador IS NULL AND m.id_subindicador IS NULL))
-                ORDER BY m.data_meta DESC, m.id";
+                WHERE 1=1";
+        
+        $params = [];
+        
+        if ($filters !== null && $filters->hasAnyFilter()) {
+            if ($filters->segmento !== null) {
+                $sql .= " AND m.segmento_id = :segmento";
+                $params[':segmento'] = $filters->segmento;
+            }
+            if ($filters->diretoria !== null) {
+                $sql .= " AND m.diretoria_id = :diretoria";
+                $params[':diretoria'] = $filters->diretoria;
+            }
+            if ($filters->regional !== null) {
+                $sql .= " AND m.gerencia_regional_id = :regional";
+                $params[':regional'] = $filters->regional;
+            }
+            if ($filters->agencia !== null) {
+                $sql .= " AND m.agencia_id = :agencia";
+                $params[':agencia'] = $filters->agencia;
+            }
+            if ($filters->gerenteGestao !== null) {
+                $sql .= " AND u.funcional = :gerente_gestao";
+                $params[':gerente_gestao'] = $filters->gerenteGestao;
+            }
+            if ($filters->gerente !== null) {
+                $sql .= " AND m.funcional = :gerente";
+                $params[':gerente'] = $filters->gerente;
+            }
+            if ($filters->familia !== null) {
+                $sql .= " AND m.id_familia = :familia";
+                $params[':familia'] = $filters->familia;
+            }
+            if ($filters->indicador !== null) {
+                $sql .= " AND m.id_indicador = :indicador";
+                $params[':indicador'] = $filters->indicador;
+            }
+            if ($filters->subindicador !== null) {
+                $sql .= " AND m.id_subindicador = :subindicador";
+                $params[':subindicador'] = $filters->subindicador;
+            }
+        }
+        
+        $sql .= " ORDER BY m.data_meta DESC, m.id";
         
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute();
+        $stmt->execute($params);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         return array_map(function ($row) {
@@ -91,12 +136,12 @@ class MetaRepository
                 isset($row['ds_indicador']) ? $row['ds_indicador'] : null,
                 isset($row['subproduto']) ? $row['subproduto'] : null,
                 isset($row['id_subindicador']) ? $row['id_subindicador'] : null,
-                null, // familiaCodigo - não disponível no banco
-                null, // indicadorCodigo - não disponível no banco
-                null, // carteira - não disponível no banco
-                null, // canalVenda - não disponível no banco
-                null, // tipoVenda - não disponível no banco
-                null, // modalidadePagamento - não disponível no banco
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
                 $dataIso,
                 $dataIso,
                 $this->toFloat(isset($row['meta_mensal']) ? $row['meta_mensal'] : null)

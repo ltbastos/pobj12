@@ -4,7 +4,9 @@ namespace App\Infrastructure\Persistence;
 
 // Removed Connection dependency
 use PDO;
+use App\Domain\DTO\FilterDTO;
 use App\Domain\DTO\HistoricoDTO;
+use App\Domain\Enum\Tables;
 use App\Infrastructure\Helpers\DateFormatter;
 
 class HistoricoRepository
@@ -16,7 +18,7 @@ class HistoricoRepository
         $this->pdo = $pdo;
     }
 
-    public function findAllAsArray(): array
+    public function findAllAsArray(FilterDTO $filters = null): array
     {
         $sql = "SELECT 
                     nivel,
@@ -39,11 +41,42 @@ class HistoricoRepository
                     pontos,
                     realizado,
                     meta
-                FROM f_historico_ranking_pobj
-                ORDER BY `database` DESC, nivel, ano";
+                FROM " . Tables::F_HISTORICO_RANKING_POBJ . "
+                WHERE 1=1";
+        
+        $params = [];
+        
+        if ($filters !== null && $filters->hasAnyFilter()) {
+            if ($filters->segmento !== null) {
+                $sql .= " AND segmento_id = :segmento";
+                $params[':segmento'] = $filters->segmento;
+            }
+            if ($filters->diretoria !== null) {
+                $sql .= " AND diretoria = :diretoria";
+                $params[':diretoria'] = $filters->diretoria;
+            }
+            if ($filters->regional !== null) {
+                $sql .= " AND gerencia_regional = :regional";
+                $params[':regional'] = $filters->regional;
+            }
+            if ($filters->agencia !== null) {
+                $sql .= " AND agencia = :agencia";
+                $params[':agencia'] = $filters->agencia;
+            }
+            if ($filters->gerenteGestao !== null) {
+                $sql .= " AND gerente_gestao = :gerente_gestao";
+                $params[':gerente_gestao'] = $filters->gerenteGestao;
+            }
+            if ($filters->gerente !== null) {
+                $sql .= " AND gerente = :gerente";
+                $params[':gerente'] = $filters->gerente;
+            }
+        }
+        
+        $sql .= " ORDER BY `database` DESC, nivel, ano";
         
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute();
+        $stmt->execute($params);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         return array_map(function ($row) {

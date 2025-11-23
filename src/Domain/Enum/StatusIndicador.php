@@ -43,7 +43,7 @@ class StatusIndicador
         }
     }
 
-    public static function tryFromString(string $value): ?self
+    public static function tryFromString(string $value): self|null
     {
         if (in_array($value, self::$validValues, true)) {
             return new self($value);

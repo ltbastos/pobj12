@@ -296,5 +296,74 @@ class FCampanhas
     {
         return $this->subindicadorCodigo;
     }
+
+    public static function fromArray(array $data): self
+    {
+        $entity = new self();
+        $entity->campanhaId = $data['campanha_id'] ?? null;
+        $entity->sprintId = $data['sprint_id'] ?? null;
+        $entity->segmento = $data['segmento'] ?? null;
+        $entity->segmentoId = $data['segmento_id'] ?? null;
+        $entity->diretoriaId = $data['diretoria_id'] ?? null;
+        $entity->diretoriaNome = $data['diretoria_nome'] ?? null;
+        $entity->gerenciaRegionalId = $data['gerencia_regional_id'] ?? null;
+        $entity->regionalNome = $data['regional_nome'] ?? null;
+        $entity->agenciaId = $data['agencia_id'] ?? null;
+        $entity->agenciaNome = $data['agencia_nome'] ?? null;
+        $entity->gerenteGestaoId = $data['gerente_gestao_id'] ?? null;
+        $entity->gerenteGestaoNome = $data['gerente_gestao_nome'] ?? null;
+        $entity->gerenteId = $data['gerente_id'] ?? null;
+        $entity->gerenteNome = $data['gerente_nome'] ?? null;
+        $entity->familiaId = $data['familia_id'] ?? null;
+        $entity->idIndicador = $data['id_indicador'] ?? null;
+        $entity->dsIndicador = $data['ds_indicador'] ?? null;
+        $entity->subproduto = $data['subproduto'] ?? null;
+        $entity->idSubindicador = $data['id_subindicador'] ?? null;
+        $entity->subindicadorCodigo = $data['subindicador_codigo'] ?? null;
+        $entity->familiaCodigo = $data['familia_codigo'] ?? null;
+        $entity->indicadorCodigo = $data['indicador_codigo'] ?? null;
+        $entity->carteira = $data['carteira'] ?? null;
+        $entity->data = $data['data'] ?? null;
+        $entity->linhas = isset($data['linhas']) ? (float)$data['linhas'] : null;
+        $entity->cash = isset($data['cash']) ? (float)$data['cash'] : null;
+        $entity->conquista = isset($data['conquista']) ? (float)$data['conquista'] : null;
+        $entity->atividade = $data['atividade'] ?? null;
+        return $entity;
+    }
+
+    public function toDTO(): \App\Domain\DTO\CampanhasDTO
+    {
+        return new \App\Domain\DTO\CampanhasDTO(
+            $this->campanhaId,
+            $this->sprintId,
+            $this->segmento,
+            $this->segmentoId,
+            $this->diretoriaId,
+            $this->diretoriaNome,
+            $this->gerenciaRegionalId,
+            $this->regionalNome,
+            $this->agenciaId,
+            $this->agenciaNome,
+            $this->gerenteGestaoId,
+            $this->gerenteGestaoNome,
+            $this->gerenteId,
+            $this->gerenteNome,
+            $this->familiaId,
+            $this->idIndicador,
+            $this->dsIndicador,
+            $this->subproduto,
+            $this->idSubindicador,
+            $this->subindicadorCodigo,
+            $this->familiaCodigo,
+            $this->indicadorCodigo,
+            $this->carteira,
+            $this->data,
+            $this->data,
+            $this->linhas,
+            $this->cash,
+            $this->conquista,
+            $this->atividade
+        );
+    }
 }
 

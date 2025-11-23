@@ -4,6 +4,7 @@ namespace App\Infrastructure\Persistence;
 
 use PDO;
 use App\Domain\DTO\OmegaStatusDTO;
+use App\Domain\Enum\Tables;
 
 class OmegaStatusRepository
 {
@@ -23,7 +24,7 @@ class OmegaStatusRepository
                     descricao,
                     ordem,
                     departamento_id
-                FROM omega_status
+                FROM " . Tables::OMEGA_STATUS . "
                 ORDER BY ordem ASC, label ASC";
         
         $stmt = $this->pdo->prepare($sql);

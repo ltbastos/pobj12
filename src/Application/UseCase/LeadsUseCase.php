@@ -2,6 +2,7 @@
 
 namespace App\Application\UseCase;
 
+use App\Domain\DTO\FilterDTO;
 use App\Infrastructure\Persistence\LeadsRepository;
 
 class LeadsUseCase
@@ -13,9 +14,9 @@ class LeadsUseCase
         $this->repository = $repository;
     }
 
-    public function getAllLeads(): array
+    public function getAllLeads(FilterDTO $filters = null): array
     {
-        return $this->repository->findAllAsArray();
+        return $this->repository->findAllAsArray($filters);
     }
 }
 

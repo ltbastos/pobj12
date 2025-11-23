@@ -2,6 +2,7 @@
 
 namespace App\Application\UseCase;
 
+use App\Domain\DTO\FilterDTO;
 use App\Infrastructure\Persistence\CampanhasRepository;
 
 class CampanhasUseCase
@@ -13,9 +14,9 @@ class CampanhasUseCase
         $this->repository = $repository;
     }
 
-    public function getAllCampanhas(): array
+    public function getAllCampanhas(FilterDTO $filters = null): array
     {
-        return $this->repository->findAllAsArray();
+        return $this->repository->findAllAsArray($filters);
     }
 }
 

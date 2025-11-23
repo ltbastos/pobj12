@@ -67,8 +67,8 @@ function registerRepositories($container)
         return new \App\Infrastructure\Persistence\StatusIndicadoresRepository($c->get(PDO::class));
     };
 
-    $container['App\Infrastructure\Persistence\RealizadoRepository'] = function ($c) {
-        return new \App\Infrastructure\Persistence\RealizadoRepository($c->get(PDO::class));
+    $container['App\Infrastructure\Persistence\FindAllRealizadosRepository'] = function ($c) {
+        return new \App\Infrastructure\Persistence\FindAllRealizadosRepository($c->get(PDO::class));
     };
 
     $container['App\Infrastructure\Persistence\MetaRepository'] = function ($c) {
@@ -83,8 +83,8 @@ function registerRepositories($container)
         return new \App\Infrastructure\Persistence\ProdutoRepository($c->get(PDO::class));
     };
 
-    $container['App\Infrastructure\Persistence\CalendarioRepository'] = function ($c) {
-        return new \App\Infrastructure\Persistence\CalendarioRepository($c->get(PDO::class));
+    $container['App\Infrastructure\Persistence\FindAllCalendarioRepository'] = function ($c) {
+        return new \App\Infrastructure\Persistence\FindAllCalendarioRepository($c->get(PDO::class));
     };
 
     $container['App\Infrastructure\Persistence\CampanhasRepository'] = function ($c) {
@@ -197,7 +197,7 @@ function registerUseCases($container)
 
     $container['App\Application\UseCase\RealizadoUseCase'] = function ($c) {
         return new \App\Application\UseCase\RealizadoUseCase(
-            $c->get('App\Infrastructure\Persistence\RealizadoRepository')
+            $c->get('App\Infrastructure\Persistence\FindAllRealizadosRepository')
         );
     };
 
@@ -233,7 +233,7 @@ function registerUseCases($container)
 
     $container['App\Application\UseCase\CalendarioUseCase'] = function ($c) {
         return new \App\Application\UseCase\CalendarioUseCase(
-            $c->get('App\Infrastructure\Persistence\CalendarioRepository')
+            $c->get('App\Infrastructure\Persistence\FindAllCalendarioRepository')
         );
     };
 

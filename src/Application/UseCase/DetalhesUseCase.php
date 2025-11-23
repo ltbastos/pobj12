@@ -2,6 +2,7 @@
 
 namespace App\Application\UseCase;
 
+use App\Domain\DTO\FilterDTO;
 use App\Infrastructure\Persistence\DetalhesRepository;
 
 class DetalhesUseCase
@@ -13,9 +14,9 @@ class DetalhesUseCase
         $this->repository = $repository;
     }
 
-    public function getAllDetalhes(): array
+    public function getAllDetalhes(FilterDTO $filters = null): array
     {
-        return $this->repository->findAllAsArray();
+        return $this->repository->findAllAsArray($filters);
     }
 }
 

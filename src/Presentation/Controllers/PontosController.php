@@ -3,6 +3,7 @@
 namespace App\Presentation\Controllers;
 
 use App\Application\UseCase\PontosUseCase;
+use App\Domain\DTO\FilterDTO;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Exception;
@@ -19,7 +20,10 @@ class PontosController
     public function handle(Request $request, Response $response)
     {
         try {
-            $result = $this->pontosUseCase->getAllPontos();
+            $queryParams = $request->getQueryParams();
+            $filters = new FilterDTO($queryParams);
+            
+            $result = $this->pontosUseCase->getAllPontos($filters);
             
             $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
             $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));

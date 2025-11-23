@@ -4,6 +4,7 @@ namespace App\Infrastructure\Persistence;
 
 use PDO;
 use App\Domain\DTO\OmegaTicketDTO;
+use App\Domain\Enum\Tables;
 
 class OmegaTicketsRepository
 {
@@ -42,7 +43,7 @@ class OmegaTicketsRepository
                     gerente,
                     credit,
                     attachment
-                FROM omega_chamados
+                FROM " . Tables::OMEGA_CHAMADOS . "
                 ORDER BY updated DESC, opened DESC";
         
         $stmt = $this->pdo->prepare($sql);

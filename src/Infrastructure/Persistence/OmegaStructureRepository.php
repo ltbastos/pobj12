@@ -4,6 +4,7 @@ namespace App\Infrastructure\Persistence;
 
 use PDO;
 use App\Domain\DTO\OmegaStructureDTO;
+use App\Domain\Enum\Tables;
 
 class OmegaStructureRepository
 {
@@ -22,7 +23,7 @@ class OmegaStructureRepository
                     departamento_id,
                     ordem_departamento,
                     ordem_tipo
-                FROM omega_departamentos
+                FROM " . Tables::OMEGA_DEPARTAMENTOS . "
                 ORDER BY ordem_departamento ASC, ordem_tipo ASC, departamento ASC, tipo ASC";
         
         $stmt = $this->pdo->prepare($sql);

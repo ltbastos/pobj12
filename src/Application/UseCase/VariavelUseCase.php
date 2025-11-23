@@ -2,6 +2,7 @@
 
 namespace App\Application\UseCase;
 
+use App\Domain\DTO\FilterDTO;
 use App\Infrastructure\Persistence\VariavelRepository;
 
 class VariavelUseCase
@@ -13,9 +14,9 @@ class VariavelUseCase
         $this->repository = $repository;
     }
 
-    public function getAllVariaveis(): array
+    public function getAllVariaveis(FilterDTO $filters = null): array
     {
-        return $this->repository->findAllAsArray();
+        return $this->repository->findAllAsArray($filters);
     }
 }
 

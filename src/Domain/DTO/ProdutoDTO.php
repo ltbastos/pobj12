@@ -42,6 +42,25 @@ class ProdutoDTO extends BaseFactDTO
         ];
     }
 
+    public static function fromEntity(\App\Domain\Entity\DProduto $entity): self
+    {
+        $peso = ($entity->getPeso() !== null && $entity->getPeso() !== '' && is_numeric($entity->getPeso())) 
+            ? (float)$entity->getPeso() 
+            : null;
+        
+        return new self(
+            $entity->getId(),
+            $entity->getIdFamilia() !== null ? (string)$entity->getIdFamilia() : null,
+            $entity->getFamilia() ?? '',
+            $entity->getIdIndicador() !== null ? (string)$entity->getIdIndicador() : null,
+            $entity->getIndicador() ?? '',
+            $entity->getIdSubindicador() !== null ? (string)$entity->getIdSubindicador() : null,
+            $entity->getSubindicador() ?? '',
+            null,
+            $peso
+        );
+    }
+
     public static function fromRows(array $rows): array
     {
         return array_map(function ($produto) {

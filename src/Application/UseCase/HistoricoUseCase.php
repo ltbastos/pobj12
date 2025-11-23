@@ -2,6 +2,7 @@
 
 namespace App\Application\UseCase;
 
+use App\Domain\DTO\FilterDTO;
 use App\Infrastructure\Persistence\HistoricoRepository;
 
 class HistoricoUseCase
@@ -13,9 +14,9 @@ class HistoricoUseCase
         $this->repository = $repository;
     }
 
-    public function getAllHistorico(): array
+    public function getAllHistorico(FilterDTO $filters = null): array
     {
-        return $this->repository->findAllAsArray();
+        return $this->repository->findAllAsArray($filters);
     }
 }
 

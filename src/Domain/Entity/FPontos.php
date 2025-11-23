@@ -149,5 +149,35 @@ class FPontos
         $this->dtAtualizacao = $dtAtualizacao;
         return $this;
     }
+
+    public static function fromArray(array $data): self
+    {
+        $entity = new self();
+        $entity->id = isset($data['id']) ? (int)$data['id'] : null;
+        $entity->funcional = $data['funcional'] ?? null;
+        $entity->idIndicador = isset($data['id_indicador']) ? (int)$data['id_indicador'] : null;
+        $entity->idFamilia = isset($data['id_familia']) ? (int)$data['id_familia'] : null;
+        $entity->indicador = $data['indicador'] ?? null;
+        $entity->meta = isset($data['meta']) ? (float)$data['meta'] : null;
+        $entity->realizado = isset($data['realizado']) ? (float)$data['realizado'] : null;
+        $entity->dataRealizado = $data['data_realizado'] ?? null;
+        $entity->dtAtualizacao = $data['dt_atualizacao'] ?? null;
+        return $entity;
+    }
+
+    public function toDTO(): \App\Domain\DTO\PontosDTO
+    {
+        return new \App\Domain\DTO\PontosDTO(
+            $this->id,
+            $this->funcional,
+            $this->idIndicador,
+            $this->idFamilia,
+            $this->indicador,
+            $this->meta,
+            $this->realizado,
+            $this->dataRealizado,
+            $this->dtAtualizacao
+        );
+    }
 }
 

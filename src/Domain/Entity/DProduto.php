@@ -133,5 +133,23 @@ class DProduto
         $this->peso = $peso;
         return $this;
     }
-}
 
+    public static function fromArray(array $data): self
+    {
+        $entity = new self();
+        $entity->id = isset($data['id']) ? (int)$data['id'] : null;
+        $entity->idFamilia = isset($data['id_familia']) ? (int)$data['id_familia'] : null;
+        $entity->familia = $data['familia'] ?? null;
+        $entity->idIndicador = isset($data['id_indicador']) ? (int)$data['id_indicador'] : null;
+        $entity->indicador = $data['indicador'] ?? null;
+        $entity->idSubindicador = isset($data['id_subindicador']) ? (int)$data['id_subindicador'] : null;
+        $entity->subindicador = $data['subindicador'] ?? null;
+        $entity->peso = isset($data['peso']) ? (float)$data['peso'] : null;
+        return $entity;
+    }
+
+    public function toDTO(): \App\Domain\DTO\ProdutoDTO
+    {
+        return \App\Domain\DTO\ProdutoDTO::fromEntity($this);
+    }
+}

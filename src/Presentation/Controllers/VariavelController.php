@@ -3,6 +3,7 @@
 namespace App\Presentation\Controllers;
 
 use App\Application\UseCase\VariavelUseCase;
+use App\Domain\DTO\FilterDTO;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -17,7 +18,10 @@ class VariavelController
 
     public function handle(Request $request, Response $response): Response
     {
-        $result = $this->variavelUseCase->getAllVariaveis();
+        $queryParams = $request->getQueryParams();
+        $filters = new FilterDTO($queryParams);
+        
+        $result = $this->variavelUseCase->getAllVariaveis($filters);
         
         $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
         $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));

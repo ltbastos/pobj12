@@ -4,7 +4,9 @@ namespace App\Infrastructure\Persistence;
 
 // Removed Connection dependency
 use PDO;
+use App\Domain\DTO\FilterDTO;
 use App\Domain\DTO\LeadsDTO;
+use App\Domain\Enum\Tables;
 use App\Infrastructure\Helpers\DateFormatter;
 
 class LeadsRepository
@@ -16,7 +18,7 @@ class LeadsRepository
         $this->pdo = $pdo;
     }
 
-    public function findAllAsArray(): array
+    public function findAllAsArray(FilterDTO $filters = null): array
     {
         $sql = "SELECT 
                     `database` AS data,
@@ -44,11 +46,54 @@ class LeadsRepository
                     gerente_cliente_id,
                     credito_pre_aprovado,
                     origem_lead
-                FROM f_leads_propensos
-                ORDER BY `database` DESC, nome_empresa";
+                FROM " . Tables::F_LEADS_PROPENSOS . "
+                WHERE 1=1";
+        
+        $params = [];
+        
+        if ($filters !== null && $filters->hasAnyFilter()) {
+            if ($filters->segmento !== null) {
+                $sql .= " AND segmento_cliente_id = :segmento";
+                $params[':segmento'] = $filters->segmento;
+            }
+            if ($filters->diretoria !== null) {
+                $sql .= " AND diretoria_cliente_id = :diretoria";
+                $params[':diretoria'] = $filters->diretoria;
+            }
+            if ($filters->regional !== null) {
+                $sql .= " AND regional_cliente_id = :regional";
+                $params[':regional'] = $filters->regional;
+            }
+            if ($filters->agencia !== null) {
+                $sql .= " AND agencia_cliente_id = :agencia";
+                $params[':agencia'] = $filters->agencia;
+            }
+            if ($filters->gerenteGestao !== null) {
+                $sql .= " AND gerente_gestao_cliente_id = :gerente_gestao";
+                $params[':gerente_gestao'] = $filters->gerenteGestao;
+            }
+            if ($filters->gerente !== null) {
+                $sql .= " AND gerente_cliente_id = :gerente";
+                $params[':gerente'] = $filters->gerente;
+            }
+            if ($filters->familia !== null) {
+                $sql .= " AND familia_produto_propenso = :familia";
+                $params[':familia'] = $filters->familia;
+            }
+            if ($filters->indicador !== null) {
+                $sql .= " AND id_indicador = :indicador";
+                $params[':indicador'] = $filters->indicador;
+            }
+            if ($filters->subindicador !== null) {
+                $sql .= " AND id_subindicador = :subindicador";
+                $params[':subindicador'] = $filters->subindicador;
+            }
+        }
+        
+        $sql .= " ORDER BY `database` DESC, nome_empresa";
         
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute();
+        $stmt->execute($params);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         return array_map(function ($row) {

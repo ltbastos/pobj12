@@ -3732,7 +3732,6 @@ function buildCardSectionsFromDimension(rows = []) {
 function applyCardSections(sections = []) {
   CARD_SECTIONS_DEF = sections;
   INDICATOR_STRUCTURE_OVERRIDES = {};
-console.log(sections);
   sections.forEach(section => {
     section.items.forEach(item => {
       if (item.forceEmptySubIndicators) {
@@ -10225,28 +10224,45 @@ function renderResumoKPI(summary, context = {}) {
   const indicadoresAtingidos = toNumber(summary.indicadoresAtingidos ?? visibleItemsHitCount ?? 0);
   const indicadoresTotal = toNumber(summary.indicadoresTotal ?? 0);
   
-  // Calcula pontos da API se disponível, senão usa os calculados
+  // Verifica se há filtros ativos (hierarquia, produto, família, etc.)
+  const filters = typeof getFilterValues === "function" ? getFilterValues() : {};
+  const hasActiveFilters = !selecaoPadrao(filters.segmento) || !selecaoPadrao(filters.diretoria) || 
+    !selecaoPadrao(filters.gerencia) || !selecaoPadrao(filters.agencia) ||
+    !selecaoPadrao(filters.ggestao) || !selecaoPadrao(filters.gerente) ||
+    !selecaoPadrao(filters.familiaId) || !selecaoPadrao(filters.produtoId) || !selecaoPadrao(filters.secaoId);
+  
+  // Calcula pontos da API aplicando filtros se disponível
   const pontosFromApi = calculatePontosFromApi(state.period || {});
   const hasPontosApi = typeof FACT_PONTOS !== "undefined" && Array.isArray(FACT_PONTOS) && FACT_PONTOS.length > 0;
-  const pontosAtingidos = hasPontosApi
-    ? pontosFromApi.realizado
-    : toNumber(summary.pontosAtingidos ?? visiblePointsHit ?? 0);
-  const pontosTotal = hasPontosApi
-    ? pontosFromApi.meta
-    : toNumber(summary.pontosPossiveis ?? 0);
+  
+  // Se há filtros ativos, prioriza dados do summary (já filtrados por filterRowsExcept)
+  // Caso contrário, usa dados da API se disponível
+  const pontosAtingidos = (hasActiveFilters && summary.pontosAtingidos != null)
+    ? toNumber(summary.pontosAtingidos ?? visiblePointsHit ?? 0)
+    : (hasPontosApi && pontosFromApi.realizado != null
+      ? pontosFromApi.realizado
+      : toNumber(summary.pontosAtingidos ?? visiblePointsHit ?? 0));
+  const pontosTotal = (hasActiveFilters && summary.pontosPossiveis != null)
+    ? toNumber(summary.pontosPossiveis ?? 0)
+    : (hasPontosApi && pontosFromApi.meta != null
+      ? pontosFromApi.meta
+      : toNumber(summary.pontosPossiveis ?? 0));
 
-  // Calcula variável da API se disponível, senão usa os calculados
+  // Calcula variável da API aplicando filtros se disponível
   const variavelFromApi = calculateVariavelFromApi(state.period || {});
   const hasVariavelApi = typeof FACT_VARIAVEL !== "undefined" && Array.isArray(FACT_VARIAVEL) && FACT_VARIAVEL.length > 0 && variavelFromApi !== null;
-  const varTotalBase = hasVariavelApi
-    ? variavelFromApi.meta
-    : (summary.varPossivel != null
-      ? toNumber(summary.varPossivel)
+  
+  // Se há filtros ativos, prioriza dados do summary (já filtrados por filterRowsExcept)
+  // Caso contrário, usa dados da API se disponível
+  const varTotalBase = (hasActiveFilters && summary.varPossivel != null)
+    ? toNumber(summary.varPossivel)
+    : (hasVariavelApi && variavelFromApi.meta != null
+      ? variavelFromApi.meta
       : (visibleVarMeta != null ? toNumber(visibleVarMeta) : null));
-  const varRealBase = hasVariavelApi
-    ? variavelFromApi.realizado
-    : (summary.varAtingido != null
-      ? toNumber(summary.varAtingido)
+  const varRealBase = (hasActiveFilters && summary.varAtingido != null)
+    ? toNumber(summary.varAtingido)
+    : (hasVariavelApi && variavelFromApi.realizado != null
+      ? variavelFromApi.realizado
       : (visibleVarAtingido != null ? toNumber(visibleVarAtingido) : null));
 
   const resumoAnim = state.animations?.resumo;

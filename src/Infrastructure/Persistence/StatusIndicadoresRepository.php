@@ -3,6 +3,7 @@
 namespace App\Infrastructure\Persistence;
 
 use PDO;
+use App\Domain\Enum\Tables;
 use App\Domain\ValueObject\StatusIndicador;
 
 class StatusIndicadoresRepository
@@ -17,7 +18,7 @@ class StatusIndicadoresRepository
     public function findAllAsArray(): array
     {
         $sql = "SELECT id, status AS label
-                FROM d_status_indicadores
+                FROM " . Tables::D_STATUS_INDICADORES . "
                 ORDER BY id ASC";
         
         $stmt = $this->pdo->prepare($sql);
@@ -34,7 +35,7 @@ class StatusIndicadoresRepository
     public function findAllForFilter(): array
     {
         $sql = "SELECT id, status AS label
-                FROM d_status_indicadores
+                FROM " . Tables::D_STATUS_INDICADORES . "
                 ORDER BY id ASC";
         
         $stmt = $this->pdo->prepare($sql);

@@ -4,6 +4,7 @@ namespace App\Infrastructure\Persistence;
 
 use PDO;
 use App\Domain\DTO\OmegaUserDTO;
+use App\Domain\Enum\Tables;
 
 class OmegaUsersRepository
 {
@@ -32,7 +33,7 @@ class OmegaUsersRepository
                     pobj,
                     matriz,
                     outros
-                FROM omega_usuarios
+                FROM " . Tables::OMEGA_USUARIOS . "
                 ORDER BY nome ASC";
         
         $stmt = $this->pdo->prepare($sql);
