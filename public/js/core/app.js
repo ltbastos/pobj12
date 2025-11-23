@@ -11996,8 +11996,19 @@ function renderFamilias(sections, summary){
 
     const cardItems = itemsFiltered.filter(item => !item.hiddenInCards);
 
-    const sectionTotalPoints = cardItems.reduce((acc,i)=> acc + (i.pontosMeta ?? i.peso ?? 0), 0);
-    const sectionPointsHit   = cardItems.reduce((acc,i)=> acc + Math.max(0, Number(i.pontos ?? 0)), 0);
+    // Calcula pontos totais e atingidos usando dados da API quando disponível
+    let sectionTotalPoints = 0;
+    let sectionPointsHit = 0;
+    
+    cardItems.forEach(i => {
+      // Busca pontos da API se disponível
+      const pontosApi = PONTOS_BY_INDICADOR.get(String(i.id));
+      const pontosMetaCard = pontosApi ? Number(pontosApi.meta) || 0 : (Number(i.pontosMeta ?? i.peso) || 0);
+      const pontosRealCard = pontosApi ? Number(pontosApi.realizado) || 0 : Math.max(0, Number(i.pontos ?? 0));
+      
+      sectionTotalPoints += pontosMetaCard;
+      sectionPointsHit += pontosRealCard;
+    });
     const sectionPointsHitDisp = formatPoints(sectionPointsHit);
     const sectionPointsTotalDisp = formatPoints(sectionTotalPoints);
     const sectionPointsHitFull = formatPoints(sectionPointsHit, { withUnit: true });
