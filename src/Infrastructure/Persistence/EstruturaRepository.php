@@ -125,4 +125,30 @@ class EstruturaRepository
         $stmt->execute(['idCargo' => Cargo::GERENTE]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+
+    public function findGerentesWithGestor(): array
+    {
+        $sql = "
+            SELECT DISTINCT
+                g.funcional AS id,
+                g.nome AS label,
+                g.agencia,
+                g.id_agencia,
+                g.cargo,
+                g.id_cargo,
+                gg.funcional AS id_gestor
+            FROM d_estrutura g
+            LEFT JOIN d_estrutura gg
+                ON gg.id_agencia = g.id_agencia
+                AND gg.id_cargo = :idCargoGestor
+            WHERE g.id_cargo = :idCargoGerente
+        ";
+        
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            'idCargoGestor' => Cargo::GERENTE_GESTAO, // assuming GERENTE_GESTAO is id_cargo 3
+            'idCargoGerente' => Cargo::GERENTE         // assuming GERENTE is id_cargo 1
+        ]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 }

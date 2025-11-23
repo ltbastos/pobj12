@@ -21,7 +21,7 @@ class EstruturaUseCase
             'regionais'       => $this->repository->findAllRegionais(),
             'agencias'        => $this->repository->findAllAgencias(),
             'gerentes_gestao' => $this->repository->findAllGGestoes(),
-            'gerentes'        => $this->repository->findAllGerentes(),
+            'gerentes'        => $this->repository->findGerentesWithGestor(),
         ];
     }
 }
