@@ -80,7 +80,7 @@ class StatusIndicadoresRepository extends BaseRepository
         if (empty($result)) {
             return StatusIndicador::getDefaults();
         }
-        
+
         return $result;
     }
 
@@ -96,7 +96,7 @@ class StatusIndicadoresRepository extends BaseRepository
         if (empty($result)) {
             return StatusIndicador::getDefaultsForFilter();
         }
-        
+
         return $result;
     }
 }
