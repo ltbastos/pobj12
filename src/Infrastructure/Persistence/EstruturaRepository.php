@@ -29,7 +29,7 @@ class EstruturaRepository
 
     public function findAllDiretorias(): array
     {
-        $sql = "SELECT DISTINCT id_diretoria AS id, diretoria AS label
+        $sql = "SELECT DISTINCT id_diretoria AS id, diretoria AS label, id_segmento
                 FROM d_estrutura
                 WHERE id_diretoria IS NOT NULL
                   AND diretoria IS NOT NULL
@@ -42,7 +42,7 @@ class EstruturaRepository
 
     public function findAllRegionais(): array
     {
-        $sql = "SELECT DISTINCT id_regional AS id, regional AS label
+        $sql = "SELECT DISTINCT id_regional AS id, regional AS label, id_diretoria
                 FROM d_estrutura
                 WHERE id_regional IS NOT NULL
                   AND regional IS NOT NULL
@@ -55,7 +55,7 @@ class EstruturaRepository
 
     public function findAllAgencias(): array
     {
-        $sql = "SELECT DISTINCT id_agencia AS id, agencia AS label, porte
+        $sql = "SELECT DISTINCT id_agencia AS id, agencia AS label, porte, id_regional
                 FROM d_estrutura
                 WHERE id_agencia IS NOT NULL
                   AND agencia IS NOT NULL

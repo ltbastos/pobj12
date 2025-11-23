@@ -7444,6 +7444,13 @@ function getHierarchyRows(){
   // Sempre retorna dados atualizados do banco (sem cache)
   if (MESU_FALLBACK_ROWS.length) return MESU_FALLBACK_ROWS;
 
+  // Tenta construir rows a partir dos dados de estrutura primeiro
+  const rowsFromEstrutura = buildHierarchyRowsFromEstrutura();
+  if (rowsFromEstrutura.length) {
+    MESU_FALLBACK_ROWS = rowsFromEstrutura;
+    return rowsFromEstrutura;
+  }
+
   const rows = [];
   const dirMap = new Map(RANKING_DIRECTORIAS.map(dir => [dir.id, dir]));
   const gerMap = new Map(RANKING_GERENCIAS.map(ger => [ger.id, ger]));
@@ -7497,6 +7504,190 @@ function getHierarchyRows(){
   }
 
   MESU_FALLBACK_ROWS = rows;
+  return rows;
+}
+
+function buildHierarchyRowsFromEstrutura(){
+  const rows = [];
+  
+  // Verifica se temos dados de estrutura disponíveis
+  if (!DIM_SEGMENTOS_LOOKUP || !DIM_DIRETORIAS_LOOKUP || !DIM_REGIONAIS_LOOKUP || 
+      !DIM_AGENCIAS_LOOKUP || !DIM_GGESTAO_LOOKUP || !DIM_GERENTES_LOOKUP) {
+    return rows;
+  }
+
+  // Cria mapas para lookup rápido
+  const segmentosMap = new Map();
+  DIM_SEGMENTOS_LOOKUP.forEach((seg, id) => {
+    segmentosMap.set(String(seg.id || id), seg);
+  });
+
+  const diretoriasMap = new Map();
+  DIM_DIRETORIAS_LOOKUP.forEach((dir, id) => {
+    diretoriasMap.set(String(dir.id || id), dir);
+  });
+
+  const regionaisMap = new Map();
+  DIM_REGIONAIS_LOOKUP.forEach((reg, id) => {
+    regionaisMap.set(String(reg.id || id), reg);
+  });
+
+  const agenciasMap = new Map();
+  DIM_AGENCIAS_LOOKUP.forEach((ag, id) => {
+    agenciasMap.set(String(ag.id || id), ag);
+  });
+
+  const gerentesGestaoMap = new Map();
+  DIM_GGESTAO_LOOKUP.forEach((gg, id) => {
+    gerentesGestaoMap.set(String(gg.id || id), gg);
+  });
+
+  const gerentesMap = new Map();
+  DIM_GERENTES_LOOKUP.forEach((ger, id) => {
+    gerentesMap.set(String(ger.id || id), ger);
+  });
+
+  // Constrói rows baseado nas relações hierárquicas
+  // Começa pelos gerentes e sobe a hierarquia
+  gerentesMap.forEach((gerente, gerenteId) => {
+    const gerenteIdStr = String(gerente.id || gerenteId);
+    const agenciaIdStr = String(gerente.id_agencia || gerente.agencia || "");
+    const gestorIdStr = String(gerente.id_gestor || gerente.gerenteGestao || "");
+    
+    if (!agenciaIdStr) return;
+
+    const agencia = agenciasMap.get(agenciaIdStr);
+    if (!agencia) return;
+
+    const regionalIdStr = String(agencia.id_regional || agencia.regional_id || agencia.gerencia_regional_id || "");
+    const regional = regionalIdStr ? regionaisMap.get(regionalIdStr) : null;
+
+    const diretoriaIdStr = regional 
+      ? String(regional.id_diretoria || regional.diretoria_id || "")
+      : String(agencia.id_diretoria || agencia.diretoria_id || "");
+    const diretoria = diretoriaIdStr ? diretoriasMap.get(diretoriaIdStr) : null;
+
+    const segmentoIdStr = diretoria
+      ? String(diretoria.id_segmento || diretoria.segmento_id || "")
+      : (regional ? String(regional.id_segmento || regional.segmento_id || "") : "");
+    const segmento = segmentoIdStr ? segmentosMap.get(segmentoIdStr) : null;
+
+    const gerenteGestao = gestorIdStr ? gerentesGestaoMap.get(gestorIdStr) : null;
+
+    // Cria uma row para cada combinação gerente-agência
+    rows.push({
+      segmentoId: segmento ? String(segmento.id || "") : "",
+      segmentoNome: segmento ? (segmento.label || segmento.nome || String(segmento.id || "")) : "",
+      diretoriaId: diretoria ? String(diretoria.id || "") : "",
+      diretoriaNome: diretoria ? (diretoria.label || diretoria.nome || String(diretoria.id || "")) : "",
+      regionalId: regional ? String(regional.id || "") : "",
+      regionalNome: regional ? (regional.label || regional.nome || String(regional.id || "")) : "",
+      agenciaId: agenciaIdStr,
+      agenciaNome: agencia ? (agencia.label || agencia.nome || agenciaIdStr) : agenciaIdStr,
+      gerenteGestaoId: gerenteGestao ? String(gerenteGestao.id || "") : "",
+      gerenteGestaoNome: gerenteGestao ? (gerenteGestao.label || gerenteGestao.nome || String(gerenteGestao.id || "")) : "",
+      gerenteId: gerenteIdStr,
+      gerenteNome: gerente ? (gerente.label || gerente.nome || gerenteIdStr) : gerenteIdStr,
+    });
+  });
+
+  // Adiciona agências que não têm gerentes mas podem ter gerentes de gestão
+  agenciasMap.forEach((agencia, agenciaId) => {
+    const agenciaIdStr = String(agencia.id || agenciaId);
+    
+    // Verifica se já existe uma row para esta agência
+    const exists = rows.some(row => row.agenciaId === agenciaIdStr);
+    if (exists) return;
+
+    const regionalIdStr = String(agencia.id_regional || agencia.regional_id || agencia.gerencia_regional_id || "");
+    const regional = regionalIdStr ? regionaisMap.get(regionalIdStr) : null;
+
+    const diretoriaIdStr = regional 
+      ? String(regional.id_diretoria || regional.diretoria_id || "")
+      : String(agencia.id_diretoria || agencia.diretoria_id || "");
+    const diretoria = diretoriaIdStr ? diretoriasMap.get(diretoriaIdStr) : null;
+
+    const segmentoIdStr = diretoria
+      ? String(diretoria.id_segmento || diretoria.segmento_id || "")
+      : (regional ? String(regional.id_segmento || regional.segmento_id || "") : "");
+    const segmento = segmentoIdStr ? segmentosMap.get(segmentoIdStr) : null;
+
+    // Busca gerente gestão vinculado a esta agência
+    const gerenteGestaoIdStr = String(agencia.id_gerente_gestao || agencia.gerenteGestao || "");
+    const gerenteGestao = gerenteGestaoIdStr ? gerentesGestaoMap.get(gerenteGestaoIdStr) : null;
+    
+    // Se não encontrou pelo campo da agência, busca pelos gerentes gestão que têm esta agência
+    let gerenteGestaoFinal = gerenteGestao;
+    if (!gerenteGestaoFinal) {
+      gerentesGestaoMap.forEach((gg, ggId) => {
+        const ggAgenciaIdStr = String(gg.id_agencia || gg.agencia || "");
+        if (ggAgenciaIdStr === agenciaIdStr) {
+          gerenteGestaoFinal = gg;
+        }
+      });
+    }
+
+    rows.push({
+      segmentoId: segmento ? String(segmento.id || "") : "",
+      segmentoNome: segmento ? (segmento.label || segmento.nome || String(segmento.id || "")) : "",
+      diretoriaId: diretoria ? String(diretoria.id || "") : "",
+      diretoriaNome: diretoria ? (diretoria.label || diretoria.nome || String(diretoria.id || "")) : "",
+      regionalId: regional ? String(regional.id || "") : "",
+      regionalNome: regional ? (regional.label || regional.nome || String(regional.id || "")) : "",
+      agenciaId: agenciaIdStr,
+      agenciaNome: agencia ? (agencia.label || agencia.nome || agenciaIdStr) : agenciaIdStr,
+      gerenteGestaoId: gerenteGestaoFinal ? String(gerenteGestaoFinal.id || "") : "",
+      gerenteGestaoNome: gerenteGestaoFinal ? (gerenteGestaoFinal.label || gerenteGestaoFinal.nome || String(gerenteGestaoFinal.id || "")) : "",
+      gerenteId: "",
+      gerenteNome: "",
+    });
+  });
+
+  // Adiciona gerentes de gestão que não estão vinculados a agências ainda processadas
+  gerentesGestaoMap.forEach((gg, ggId) => {
+    const ggIdStr = String(gg.id || ggId);
+    const agenciaIdStr = String(gg.id_agencia || gg.agencia || "");
+    
+    if (!agenciaIdStr) return;
+    
+    // Verifica se já existe uma row para esta combinação agência-gerente gestão
+    const exists = rows.some(row => 
+      row.agenciaId === agenciaIdStr && row.gerenteGestaoId === ggIdStr
+    );
+    if (exists) return;
+
+    const agencia = agenciasMap.get(agenciaIdStr);
+    if (!agencia) return;
+
+    const regionalIdStr = String(agencia.id_regional || agencia.regional_id || agencia.gerencia_regional_id || "");
+    const regional = regionalIdStr ? regionaisMap.get(regionalIdStr) : null;
+
+    const diretoriaIdStr = regional 
+      ? String(regional.id_diretoria || regional.diretoria_id || "")
+      : String(agencia.id_diretoria || agencia.diretoria_id || "");
+    const diretoria = diretoriaIdStr ? diretoriasMap.get(diretoriaIdStr) : null;
+
+    const segmentoIdStr = diretoria
+      ? String(diretoria.id_segmento || diretoria.segmento_id || "")
+      : (regional ? String(regional.id_segmento || regional.segmento_id || "") : "");
+    const segmento = segmentoIdStr ? segmentosMap.get(segmentoIdStr) : null;
+
+    rows.push({
+      segmentoId: segmento ? String(segmento.id || "") : "",
+      segmentoNome: segmento ? (segmento.label || segmento.nome || String(segmento.id || "")) : "",
+      diretoriaId: diretoria ? String(diretoria.id || "") : "",
+      diretoriaNome: diretoria ? (diretoria.label || diretoria.nome || String(diretoria.id || "")) : "",
+      regionalId: regional ? String(regional.id || "") : "",
+      regionalNome: regional ? (regional.label || regional.nome || String(regional.id || "")) : "",
+      agenciaId: agenciaIdStr,
+      agenciaNome: agencia ? (agencia.label || agencia.nome || agenciaIdStr) : agenciaIdStr,
+      gerenteGestaoId: ggIdStr,
+      gerenteGestaoNome: gg ? (gg.label || gg.nome || ggIdStr) : ggIdStr,
+      gerenteId: "",
+      gerenteNome: "",
+    });
+  });
+
   return rows;
 }
 
@@ -7995,6 +8186,21 @@ function adjustHierarchySelection(selection, changedField){
   const effective = value || def.defaultValue;
   selection[changedField] = effective;
 
+  // Define a ordem hierárquica: segmento -> diretoria -> gerencia -> agencia -> ggestao -> gerente
+  const hierarchyOrder = ["segmento", "diretoria", "gerencia", "agencia", "ggestao", "gerente"];
+  const changedIndex = hierarchyOrder.indexOf(changedField);
+  
+  // Limpa todos os níveis inferiores ao campo alterado
+  if (changedIndex >= 0) {
+    for (let i = changedIndex + 1; i < hierarchyOrder.length; i++) {
+      const lowerField = hierarchyOrder[i];
+      const lowerDef = HIERARCHY_FIELD_MAP.get(lowerField);
+      if (lowerDef) {
+        selection[lowerField] = lowerDef.defaultValue;
+      }
+    }
+  }
+
   const setIf = (key, next) => {
     if (!next) return;
     const meta = HIERARCHY_FIELD_MAP.get(key);
@@ -8003,6 +8209,7 @@ function adjustHierarchySelection(selection, changedField){
     selection[key] = normalized || meta.defaultValue;
   };
 
+  // Quando um nível é selecionado, preenche automaticamente os níveis superiores se possível
   if (changedField === "agencia" && effective !== def.defaultValue){
     const meta = findAgenciaMeta(effective) || {};
     setIf("gerencia", meta.gerencia || meta.regionalId || meta.regional);
@@ -8033,10 +8240,16 @@ function adjustHierarchySelection(selection, changedField){
   if (changedField === "gerente" && effective !== def.defaultValue){
     const meta = findGerenteMeta(effective) || {};
     setIf("agencia", meta.agencia);
+    setIf("ggestao", meta.gerenteGestao || meta.id_gestor);
     setIf("gerencia", meta.gerencia);
     setIf("diretoria", meta.diretoria);
     const agMeta = meta.agencia ? (findAgenciaMeta(meta.agencia) || {}) : {};
     setIf("segmento", agMeta.segmento || agMeta.segmentoId);
+  }
+
+  if (changedField === "segmento" && effective !== def.defaultValue){
+    // Quando segmento é alterado, limpa diretoria, gerencia, agencia, ggestao e gerente
+    // (já feito acima, mas garantindo)
   }
 
   return selection;
