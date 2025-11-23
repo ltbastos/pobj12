@@ -3,7 +3,6 @@
 namespace App\Presentation\Controllers;
 
 use App\Application\UseCase\MetaUseCase;
-use App\Domain\DTO\FilterDTO;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
@@ -18,8 +17,7 @@ class MetasController extends ControllerBase
 
     public function handle(Request $request, Response $response): Response
     {
-        $queryParams = $request->getQueryParams();
-        $filters = new FilterDTO($queryParams);
+        $filters = $request->getAttribute('filters');
         
         $result = $this->metaUseCase->handle($filters);
         

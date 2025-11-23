@@ -80,49 +80,49 @@ class MetasRepository extends BaseRepository
             return ['sql' => $sql, 'params' => $params];
         }
 
-        if ($filters->segmento !== null) {
+        if ($filters->getSegmento() !== null) {
             $sql .= " AND m.segmento_id = :segmento";
-            $params[':segmento'] = $filters->segmento;
+            $params[':segmento'] = $filters->getSegmento();
         }
 
-        if ($filters->diretoria !== null) {
+        if ($filters->getDiretoria() !== null) {
             $sql .= " AND m.diretoria_id = :diretoria";
-            $params[':diretoria'] = $filters->diretoria;
+            $params[':diretoria'] = $filters->getDiretoria();
         }
 
-        if ($filters->regional !== null) {
+        if ($filters->getRegional() !== null) {
             $sql .= " AND m.gerencia_regional_id = :regional";
-            $params[':regional'] = $filters->regional;
+            $params[':regional'] = $filters->getRegional();
         }
 
-        if ($filters->agencia !== null) {
+        if ($filters->getAgencia() !== null) {
             $sql .= " AND m.agencia_id = :agencia";
-            $params[':agencia'] = $filters->agencia;
+            $params[':agencia'] = $filters->getAgencia();
         }
 
-        if ($filters->gerenteGestao !== null) {
+        if ($filters->getGerenteGestao() !== null) {
             $sql .= " AND u.funcional = :gerente_gestao";
-            $params[':gerente_gestao'] = $filters->gerenteGestao;
+            $params[':gerente_gestao'] = $filters->getGerenteGestao();
         }
 
-        if ($filters->gerente !== null) {
+        if ($filters->getGerente() !== null) {
             $sql .= " AND m.funcional = :gerente";
-            $params[':gerente'] = $filters->gerente;
+            $params[':gerente'] = $filters->getGerente();
         }
 
-        if ($filters->familia !== null) {
+        if ($filters->getFamilia() !== null) {
             $sql .= " AND m.id_familia = :familia";
-            $params[':familia'] = $filters->familia;
+            $params[':familia'] = $filters->getFamilia();
         }
 
-        if ($filters->indicador !== null) {
+        if ($filters->getIndicador() !== null) {
             $sql .= " AND m.id_indicador = :indicador";
-            $params[':indicador'] = $filters->indicador;
+            $params[':indicador'] = $filters->getIndicador();
         }
 
-        if ($filters->subindicador !== null) {
+        if ($filters->getSubindicador() !== null) {
             $sql .= " AND m.id_subindicador = :subindicador";
-            $params[':subindicador'] = $filters->subindicador;
+            $params[':subindicador'] = $filters->getSubindicador();
         }
 
         return ['sql' => $sql, 'params' => $params];

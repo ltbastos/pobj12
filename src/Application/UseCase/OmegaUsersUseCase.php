@@ -4,18 +4,26 @@ namespace App\Application\UseCase;
 
 use App\Infrastructure\Persistence\OmegaUsersRepository;
 
-class OmegaUsersUseCase
+/**
+ * UseCase para operações relacionadas a usuários Omega
+ */
+class OmegaUsersUseCase extends AbstractUseCase
 {
-    private $repository;
-
+    /**
+     * @param OmegaUsersRepository $repository
+     */
     public function __construct(OmegaUsersRepository $repository)
     {
-        $this->repository = $repository;
+        parent::__construct($repository);
     }
 
+    /**
+     * Retorna todos os usuários Omega
+     * @return array
+     */
     public function getAllUsers(): array
     {
-        return $this->repository->findAllAsArray();
+        return $this->repository->fetch(null);
     }
 }
 

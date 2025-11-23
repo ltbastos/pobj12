@@ -67,35 +67,35 @@ class HistoricoRepository extends BaseRepository
             return ['sql' => $sql, 'params' => $params];
         }
 
-            if ($filters->segmento !== null) {
-                $sql .= " AND segmento_id = :segmento";
-                $params[':segmento'] = $filters->segmento;
-            }
+        if ($filters->getSegmento() !== null) {
+            $sql .= " AND segmento_id = :segmento";
+            $params[':segmento'] = $filters->getSegmento();
+        }
 
-            if ($filters->diretoria !== null) {
-                $sql .= " AND diretoria = :diretoria";
-                $params[':diretoria'] = $filters->diretoria;
-            }
+        if ($filters->getDiretoria() !== null) {
+            $sql .= " AND diretoria = :diretoria";
+            $params[':diretoria'] = $filters->getDiretoria();
+        }
 
-            if ($filters->regional !== null) {
-                $sql .= " AND gerencia_regional = :regional";
-                $params[':regional'] = $filters->regional;
-            }
+        if ($filters->getRegional() !== null) {
+            $sql .= " AND gerencia_regional = :regional";
+            $params[':regional'] = $filters->getRegional();
+        }
 
-            if ($filters->agencia !== null) {
-                $sql .= " AND agencia = :agencia";
-                $params[':agencia'] = $filters->agencia;
-            }
+        if ($filters->getAgencia() !== null) {
+            $sql .= " AND agencia = :agencia";
+            $params[':agencia'] = $filters->getAgencia();
+        }
 
-            if ($filters->gerenteGestao !== null) {
-                $sql .= " AND gerente_gestao = :gerente_gestao";
-                $params[':gerente_gestao'] = $filters->gerenteGestao;
-            }
+        if ($filters->getGerenteGestao() !== null) {
+            $sql .= " AND gerente_gestao = :gerente_gestao";
+            $params[':gerente_gestao'] = $filters->getGerenteGestao();
+        }
 
-            if ($filters->gerente !== null) {
-                $sql .= " AND gerente = :gerente";
-                $params[':gerente'] = $filters->gerente;
-            }
+        if ($filters->getGerente() !== null) {
+            $sql .= " AND gerente = :gerente";
+            $params[':gerente'] = $filters->getGerente();
+        }
 
         return ['sql' => $sql, 'params' => $params];
     }

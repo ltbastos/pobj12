@@ -75,50 +75,50 @@ class CampanhasRepository extends BaseRepository
             return ['sql' => $sql, 'params' => $params];
         }
 
-            if ($filters->segmento !== null) {
-                $sql .= " AND segmento_id = :segmento";
-                $params[':segmento'] = $filters->segmento;
-            }
+        if ($filters->getSegmento() !== null) {
+            $sql .= " AND segmento_id = :segmento";
+            $params[':segmento'] = $filters->getSegmento();
+        }
 
-            if ($filters->diretoria !== null) {
-                $sql .= " AND diretoria_id = :diretoria";
-                $params[':diretoria'] = $filters->diretoria;
-            }
+        if ($filters->getDiretoria() !== null) {
+            $sql .= " AND diretoria_id = :diretoria";
+            $params[':diretoria'] = $filters->getDiretoria();
+        }
 
-            if ($filters->regional !== null) {
-                $sql .= " AND gerencia_regional_id = :regional";
-                $params[':regional'] = $filters->regional;
-            }
+        if ($filters->getRegional() !== null) {
+            $sql .= " AND gerencia_regional_id = :regional";
+            $params[':regional'] = $filters->getRegional();
+        }
 
-            if ($filters->agencia !== null) {
-                $sql .= " AND agencia_id = :agencia";
-                $params[':agencia'] = $filters->agencia;
-            }
+        if ($filters->getAgencia() !== null) {
+            $sql .= " AND agencia_id = :agencia";
+            $params[':agencia'] = $filters->getAgencia();
+        }
 
-            if ($filters->gerenteGestao !== null) {
-                $sql .= " AND gerente_gestao_id = :gerente_gestao";
-                $params[':gerente_gestao'] = $filters->gerenteGestao;
-            }
+        if ($filters->getGerenteGestao() !== null) {
+            $sql .= " AND gerente_gestao_id = :gerente_gestao";
+            $params[':gerente_gestao'] = $filters->getGerenteGestao();
+        }
 
-            if ($filters->gerente !== null) {
-                $sql .= " AND gerente_id = :gerente";
-                $params[':gerente'] = $filters->gerente;
-            }
+        if ($filters->getGerente() !== null) {
+            $sql .= " AND gerente_id = :gerente";
+            $params[':gerente'] = $filters->getGerente();
+        }
 
-            if ($filters->familia !== null) {
-                $sql .= " AND familia_id = :familia";
-                $params[':familia'] = $filters->familia;
-            }
+        if ($filters->getFamilia() !== null) {
+            $sql .= " AND familia_id = :familia";
+            $params[':familia'] = $filters->getFamilia();
+        }
 
-            if ($filters->indicador !== null) {
-                $sql .= " AND id_indicador = :indicador";
-                $params[':indicador'] = $filters->indicador;
-            }
+        if ($filters->getIndicador() !== null) {
+            $sql .= " AND id_indicador = :indicador";
+            $params[':indicador'] = $filters->getIndicador();
+        }
 
-            if ($filters->subindicador !== null) {
-                $sql .= " AND id_subindicador = :subindicador";
-                $params[':subindicador'] = $filters->subindicador;
-            }
+        if ($filters->getSubindicador() !== null) {
+            $sql .= " AND id_subindicador = :subindicador";
+            $params[':subindicador'] = $filters->getSubindicador();
+        }
 
         return ['sql' => $sql, 'params' => $params];
     }

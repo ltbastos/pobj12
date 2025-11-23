@@ -20,7 +20,8 @@ class CalendarioController extends ControllerBase
 
     public function handle(Request $request, Response $response): Response
     {
-        $result = $this->calendarioUseCase->handle();
+        $filters = $request->getAttribute('filters');
+        $result = $this->calendarioUseCase->handle($filters);
         
         return $this->success($response, $result);
     }

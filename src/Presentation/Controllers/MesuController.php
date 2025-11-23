@@ -3,11 +3,13 @@
 namespace App\Presentation\Controllers;
 
 use App\Application\UseCase\OmegaMesuUseCase;
-use App\Domain\DTO\FilterDTO;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
-class MesuController
+/**
+ * Controller para operações relacionadas a estrutura Mesu
+ */
+class MesuController extends ControllerBase
 {
     private $omegaMesuUseCase;
 
@@ -18,14 +20,9 @@ class MesuController
 
     public function handle(Request $request, Response $response): Response
     {
-        $queryParams = $request->getQueryParams();
-        $filters = new FilterDTO($queryParams);
+        $filters = $request->getAttribute('filters');
+        $result = $this->omegaMesuUseCase->handle($filters);
         
-        $result = $this->omegaMesuUseCase->getMesuData($filters);
-        
-        $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
-        $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));
-        return $response;
+        return $this->success($response, $result);
     }
 }
-

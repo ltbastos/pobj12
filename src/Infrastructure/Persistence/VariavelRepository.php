@@ -63,43 +63,43 @@ class VariavelRepository extends BaseRepository
             return ['sql' => $sql, 'params' => $params];
         }
 
-            if ($filters->segmento !== null) {
-                $sql .= " AND e.id_segmento = :segmento";
-                $params[':segmento'] = $filters->segmento;
-            }
-            
-            if ($filters->diretoria !== null) {
-                $sql .= " AND e.id_diretoria = :diretoria";
-                $params[':diretoria'] = $filters->diretoria;
-            }
-            
-            if ($filters->regional !== null) {
-                $sql .= " AND e.id_regional = :regional";
-                $params[':regional'] = $filters->regional;
-            }
-            
-            if ($filters->agencia !== null) {
-                $sql .= " AND e.id_agencia = :agencia";
-                $params[':agencia'] = $filters->agencia;
-            }
-            
-            if ($filters->gerenteGestao !== null) {
-                $sql .= " AND EXISTS (
-                    SELECT 1 FROM " . Tables::D_ESTRUTURA . " ggestao 
-                    WHERE ggestao.funcional = :gerente_gestao
-                    AND ggestao.id_cargo = " . Cargo::GERENTE_GESTAO . "
-                    AND ggestao.id_segmento = e.id_segmento
-                    AND ggestao.id_diretoria = e.id_diretoria
-                    AND ggestao.id_regional = e.id_regional
-                    AND ggestao.id_agencia = e.id_agencia
-                )";
-                $params[':gerente_gestao'] = $filters->gerenteGestao;
-            }
-            
-            if ($filters->gerente !== null) {
-                $sql .= " AND v.funcional = :gerente";
-                $params[':gerente'] = $filters->gerente;
-            }
+        if ($filters->getSegmento() !== null) {
+            $sql .= " AND e.id_segmento = :segmento";
+            $params[':segmento'] = $filters->getSegmento();
+        }
+
+        if ($filters->getDiretoria() !== null) {
+            $sql .= " AND e.id_diretoria = :diretoria";
+            $params[':diretoria'] = $filters->getDiretoria();
+        }
+
+        if ($filters->getRegional() !== null) {
+            $sql .= " AND e.id_regional = :regional";
+            $params[':regional'] = $filters->getRegional();
+        }
+
+        if ($filters->getAgencia() !== null) {
+            $sql .= " AND e.id_agencia = :agencia";
+            $params[':agencia'] = $filters->getAgencia();
+        }
+
+        if ($filters->getGerenteGestao() !== null) {
+            $sql .= " AND EXISTS (
+                SELECT 1 FROM " . Tables::D_ESTRUTURA . " ggestao 
+                WHERE ggestao.funcional = :gerente_gestao
+                AND ggestao.id_cargo = " . Cargo::GERENTE_GESTAO . "
+                AND ggestao.id_segmento = e.id_segmento
+                AND ggestao.id_diretoria = e.id_diretoria
+                AND ggestao.id_regional = e.id_regional
+                AND ggestao.id_agencia = e.id_agencia
+            )";
+            $params[':gerente_gestao'] = $filters->getGerenteGestao();
+        }
+
+        if ($filters->getGerente() !== null) {
+            $sql .= " AND v.funcional = :gerente";
+            $params[':gerente'] = $filters->getGerente();
+        }
 
         return ['sql' => $sql, 'params' => $params];
     }

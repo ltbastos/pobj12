@@ -81,27 +81,27 @@ class RealizadosRepository extends BaseRepository
             return ['sql' => $sql, 'params' => $params];
         }
 
-        if ($filters->segmento !== null) {
+        if ($filters->getSegmento() !== null) {
             $sql .= " AND r.segmento_id = :segmento";
-            $params[':segmento'] = $filters->segmento;
+            $params[':segmento'] = $filters->getSegmento();
         }
 
-        if ($filters->diretoria !== null) {
+        if ($filters->getDiretoria() !== null) {
             $sql .= " AND r.diretoria_id = :diretoria";
-            $params[':diretoria'] = $filters->diretoria;
+            $params[':diretoria'] = $filters->getDiretoria();
         }
 
-        if ($filters->regional !== null) {
+        if ($filters->getRegional() !== null) {
             $sql .= " AND r.gerencia_regional_id = :regional";
-            $params[':regional'] = $filters->regional;
+            $params[':regional'] = $filters->getRegional();
         }
 
-        if ($filters->agencia !== null) {
+        if ($filters->getAgencia() !== null) {
             $sql .= " AND r.agencia_id = :agencia";
-            $params[':agencia'] = $filters->agencia;
+            $params[':agencia'] = $filters->getAgencia();
         }
 
-        if ($filters->gerenteGestao !== null) {
+        if ($filters->getGerenteGestao() !== null) {
             $sql .= " AND EXISTS (
                 SELECT 1 FROM " . Tables::D_ESTRUTURA . " ggestao 
                 WHERE ggestao.funcional = :gerente_gestao
@@ -111,27 +111,27 @@ class RealizadosRepository extends BaseRepository
                 AND ggestao.id_regional = r.gerencia_regional_id
                 AND ggestao.id_agencia = r.agencia_id
             )";
-            $params[':gerente_gestao'] = $filters->gerenteGestao;
+            $params[':gerente_gestao'] = $filters->getGerenteGestao();
         }
 
-        if ($filters->gerente !== null) {
+        if ($filters->getGerente() !== null) {
             $sql .= " AND r.funcional = :gerente";
-            $params[':gerente'] = $filters->gerente;
+            $params[':gerente'] = $filters->getGerente();
         }
 
-        if ($filters->familia !== null) {
+        if ($filters->getFamilia() !== null) {
             $sql .= " AND r.familia_id = :familia";
-            $params[':familia'] = $filters->familia;
+            $params[':familia'] = $filters->getFamilia();
         }
 
-        if ($filters->indicador !== null) {
+        if ($filters->getIndicador() !== null) {
             $sql .= " AND r.indicador_id = :indicador";
-            $params[':indicador'] = $filters->indicador;
+            $params[':indicador'] = $filters->getIndicador();
         }
 
-        if ($filters->subindicador !== null) {
+        if ($filters->getSubindicador() !== null) {
             $sql .= " AND r.subindicador_id = :subindicador";
-            $params[':subindicador'] = $filters->subindicador;
+            $params[':subindicador'] = $filters->getSubindicador();
         }
 
         return ['sql' => $sql, 'params' => $params];

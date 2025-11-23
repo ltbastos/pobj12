@@ -56,20 +56,20 @@ class ProdutoRepository extends BaseRepository
             return ['sql' => $sql, 'params' => $params];
         }
 
-            if ($filters->familia !== null) {
-                $sql .= " AND id_familia = :familia";
-                $params[':familia'] = $filters->familia;
-            }
+        if ($filters->getFamilia() !== null) {
+            $sql .= " AND id_familia = :familia";
+            $params[':familia'] = $filters->getFamilia();
+        }
 
-            if ($filters->indicador !== null) {
-                $sql .= " AND id_indicador = :indicador";
-                $params[':indicador'] = $filters->indicador;
-            }
+        if ($filters->getIndicador() !== null) {
+            $sql .= " AND id_indicador = :indicador";
+            $params[':indicador'] = $filters->getIndicador();
+        }
 
-            if ($filters->subindicador !== null) {
-                $sql .= " AND id_subindicador = :subindicador";
-                $params[':subindicador'] = $filters->subindicador;
-            }
+        if ($filters->getSubindicador() !== null) {
+            $sql .= " AND id_subindicador = :subindicador";
+            $params[':subindicador'] = $filters->getSubindicador();
+        }
 
         return ['sql' => $sql, 'params' => $params];
     }

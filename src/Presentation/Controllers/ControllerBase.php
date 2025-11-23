@@ -18,6 +18,15 @@ abstract class ControllerBase
 
     protected function success(Response $response, $data): Response
     {
+        // Se o data já tem estrutura de paginação (com 'data' e 'pagination'), retorna diretamente
+        if (is_array($data) && isset($data['data']) && isset($data['pagination'])) {
+            return $this->json($response, [
+                'success' => true,
+                'data' => $data['data'],
+                'pagination' => $data['pagination']
+            ], 200);
+        }
+        
         return $this->json($response, [
             'success' => true,
             'data' => $data

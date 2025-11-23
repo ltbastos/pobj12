@@ -3,21 +3,30 @@
 namespace App\Infrastructure\Persistence;
 
 use PDO;
+use App\Domain\DTO\FilterDTO;
 use App\Domain\DTO\OmegaUserDTO;
 use App\Domain\Enum\Tables;
 
-class OmegaUsersRepository
+/**
+ * Repositório para buscar todos os registros de usuários Omega
+ */
+class OmegaUsersRepository extends BaseRepository
 {
-    private $pdo;
-
+    /**
+     * @param PDO $pdo
+     */
     public function __construct(PDO $pdo)
     {
-        $this->pdo = $pdo;
+        parent::__construct($pdo, OmegaUserDTO::class);
     }
 
-    public function findAllAsArray(): array
+    /**
+     * Retorna o SELECT completo da consulta
+     * @return string
+     */
+    public function baseSelect(): string
     {
-        $sql = "SELECT 
+        return "SELECT 
                     id,
                     nome,
                     funcional,
@@ -34,32 +43,53 @@ class OmegaUsersRepository
                     matriz,
                     outros
                 FROM " . Tables::OMEGA_USUARIOS . "
-                ORDER BY nome ASC";
-        
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute();
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        return array_map(function ($row) {
-            $dto = new OmegaUserDTO(
-                isset($row['id']) ? $row['id'] : null,
-                isset($row['nome']) ? $row['nome'] : null,
-                isset($row['funcional']) ? $row['funcional'] : null,
-                isset($row['matricula']) ? $row['matricula'] : null,
-                isset($row['cargo']) ? $row['cargo'] : null,
-                isset($row['usuario']) ? (bool)$row['usuario'] : false,
-                isset($row['analista']) ? (bool)$row['analista'] : false,
-                isset($row['supervisor']) ? (bool)$row['supervisor'] : false,
-                isset($row['admin']) ? (bool)$row['admin'] : false,
-                isset($row['encarteiramento']) ? (bool)$row['encarteiramento'] : false,
-                isset($row['meta']) ? (bool)$row['meta'] : false,
-                isset($row['orcamento']) ? (bool)$row['orcamento'] : false,
-                isset($row['pobj']) ? (bool)$row['pobj'] : false,
-                isset($row['matriz']) ? (bool)$row['matriz'] : false,
-                isset($row['outros']) ? (bool)$row['outros'] : false
-            );
-            
-            return $dto->toArray();
-        }, $results);
+                WHERE 1=1";
+    }
+
+    /**
+     * Constrói os filtros WHERE baseado no FilterDTO
+     * OmegaUsers não utiliza filtros, então sempre retorna vazio
+     * @param FilterDTO|null $filters
+     * @return array ['sql' => string, 'params' => array]
+     */
+    public function builderFilter(FilterDTO $filters = null): array
+    {
+        // OmegaUsers não utiliza filtros
+        return ['sql' => '', 'params' => []];
+    }
+
+    /**
+     * Retorna a cláusula ORDER BY
+     * @return string
+     */
+    protected function getOrderBy(): string
+    {
+        return "ORDER BY nome ASC";
+    }
+
+    /**
+     * Mapeia um array de resultados para OmegaUserDTO
+     * @param array $row
+     * @return OmegaUserDTO
+     */
+    public function mapToDto(array $row): OmegaUserDTO
+    {
+        return new OmegaUserDTO(
+            $row['id'] ?? null,
+            $row['nome'] ?? null,
+            $row['funcional'] ?? null,
+            $row['matricula'] ?? null,
+            $row['cargo'] ?? null,
+            isset($row['usuario']) ? (bool)$row['usuario'] : false,
+            isset($row['analista']) ? (bool)$row['analista'] : false,
+            isset($row['supervisor']) ? (bool)$row['supervisor'] : false,
+            isset($row['admin']) ? (bool)$row['admin'] : false,
+            isset($row['encarteiramento']) ? (bool)$row['encarteiramento'] : false,
+            isset($row['meta']) ? (bool)$row['meta'] : false,
+            isset($row['orcamento']) ? (bool)$row['orcamento'] : false,
+            isset($row['pobj']) ? (bool)$row['pobj'] : false,
+            isset($row['matriz']) ? (bool)$row['matriz'] : false,
+            isset($row['outros']) ? (bool)$row['outros'] : false
+        );
     }
 }

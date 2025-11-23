@@ -2,21 +2,19 @@
 
 namespace App\Application\UseCase;
 
-use App\Domain\DTO\FilterDTO;
 use App\Infrastructure\Persistence\OmegaMesuRepository;
 
-class OmegaMesuUseCase
+/**
+ * UseCase para operações relacionadas a estrutura Omega Mesu
+ */
+class OmegaMesuUseCase extends AbstractUseCase
 {
-    private $repository;
-
+    /**
+     * @param OmegaMesuRepository $repository
+     */
     public function __construct(OmegaMesuRepository $repository)
     {
-        $this->repository = $repository;
-    }
-
-    public function getMesuData(FilterDTO $filters = null): array
-    {
-        return $this->repository->findAll($filters);
+        parent::__construct($repository);
     }
 }
 

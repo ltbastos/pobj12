@@ -2,24 +2,31 @@
 
 namespace App\Infrastructure\Persistence;
 
-// Removed Connection dependency
 use PDO;
 use App\Domain\DTO\FilterDTO;
 use App\Domain\DTO\OmegaMesuDTO;
 use App\Domain\Enum\Tables;
 
-class OmegaMesuRepository
+/**
+ * Repositório para buscar todos os registros de estrutura Omega Mesu com filtros opcionais
+ */
+class OmegaMesuRepository extends BaseRepository
 {
-    private $pdo;
-
+    /**
+     * @param PDO $pdo
+     */
     public function __construct(PDO $pdo)
     {
-        $this->pdo = $pdo;
+        parent::__construct($pdo, OmegaMesuDTO::class);
     }
 
-    public function findAll(FilterDTO $filters = null): array
+    /**
+     * Retorna o SELECT completo da consulta
+     * @return string
+     */
+    public function baseSelect(): string
     {
-        $sql = "SELECT DISTINCT
+        return "SELECT DISTINCT
                     segmento AS segmento,
                     id_segmento AS segmento_id,
                     diretoria AS diretoria,
@@ -34,67 +41,91 @@ class OmegaMesuRepository
                     funcional AS gerente_id
                 FROM " . Tables::D_ESTRUTURA . "
                 WHERE segmento IS NOT NULL";
-        
-        $params = [];
-        
-        if ($filters !== null && $filters->hasAnyFilter()) {
-            if ($filters->segmento !== null) {
-                $sql .= " AND id_segmento = :segmento";
-                $params[':segmento'] = $filters->segmento;
-            }
-            if ($filters->diretoria !== null) {
-                $sql .= " AND id_diretoria = :diretoria";
-                $params[':diretoria'] = $filters->diretoria;
-            }
-            if ($filters->regional !== null) {
-                $sql .= " AND id_regional = :regional";
-                $params[':regional'] = $filters->regional;
-            }
-            if ($filters->agencia !== null) {
-                $sql .= " AND id_agencia = :agencia";
-                $params[':agencia'] = $filters->agencia;
-            }
-            if ($filters->gerenteGestao !== null) {
-                $sql .= " AND funcional = :gerente_gestao";
-                $params[':gerente_gestao'] = $filters->gerenteGestao;
-            }
-            if ($filters->gerente !== null) {
-                $sql .= " AND funcional = :gerente";
-                $params[':gerente'] = $filters->gerente;
-            }
-        }
-        
-        $sql .= " ORDER BY segmento, diretoria, regional, agencia";
+    }
 
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        return array_map(function ($row) {
-            $segmentoId = isset($row['segmento_id']) ? $row['segmento_id'] : null;
-            $diretoriaId = isset($row['diretoria_id']) ? $row['diretoria_id'] : null;
-            $gerenciaRegionalId = isset($row['gerencia_regional_id']) ? $row['gerencia_regional_id'] : null;
-            $agenciaId = isset($row['agencia_id']) ? $row['agencia_id'] : null;
-            $gerenteGestaoId = isset($row['gerente_gestao_id']) ? $row['gerente_gestao_id'] : null;
-            $gerenteId = isset($row['gerente_id']) ? $row['gerente_id'] : null;
-            
-            $dto = new OmegaMesuDTO(
-                isset($row['segmento']) ? $row['segmento'] : null,
-                $segmentoId !== null ? (string)$segmentoId : null,
-                isset($row['diretoria']) ? $row['diretoria'] : null,
-                $diretoriaId !== null ? (string)$diretoriaId : null,
-                isset($row['gerencia_regional']) ? $row['gerencia_regional'] : null,
-                $gerenciaRegionalId !== null ? (string)$gerenciaRegionalId : null,
-                isset($row['agencia']) ? $row['agencia'] : null,
-                $agenciaId !== null ? (string)$agenciaId : null,
-                isset($row['gerente_gestao']) ? $row['gerente_gestao'] : null,
-                $gerenteGestaoId !== null ? (string)$gerenteGestaoId : null,
-                isset($row['gerente']) ? $row['gerente'] : null,
-                $gerenteId !== null ? (string)$gerenteId : null
-            );
-            
-            return $dto->toArray();
-        }, $results);
+    /**
+     * Constrói os filtros WHERE baseado no FilterDTO
+     * @param FilterDTO|null $filters
+     * @return array ['sql' => string, 'params' => array]
+     */
+    public function builderFilter(FilterDTO $filters = null): array
+    {
+        $sql = "";
+        $params = [];
+
+        if ($filters === null || !$filters->hasAnyFilter()) {
+            return ['sql' => $sql, 'params' => $params];
+        }
+
+        if ($filters->getSegmento() !== null) {
+            $sql .= " AND id_segmento = :segmento";
+            $params[':segmento'] = $filters->getSegmento();
+        }
+
+        if ($filters->getDiretoria() !== null) {
+            $sql .= " AND id_diretoria = :diretoria";
+            $params[':diretoria'] = $filters->getDiretoria();
+        }
+
+        if ($filters->getRegional() !== null) {
+            $sql .= " AND id_regional = :regional";
+            $params[':regional'] = $filters->getRegional();
+        }
+
+        if ($filters->getAgencia() !== null) {
+            $sql .= " AND id_agencia = :agencia";
+            $params[':agencia'] = $filters->getAgencia();
+        }
+
+        if ($filters->getGerenteGestao() !== null) {
+            $sql .= " AND funcional = :gerente_gestao";
+            $params[':gerente_gestao'] = $filters->getGerenteGestao();
+        }
+
+        if ($filters->getGerente() !== null) {
+            $sql .= " AND funcional = :gerente";
+            $params[':gerente'] = $filters->getGerente();
+        }
+
+        return ['sql' => $sql, 'params' => $params];
+    }
+
+    /**
+     * Retorna a cláusula ORDER BY
+     * @return string
+     */
+    protected function getOrderBy(): string
+    {
+        return "ORDER BY segmento, diretoria, regional, agencia";
+    }
+
+    /**
+     * Mapeia um array de resultados para OmegaMesuDTO
+     * @param array $row
+     * @return OmegaMesuDTO
+     */
+    public function mapToDto(array $row): OmegaMesuDTO
+    {
+        $segmentoId = isset($row['segmento_id']) ? $row['segmento_id'] : null;
+        $diretoriaId = isset($row['diretoria_id']) ? $row['diretoria_id'] : null;
+        $gerenciaRegionalId = isset($row['gerencia_regional_id']) ? $row['gerencia_regional_id'] : null;
+        $agenciaId = isset($row['agencia_id']) ? $row['agencia_id'] : null;
+        $gerenteGestaoId = isset($row['gerente_gestao_id']) ? $row['gerente_gestao_id'] : null;
+        $gerenteId = isset($row['gerente_id']) ? $row['gerente_id'] : null;
+
+        return new OmegaMesuDTO(
+            $row['segmento'] ?? null,
+            $segmentoId !== null ? (string)$segmentoId : null,
+            $row['diretoria'] ?? null,
+            $diretoriaId !== null ? (string)$diretoriaId : null,
+            $row['gerencia_regional'] ?? null,
+            $gerenciaRegionalId !== null ? (string)$gerenciaRegionalId : null,
+            $row['agencia'] ?? null,
+            $agenciaId !== null ? (string)$agenciaId : null,
+            $row['gerente_gestao'] ?? null,
+            $gerenteGestaoId !== null ? (string)$gerenteGestaoId : null,
+            $row['gerente'] ?? null,
+            $gerenteId !== null ? (string)$gerenteId : null
+        );
     }
 }
-

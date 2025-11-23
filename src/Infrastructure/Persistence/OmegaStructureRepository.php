@@ -3,43 +3,73 @@
 namespace App\Infrastructure\Persistence;
 
 use PDO;
+use App\Domain\DTO\FilterDTO;
 use App\Domain\DTO\OmegaStructureDTO;
 use App\Domain\Enum\Tables;
 
-class OmegaStructureRepository
+/**
+ * Repositório para buscar todos os registros de estrutura Omega
+ */
+class OmegaStructureRepository extends BaseRepository
 {
-    private $pdo;
-
+    /**
+     * @param PDO $pdo
+     */
     public function __construct(PDO $pdo)
     {
-        $this->pdo = $pdo;
+        parent::__construct($pdo, OmegaStructureDTO::class);
     }
 
-    public function findAllAsArray(): array
+    /**
+     * Retorna o SELECT completo da consulta
+     * @return string
+     */
+    public function baseSelect(): string
     {
-        $sql = "SELECT 
+        return "SELECT 
                     departamento,
                     tipo,
                     departamento_id,
                     ordem_departamento,
                     ordem_tipo
                 FROM " . Tables::OMEGA_DEPARTAMENTOS . "
-                ORDER BY ordem_departamento ASC, ordem_tipo ASC, departamento ASC, tipo ASC";
-        
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute();
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        return array_map(function ($row) {
-            $dto = new OmegaStructureDTO(
-                isset($row['departamento']) ? $row['departamento'] : null,
-                isset($row['tipo']) ? $row['tipo'] : null,
-                isset($row['departamento_id']) ? $row['departamento_id'] : null,
-                isset($row['ordem_departamento']) ? $row['ordem_departamento'] : null,
-                isset($row['ordem_tipo']) ? $row['ordem_tipo'] : null
-            );
-            
-            return $dto->toArray();
-        }, $results);
+                WHERE 1=1";
+    }
+
+    /**
+     * Constrói os filtros WHERE baseado no FilterDTO
+     * OmegaStructure não utiliza filtros, então sempre retorna vazio
+     * @param FilterDTO|null $filters
+     * @return array ['sql' => string, 'params' => array]
+     */
+    public function builderFilter(FilterDTO $filters = null): array
+    {
+        // OmegaStructure não utiliza filtros
+        return ['sql' => '', 'params' => []];
+    }
+
+    /**
+     * Retorna a cláusula ORDER BY
+     * @return string
+     */
+    protected function getOrderBy(): string
+    {
+        return "ORDER BY ordem_departamento ASC, ordem_tipo ASC, departamento ASC, tipo ASC";
+    }
+
+    /**
+     * Mapeia um array de resultados para OmegaStructureDTO
+     * @param array $row
+     * @return OmegaStructureDTO
+     */
+    public function mapToDto(array $row): OmegaStructureDTO
+    {
+        return new OmegaStructureDTO(
+            $row['departamento'] ?? null,
+            $row['tipo'] ?? null,
+            $row['departamento_id'] ?? null,
+            $row['ordem_departamento'] ?? null,
+            $row['ordem_tipo'] ?? null
+        );
     }
 }

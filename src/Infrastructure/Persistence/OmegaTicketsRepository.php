@@ -3,21 +3,31 @@
 namespace App\Infrastructure\Persistence;
 
 use PDO;
+use App\Domain\DTO\FilterDTO;
 use App\Domain\DTO\OmegaTicketDTO;
 use App\Domain\Enum\Tables;
+use App\Infrastructure\Helpers\DateFormatter;
 
-class OmegaTicketsRepository
+/**
+ * Repositório para buscar todos os registros de tickets Omega
+ */
+class OmegaTicketsRepository extends BaseRepository
 {
-    private $pdo;
-
+    /**
+     * @param PDO $pdo
+     */
     public function __construct(PDO $pdo)
     {
-        $this->pdo = $pdo;
+        parent::__construct($pdo, OmegaTicketDTO::class);
     }
 
-    public function findAllAsArray(): array
+    /**
+     * Retorna o SELECT completo da consulta
+     * @return string
+     */
+    public function baseSelect(): string
     {
-        $sql = "SELECT 
+        return "SELECT 
                     id,
                     subject,
                     company,
@@ -44,46 +54,88 @@ class OmegaTicketsRepository
                     credit,
                     attachment
                 FROM " . Tables::OMEGA_CHAMADOS . "
-                ORDER BY updated DESC, opened DESC";
+                WHERE 1=1";
+    }
+
+    /**
+     * Constrói os filtros WHERE baseado no FilterDTO
+     * OmegaTickets não utiliza filtros, então sempre retorna vazio
+     * @param FilterDTO|null $filters
+     * @return array ['sql' => string, 'params' => array]
+     */
+    public function builderFilter(FilterDTO $filters = null): array
+    {
+        // OmegaTickets não utiliza filtros
+        return ['sql' => '', 'params' => []];
+    }
+
+    /**
+     * Retorna a cláusula ORDER BY
+     * @return string
+     */
+    protected function getOrderBy(): string
+    {
+        return "ORDER BY updated DESC, opened DESC";
+    }
+
+    /**
+     * Mapeia um array de resultados para OmegaTicketDTO
+     * @param array $row
+     * @return OmegaTicketDTO
+     */
+    public function mapToDto(array $row): OmegaTicketDTO
+    {
+        $opened = isset($row['opened']) && $row['opened'] ? $this->formatDateTime($row['opened']) : null;
+        $updated = isset($row['updated']) && $row['updated'] ? $this->formatDateTime($row['updated']) : null;
+        $dueDate = isset($row['due_date']) && $row['due_date'] ? $this->formatDateTime($row['due_date']) : null;
+
+        return new OmegaTicketDTO(
+            $row['id'] ?? null,
+            $row['subject'] ?? null,
+            $row['company'] ?? null,
+            $row['product_id'] ?? null,
+            $row['product_label'] ?? null,
+            $row['family'] ?? null,
+            $row['section'] ?? null,
+            $row['queue'] ?? null,
+            $row['category'] ?? null,
+            $row['status'] ?? null,
+            $row['priority'] ?? null,
+            $opened,
+            $updated,
+            $dueDate,
+            $row['requester_id'] ?? null,
+            $row['owner_id'] ?? null,
+            $row['team_id'] ?? null,
+            $row['history'] ?? null,
+            $row['diretoria'] ?? null,
+            $row['gerencia'] ?? null,
+            $row['agencia'] ?? null,
+            $row['gerente_gestao'] ?? null,
+            $row['gerente'] ?? null,
+            $row['credit'] ?? null,
+            $row['attachment'] ?? null
+        );
+    }
+
+    /**
+     * Formata um valor para datetime ISO (Y-m-d H:i:s)
+     * @param mixed $value
+     * @return string|null
+     */
+    private function formatDateTime($value)
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->format('Y-m-d H:i:s');
+        }
         
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute();
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        if (is_string($value) && !empty($value)) {
+            $timestamp = strtotime($value);
+            if ($timestamp !== false) {
+                return date('Y-m-d H:i:s', $timestamp);
+            }
+        }
         
-        return array_map(function ($row) {
-            $opened = isset($row['opened']) && $row['opened'] ? date('Y-m-d H:i:s', strtotime($row['opened'])) : null;
-            $updated = isset($row['updated']) && $row['updated'] ? date('Y-m-d H:i:s', strtotime($row['updated'])) : null;
-            $dueDate = isset($row['due_date']) && $row['due_date'] ? date('Y-m-d H:i:s', strtotime($row['due_date'])) : null;
-            
-            $dto = new OmegaTicketDTO(
-                isset($row['id']) ? $row['id'] : null,
-                isset($row['subject']) ? $row['subject'] : null,
-                isset($row['company']) ? $row['company'] : null,
-                isset($row['product_id']) ? $row['product_id'] : null,
-                isset($row['product_label']) ? $row['product_label'] : null,
-                isset($row['family']) ? $row['family'] : null,
-                isset($row['section']) ? $row['section'] : null,
-                isset($row['queue']) ? $row['queue'] : null,
-                isset($row['category']) ? $row['category'] : null,
-                isset($row['status']) ? $row['status'] : null,
-                isset($row['priority']) ? $row['priority'] : null,
-                $opened,
-                $updated,
-                $dueDate,
-                isset($row['requester_id']) ? $row['requester_id'] : null,
-                isset($row['owner_id']) ? $row['owner_id'] : null,
-                isset($row['team_id']) ? $row['team_id'] : null,
-                isset($row['history']) ? $row['history'] : null,
-                isset($row['diretoria']) ? $row['diretoria'] : null,
-                isset($row['gerencia']) ? $row['gerencia'] : null,
-                isset($row['agencia']) ? $row['agencia'] : null,
-                isset($row['gerente_gestao']) ? $row['gerente_gestao'] : null,
-                isset($row['gerente']) ? $row['gerente'] : null,
-                isset($row['credit']) ? $row['credit'] : null,
-                isset($row['attachment']) ? $row['attachment'] : null
-            );
-            
-            return $dto->toArray();
-        }, $results);
+        return null;
     }
 }

@@ -4,76 +4,137 @@ namespace App\Domain\DTO;
 
 class FilterDTO
 {
-    public $segmento = null;
-    public $diretoria = null;
-    public $regional = null;
-    public $agencia = null;
-    public $gerenteGestao = null;
-    public $gerente = null;
-    public $familia = null;
-    public $indicador = null;
-    public $subindicador = null;
-    public $page = null;
-    public $limit = null;
+    public $page;
+    public $limit;
+    public $filters;
+    private $paginationRequested;
 
-    public function __construct(array $filters = [])
+    public function __construct(array $params = [])
     {
-        $this->segmento = $filters['segmentoId'] ?? $filters['segmento'] ?? null;
-        $this->diretoria = $filters['diretoriaId'] ?? $filters['diretoria'] ?? null;
-        $this->regional = $filters['regionalId'] ?? $filters['regional'] ?? null;
-        $this->agencia = $filters['agenciaId'] ?? $filters['agencia'] ?? null;
-        $this->gerenteGestao = $filters['gerenteGestaoId'] ?? $filters['gerente_gestao'] ?? $filters['gerenteGestao'] ?? null;
-        $this->gerente = $filters['gerenteId'] ?? $filters['gerente'] ?? null;
-        $this->familia = $filters['familiaId'] ?? $filters['familia'] ?? null;
-        $this->indicador = $filters['indicadorId'] ?? $filters['indicador'] ?? null;
-        $this->subindicador = $filters['subindicadorId'] ?? $filters['subindicador'] ?? null;
+        // Verifica se page ou limit foram explicitamente solicitados
+        $this->paginationRequested = isset($params['page']) || isset($params['limit']);
         
-        // Paginação
-        $this->page = isset($filters['page']) ? max(1, (int)$filters['page']) : null;
-        $this->limit = isset($filters['limit']) ? max(1, min(1000, (int)$filters['limit'])) : null;
+        $this->page = isset($params['page']) ? (int)$params['page'] : 1;
+        $this->limit = isset($params['limit']) ? (int)$params['limit'] : 20;
+
+        unset($params['page'], $params['limit']);
+        $this->filters = $params;
     }
 
     public function hasAnyFilter(): bool
     {
-        return $this->segmento !== null
-            || $this->diretoria !== null
-            || $this->regional !== null
-            || $this->agencia !== null
-            || $this->gerenteGestao !== null
-            || $this->gerente !== null
-            || $this->familia !== null
-            || $this->indicador !== null
-            || $this->subindicador !== null;
+        return !empty($this->filters);
     }
 
     public function hasPagination(): bool
     {
-        return $this->page !== null && $this->limit !== null;
+        // Só retorna true se a paginação foi explicitamente solicitada
+        return $this->paginationRequested && $this->page > 0 && $this->limit > 0;
     }
 
     public function getOffset(): int
     {
-        if (!$this->hasPagination()) {
-            return 0;
-        }
         return ($this->page - 1) * $this->limit;
+    }
+
+    /**
+     * Obtém um valor de filtro específico
+     * @param string $key
+     * @param mixed $default
+     * @return mixed
+     */
+    public function get(string $key, $default = null)
+    {
+        // Suporta múltiplas chaves para compatibilidade
+        $keys = [
+            $key . 'Id',
+            $key,
+            $this->normalizeKey($key),
+        ];
+
+        foreach ($keys as $k) {
+            if (isset($this->filters[$k])) {
+                return $this->filters[$k];
+            }
+        }
+
+        return $default;
+    }
+
+    /**
+     * Normaliza a chave do filtro
+     * @param string $key
+     * @return string
+     */
+    private function normalizeKey(string $key): string
+    {
+        $normalizations = [
+            'segmento' => ['segmentoId', 'segmento'],
+            'diretoria' => ['diretoriaId', 'diretoria'],
+            'regional' => ['regionalId', 'regional'],
+            'agencia' => ['agenciaId', 'agencia'],
+            'gerenteGestao' => ['gerenteGestaoId', 'gerente_gestao', 'gerenteGestao'],
+            'gerente' => ['gerenteId', 'gerente'],
+            'familia' => ['familiaId', 'familia'],
+            'indicador' => ['indicadorId', 'indicador'],
+            'subindicador' => ['subindicadorId', 'subindicador'],
+        ];
+
+        return $normalizations[$key][0] ?? $key;
+    }
+
+    // Métodos helper para acesso direto aos filtros comuns
+    public function getSegmento()
+    {
+        return $this->get('segmento');
+    }
+
+    public function getDiretoria()
+    {
+        return $this->get('diretoria');
+    }
+
+    public function getRegional()
+    {
+        return $this->get('regional');
+    }
+
+    public function getAgencia()
+    {
+        return $this->get('agencia');
+    }
+
+    public function getGerenteGestao()
+    {
+        return $this->get('gerenteGestao');
+    }
+
+    public function getGerente()
+    {
+        return $this->get('gerente');
+    }
+
+    public function getFamilia()
+    {
+        return $this->get('familia');
+    }
+
+    public function getIndicador()
+    {
+        return $this->get('indicador');
+    }
+
+    public function getSubindicador()
+    {
+        return $this->get('subindicador');
     }
 
     public function toArray(): array
     {
         return [
-            'segmento' => $this->segmento,
-            'diretoria' => $this->diretoria,
-            'regional' => $this->regional,
-            'agencia' => $this->agencia,
-            'gerente_gestao' => $this->gerenteGestao,
-            'gerente' => $this->gerente,
-            'familia' => $this->familia,
-            'indicador' => $this->indicador,
-            'subindicador' => $this->subindicador,
             'page' => $this->page,
             'limit' => $this->limit,
+            'filters' => $this->filters,
         ];
     }
 }
-

@@ -3,21 +3,30 @@
 namespace App\Infrastructure\Persistence;
 
 use PDO;
+use App\Domain\DTO\FilterDTO;
 use App\Domain\DTO\OmegaStatusDTO;
 use App\Domain\Enum\Tables;
 
-class OmegaStatusRepository
+/**
+ * Repositório para buscar todos os registros de status Omega
+ */
+class OmegaStatusRepository extends BaseRepository
 {
-    private $pdo;
-
+    /**
+     * @param PDO $pdo
+     */
     public function __construct(PDO $pdo)
     {
-        $this->pdo = $pdo;
+        parent::__construct($pdo, OmegaStatusDTO::class);
     }
 
-    public function findAllAsArray(): array
+    /**
+     * Retorna o SELECT completo da consulta
+     * @return string
+     */
+    public function baseSelect(): string
     {
-        $sql = "SELECT 
+        return "SELECT 
                     id,
                     label,
                     tone,
@@ -25,23 +34,44 @@ class OmegaStatusRepository
                     ordem,
                     departamento_id
                 FROM " . Tables::OMEGA_STATUS . "
-                ORDER BY ordem ASC, label ASC";
-        
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute();
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        return array_map(function ($row) {
-            $dto = new OmegaStatusDTO(
-                isset($row['id']) ? $row['id'] : null,
-                isset($row['label']) ? $row['label'] : null,
-                isset($row['tone']) ? $row['tone'] : null,
-                isset($row['descricao']) ? $row['descricao'] : null,
-                isset($row['ordem']) ? $row['ordem'] : null,
-                isset($row['departamento_id']) ? $row['departamento_id'] : null
-            );
-            
-            return $dto->toArray();
-        }, $results);
+                WHERE 1=1";
+    }
+
+    /**
+     * Constrói os filtros WHERE baseado no FilterDTO
+     * OmegaStatus não utiliza filtros, então sempre retorna vazio
+     * @param FilterDTO|null $filters
+     * @return array ['sql' => string, 'params' => array]
+     */
+    public function builderFilter(FilterDTO $filters = null): array
+    {
+        // OmegaStatus não utiliza filtros
+        return ['sql' => '', 'params' => []];
+    }
+
+    /**
+     * Retorna a cláusula ORDER BY
+     * @return string
+     */
+    protected function getOrderBy(): string
+    {
+        return "ORDER BY ordem ASC, label ASC";
+    }
+
+    /**
+     * Mapeia um array de resultados para OmegaStatusDTO
+     * @param array $row
+     * @return OmegaStatusDTO
+     */
+    public function mapToDto(array $row): OmegaStatusDTO
+    {
+        return new OmegaStatusDTO(
+            $row['id'] ?? null,
+            $row['label'] ?? null,
+            $row['tone'] ?? null,
+            $row['descricao'] ?? null,
+            $row['ordem'] ?? null,
+            $row['departamento_id'] ?? null
+        );
     }
 }

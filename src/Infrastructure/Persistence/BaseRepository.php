@@ -92,12 +92,23 @@ abstract class BaseRepository implements BaseRepositoryInterface
         if ($filters !== null && $filters->hasPagination()) {
             $offset = $filters->getOffset();
             $sql .= " LIMIT :limit OFFSET :offset";
-            $params[':limit'] = $filters->limit;
-            $params[':offset'] = $offset;
         }
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->execute($params);
+        
+        // Bind dos parâmetros de filtros
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+        }
+        
+        // Bind dos parâmetros de paginação
+        if ($filters !== null && $filters->hasPagination()) {
+            $offset = $filters->getOffset();
+            $stmt->bindValue(':limit', $filters->limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        }
+        
+        $stmt->execute();
 
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
         

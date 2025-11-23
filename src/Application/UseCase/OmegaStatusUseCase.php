@@ -4,18 +4,26 @@ namespace App\Application\UseCase;
 
 use App\Infrastructure\Persistence\OmegaStatusRepository;
 
-class OmegaStatusUseCase
+/**
+ * UseCase para operações relacionadas a status Omega
+ */
+class OmegaStatusUseCase extends AbstractUseCase
 {
-    private $repository;
-
+    /**
+     * @param OmegaStatusRepository $repository
+     */
     public function __construct(OmegaStatusRepository $repository)
     {
-        $this->repository = $repository;
+        parent::__construct($repository);
     }
 
+    /**
+     * Retorna todos os status Omega
+     * @return array
+     */
     public function getAllStatus(): array
     {
-        return $this->repository->findAllAsArray();
+        return $this->repository->fetch(null);
     }
 }
 

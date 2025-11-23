@@ -6,7 +6,10 @@ use App\Application\UseCase\OmegaMesuUseCase;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 
-class OmegaMesuController
+/**
+ * Controller para operações relacionadas a estrutura Omega Mesu
+ */
+class OmegaMesuController extends ControllerBase
 {
     private $omegaMesuUseCase;
 
@@ -17,20 +20,10 @@ class OmegaMesuController
 
     public function handle(Request $request, Response $response): Response
     {
-        try {
-            $result = $this->omegaMesuUseCase->getMesuData();
+        $filters = $request->getAttribute('filters');
+        $result = $this->omegaMesuUseCase->handle($filters);
             
-            $response = $response->withHeader('Content-Type', 'application/json; charset=utf-8');
-            $response->getBody()->write(json_encode($result, JSON_UNESCAPED_UNICODE));
-            return $response;
-        } catch (\Throwable $e) {
-            $response = $response->withStatus(500)
-                ->withHeader('Content-Type', 'application/json; charset=utf-8');
-            $response->getBody()->write(json_encode([
-                'error' => 'Erro ao carregar dados MESU: ' . $e->getMessage()
-            ], JSON_UNESCAPED_UNICODE));
-            return $response;
-        }
+        return $this->success($response, $result);
     }
 }
 
