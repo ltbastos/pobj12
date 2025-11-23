@@ -7575,19 +7575,47 @@ function buildHierarchyRowsFromEstrutura(){
     const gerenteGestao = gestorIdStr ? gerentesGestaoMap.get(gestorIdStr) : null;
 
     // Cria uma row para cada combinação gerente-agência
+    const agenciaNomeRaw = agencia ? (agencia.label || agencia.nome || agenciaIdStr) : agenciaIdStr;
+    const agenciaNome = agenciaIdStr && agenciaNomeRaw && agenciaNomeRaw !== agenciaIdStr 
+      ? buildHierarchyLabel(agenciaIdStr, agenciaNomeRaw) || agenciaNomeRaw 
+      : agenciaNomeRaw;
+    
+    const gerenteGestaoNomeRaw = gerenteGestao ? (gerenteGestao.label || gerenteGestao.nome || String(gerenteGestao.id || "")) : "";
+    const gerenteGestaoIdStr = gerenteGestao ? String(gerenteGestao.id || "") : "";
+    const gerenteGestaoNome = gerenteGestaoIdStr && gerenteGestaoNomeRaw && gerenteGestaoNomeRaw !== gerenteGestaoIdStr
+      ? buildHierarchyLabel(gerenteGestaoIdStr, gerenteGestaoNomeRaw) || gerenteGestaoNomeRaw
+      : gerenteGestaoNomeRaw;
+    
+    const gerenteNomeRaw = gerente ? (gerente.label || gerente.nome || gerenteIdStr) : gerenteIdStr;
+    const gerenteNome = gerenteIdStr && gerenteNomeRaw && gerenteNomeRaw !== gerenteIdStr
+      ? buildHierarchyLabel(gerenteIdStr, gerenteNomeRaw) || gerenteNomeRaw
+      : gerenteNomeRaw;
+    
+    const segmentoIdStrFinal = segmento ? String(segmento.id || "") : segmentoIdStr || "";
+    const segmentoNomeRaw = segmento ? (segmento.label || segmento.nome || segmentoIdStrFinal) : "";
+    const segmentoNome = segmentoIdStrFinal && segmentoNomeRaw && segmentoNomeRaw !== segmentoIdStrFinal
+      ? buildHierarchyLabel(segmentoIdStrFinal, segmentoNomeRaw) || segmentoNomeRaw
+      : segmentoNomeRaw;
+    
+    const diretoriaIdStrFinal = diretoria ? String(diretoria.id || "") : diretoriaIdStr || "";
+    const diretoriaNomeRaw = diretoria ? (diretoria.label || diretoria.nome || diretoriaIdStrFinal) : "";
+    const diretoriaNome = diretoriaIdStrFinal && diretoriaNomeRaw && diretoriaNomeRaw !== diretoriaIdStrFinal
+      ? buildHierarchyLabel(diretoriaIdStrFinal, diretoriaNomeRaw) || diretoriaNomeRaw
+      : diretoriaNomeRaw;
+    
     rows.push({
-      segmentoId: segmento ? String(segmento.id || "") : "",
-      segmentoNome: segmento ? (segmento.label || segmento.nome || String(segmento.id || "")) : "",
-      diretoriaId: diretoria ? String(diretoria.id || "") : "",
-      diretoriaNome: diretoria ? (diretoria.label || diretoria.nome || String(diretoria.id || "")) : "",
+      segmentoId: segmentoIdStrFinal,
+      segmentoNome: segmentoNome,
+      diretoriaId: diretoriaIdStrFinal,
+      diretoriaNome: diretoriaNome,
       regionalId: regional ? String(regional.id || "") : "",
       regionalNome: regional ? (regional.label || regional.nome || String(regional.id || "")) : "",
       agenciaId: agenciaIdStr,
-      agenciaNome: agencia ? (agencia.label || agencia.nome || agenciaIdStr) : agenciaIdStr,
-      gerenteGestaoId: gerenteGestao ? String(gerenteGestao.id || "") : "",
-      gerenteGestaoNome: gerenteGestao ? (gerenteGestao.label || gerenteGestao.nome || String(gerenteGestao.id || "")) : "",
+      agenciaNome: agenciaNome,
+      gerenteGestaoId: gerenteGestaoIdStr,
+      gerenteGestaoNome: gerenteGestaoNome,
       gerenteId: gerenteIdStr,
-      gerenteNome: gerente ? (gerente.label || gerente.nome || gerenteIdStr) : gerenteIdStr,
+      gerenteNome: gerenteNome,
     });
   });
 
@@ -7627,17 +7655,40 @@ function buildHierarchyRowsFromEstrutura(){
       });
     }
 
+    const agenciaNomeRaw2 = agencia ? (agencia.label || agencia.nome || agenciaIdStr) : agenciaIdStr;
+    const agenciaNome2 = agenciaIdStr && agenciaNomeRaw2 && agenciaNomeRaw2 !== agenciaIdStr 
+      ? buildHierarchyLabel(agenciaIdStr, agenciaNomeRaw2) || agenciaNomeRaw2 
+      : agenciaNomeRaw2;
+    
+    const gerenteGestaoIdStr2 = gerenteGestaoFinal ? String(gerenteGestaoFinal.id || "") : "";
+    const gerenteGestaoNomeRaw2 = gerenteGestaoFinal ? (gerenteGestaoFinal.label || gerenteGestaoFinal.nome || gerenteGestaoIdStr2) : "";
+    const gerenteGestaoNome2 = gerenteGestaoIdStr2 && gerenteGestaoNomeRaw2 && gerenteGestaoNomeRaw2 !== gerenteGestaoIdStr2
+      ? buildHierarchyLabel(gerenteGestaoIdStr2, gerenteGestaoNomeRaw2) || gerenteGestaoNomeRaw2
+      : gerenteGestaoNomeRaw2;
+    
+    const segmentoIdStrFinal2 = segmento ? String(segmento.id || "") : segmentoIdStr || "";
+    const segmentoNomeRaw2 = segmento ? (segmento.label || segmento.nome || segmentoIdStrFinal2) : "";
+    const segmentoNome2 = segmentoIdStrFinal2 && segmentoNomeRaw2 && segmentoNomeRaw2 !== segmentoIdStrFinal2
+      ? buildHierarchyLabel(segmentoIdStrFinal2, segmentoNomeRaw2) || segmentoNomeRaw2
+      : segmentoNomeRaw2;
+    
+    const diretoriaIdStrFinal2 = diretoria ? String(diretoria.id || "") : diretoriaIdStr || "";
+    const diretoriaNomeRaw2 = diretoria ? (diretoria.label || diretoria.nome || diretoriaIdStrFinal2) : "";
+    const diretoriaNome2 = diretoriaIdStrFinal2 && diretoriaNomeRaw2 && diretoriaNomeRaw2 !== diretoriaIdStrFinal2
+      ? buildHierarchyLabel(diretoriaIdStrFinal2, diretoriaNomeRaw2) || diretoriaNomeRaw2
+      : diretoriaNomeRaw2;
+    
     rows.push({
-      segmentoId: segmento ? String(segmento.id || "") : "",
-      segmentoNome: segmento ? (segmento.label || segmento.nome || String(segmento.id || "")) : "",
-      diretoriaId: diretoria ? String(diretoria.id || "") : "",
-      diretoriaNome: diretoria ? (diretoria.label || diretoria.nome || String(diretoria.id || "")) : "",
+      segmentoId: segmentoIdStrFinal2,
+      segmentoNome: segmentoNome2,
+      diretoriaId: diretoriaIdStrFinal2,
+      diretoriaNome: diretoriaNome2,
       regionalId: regional ? String(regional.id || "") : "",
       regionalNome: regional ? (regional.label || regional.nome || String(regional.id || "")) : "",
       agenciaId: agenciaIdStr,
-      agenciaNome: agencia ? (agencia.label || agencia.nome || agenciaIdStr) : agenciaIdStr,
-      gerenteGestaoId: gerenteGestaoFinal ? String(gerenteGestaoFinal.id || "") : "",
-      gerenteGestaoNome: gerenteGestaoFinal ? (gerenteGestaoFinal.label || gerenteGestaoFinal.nome || String(gerenteGestaoFinal.id || "")) : "",
+      agenciaNome: agenciaNome2,
+      gerenteGestaoId: gerenteGestaoIdStr2,
+      gerenteGestaoNome: gerenteGestaoNome2,
       gerenteId: "",
       gerenteNome: "",
     });
@@ -7672,17 +7723,39 @@ function buildHierarchyRowsFromEstrutura(){
       : (regional ? String(regional.id_segmento || regional.segmento_id || "") : "");
     const segmento = segmentoIdStr ? segmentosMap.get(segmentoIdStr) : null;
 
+    const agenciaNomeRaw3 = agencia ? (agencia.label || agencia.nome || agenciaIdStr) : agenciaIdStr;
+    const agenciaNome3 = agenciaIdStr && agenciaNomeRaw3 && agenciaNomeRaw3 !== agenciaIdStr 
+      ? buildHierarchyLabel(agenciaIdStr, agenciaNomeRaw3) || agenciaNomeRaw3 
+      : agenciaNomeRaw3;
+    
+    const gerenteGestaoNomeRaw3 = gg ? (gg.label || gg.nome || ggIdStr) : ggIdStr;
+    const gerenteGestaoNome3 = ggIdStr && gerenteGestaoNomeRaw3 && gerenteGestaoNomeRaw3 !== ggIdStr
+      ? buildHierarchyLabel(ggIdStr, gerenteGestaoNomeRaw3) || gerenteGestaoNomeRaw3
+      : gerenteGestaoNomeRaw3;
+    
+    const segmentoIdStrFinal3 = segmento ? String(segmento.id || "") : segmentoIdStr || "";
+    const segmentoNomeRaw3 = segmento ? (segmento.label || segmento.nome || segmentoIdStrFinal3) : "";
+    const segmentoNome3 = segmentoIdStrFinal3 && segmentoNomeRaw3 && segmentoNomeRaw3 !== segmentoIdStrFinal3
+      ? buildHierarchyLabel(segmentoIdStrFinal3, segmentoNomeRaw3) || segmentoNomeRaw3
+      : segmentoNomeRaw3;
+    
+    const diretoriaIdStrFinal3 = diretoria ? String(diretoria.id || "") : diretoriaIdStr || "";
+    const diretoriaNomeRaw3 = diretoria ? (diretoria.label || diretoria.nome || diretoriaIdStrFinal3) : "";
+    const diretoriaNome3 = diretoriaIdStrFinal3 && diretoriaNomeRaw3 && diretoriaNomeRaw3 !== diretoriaIdStrFinal3
+      ? buildHierarchyLabel(diretoriaIdStrFinal3, diretoriaNomeRaw3) || diretoriaNomeRaw3
+      : diretoriaNomeRaw3;
+    
     rows.push({
-      segmentoId: segmento ? String(segmento.id || "") : "",
-      segmentoNome: segmento ? (segmento.label || segmento.nome || String(segmento.id || "")) : "",
-      diretoriaId: diretoria ? String(diretoria.id || "") : "",
-      diretoriaNome: diretoria ? (diretoria.label || diretoria.nome || String(diretoria.id || "")) : "",
+      segmentoId: segmentoIdStrFinal3,
+      segmentoNome: segmentoNome3,
+      diretoriaId: diretoriaIdStrFinal3,
+      diretoriaNome: diretoriaNome3,
       regionalId: regional ? String(regional.id || "") : "",
       regionalNome: regional ? (regional.label || regional.nome || String(regional.id || "")) : "",
       agenciaId: agenciaIdStr,
-      agenciaNome: agencia ? (agencia.label || agencia.nome || agenciaIdStr) : agenciaIdStr,
+      agenciaNome: agenciaNome3,
       gerenteGestaoId: ggIdStr,
-      gerenteGestaoNome: gg ? (gg.label || gg.nome || ggIdStr) : ggIdStr,
+      gerenteGestaoNome: gerenteGestaoNome3,
       gerenteId: "",
       gerenteNome: "",
     });
@@ -7726,6 +7799,9 @@ function buildHierarchyOptions(fieldKey, selection, rows){
   const def = HIERARCHY_FIELD_MAP.get(fieldKey);
   if (!def) return [];
   
+  // Campos que sempre devem mostrar ID junto com o nome
+  const fieldsWithIdRequired = new Set(["segmento", "diretoria", "agencia", "ggestao", "gerente"]);
+  
   // Mapeamento de fieldKey para a chave correta em DIMENSION_FILTER_OPTIONS
   const dimensionKeyMap = {
     'ggestao': 'gerenteGestao',
@@ -7747,9 +7823,25 @@ function buildHierarchyOptions(fieldKey, selection, rows){
     const options = [baseOption].concat(
       DIMENSION_FILTER_OPTIONS[dimensionKey].map(opt => {
         const normalized = normOpt(opt);
+        let label = normalized.label || normalized.id;
+        
+        // Para segmento, diretoria, agência, gerente gestão e gerente, garantir que o label inclua o ID
+        if (fieldsWithIdRequired.has(fieldKey) && normalized.id) {
+          const optId = limparTexto(normalized.id);
+          const optLabel = limparTexto(normalized.label);
+          const optName = typeof extractNameFromLabel === "function" ? extractNameFromLabel(optLabel) : optLabel;
+          
+          // Se o label não contém o ID, adiciona usando buildHierarchyLabel
+          if (optId && optName && optId !== optName && !optLabel.includes(optId)) {
+            label = buildHierarchyLabel(optId, optName) || `${optId} - ${optName}`;
+          } else if (optId && !optLabel.includes(optId)) {
+            label = buildHierarchyLabel(optId, optLabel) || `${optId} - ${optLabel}`;
+          }
+        }
+        
         return {
           value: normalized.id || normalized.label,
-          label: normalized.label || normalized.id,
+          label: label || normalized.id,
           aliases: Array.isArray(opt.aliases) ? opt.aliases : [],
         };
       })
@@ -7906,7 +7998,19 @@ function buildHierarchyOptions(fieldKey, selection, rows){
       || limparTexto(row.nome);
     const dimensionLabel = cleanValue ? dimensionOptionMap.get(cleanValue) : undefined;
     let displayLabel = dimensionLabel || explicitLabel || cleanLabel || cleanValue;
-    if (!explicitLabel && comboFieldsWithConcat.has(fieldKey) && idForLabel && nameForLabel && idForLabel !== nameForLabel) {
+    
+    // Para segmento, diretoria, agência, gerente gestão e gerente, sempre incluir ID junto com o nome
+    if (fieldsWithIdRequired.has(fieldKey) && idForLabel && nameForLabel && idForLabel !== nameForLabel) {
+      // Verifica se o label já contém o ID
+      const labelWithId = buildHierarchyLabel(idForLabel, nameForLabel);
+      if (labelWithId && labelWithId !== displayLabel) {
+        displayLabel = labelWithId;
+      } else if (!explicitLabel || !displayLabel.includes(idForLabel)) {
+        displayLabel = `${idForLabel} - ${nameForLabel}`;
+      }
+      aliasCandidates.push(nameForLabel);
+    } else if (!explicitLabel && comboFieldsWithConcat.has(fieldKey) && idForLabel && nameForLabel && idForLabel !== nameForLabel) {
+      // Para outros campos que não estão em fieldsWithIdRequired mas estão em comboFieldsWithConcat
       displayLabel = `${idForLabel} - ${nameForLabel}`;
       aliasCandidates.push(nameForLabel);
     }
@@ -7947,6 +8051,20 @@ function buildHierarchyOptions(fieldKey, selection, rows){
     DIMENSION_FILTER_OPTIONS[dimensionKey].forEach(opt => {
       const normalized = normOpt(opt);
       if (!normalized.id) return;
+      
+      // Para segmento, diretoria, agência, gerente gestão e gerente, garantir que o label inclua o ID
+      if (fieldsWithIdRequired.has(fieldKey)) {
+          const optId = limparTexto(normalized.id);
+          const optLabel = limparTexto(normalized.label);
+          const optName = typeof extractNameFromLabel === "function" ? extractNameFromLabel(optLabel) : optLabel;
+          
+          // Se o label não contém o ID, adiciona usando buildHierarchyLabel
+          if (optId && optName && optId !== optName && !optLabel.includes(optId)) {
+            normalized.label = buildHierarchyLabel(optId, optName) || `${optId} - ${optName}`;
+          } else if (optId && !optLabel.includes(optId)) {
+            normalized.label = buildHierarchyLabel(optId, optLabel) || `${optId} - ${optLabel}`;
+          }
+        }
       register(normalized.id, normalized.label);
     });
   }
