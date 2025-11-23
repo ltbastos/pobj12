@@ -68,7 +68,7 @@ class EstruturaRepository
 
     public function findAllGGestoes(): array
     {
-        $sql = "SELECT DISTINCT funcional AS id, nome AS label
+        $sql = "SELECT DISTINCT funcional AS id, nome AS label, id_agencia
                 FROM d_estrutura
                 WHERE id_cargo = :idCargo
                   AND funcional IS NOT NULL
