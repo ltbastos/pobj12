@@ -61,3 +61,4 @@ vendor/bin/phpunit --coverage-html coverage/
 - [ ] Testes para DTOs
 - [ ] Testes para Entities
 
+

@@ -179,3 +179,4 @@ class StatusIndicadorTest extends TestCase
     }
 }
 
+
