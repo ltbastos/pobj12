@@ -28,26 +28,22 @@ class HistoricoRepository extends BaseRepository
      */
     public function baseSelect(): string
     {
+        // Correspondendo explicitamente aos nomes da tabela fornecida no exemplo
         return "SELECT 
-                    ano,
-                    `database` AS data,
+                    id AS nivel,
+                    data,
+                    id_segmento,
                     segmento,
-                    segmento_id,
+                    id_diretoria,
                     diretoria,
-                    diretoria_nome,
-                    gerencia_regional,
-                    gerencia_regional_nome,
+                    id_regional,
+                    regional,
+                    id_agencia,
                     agencia,
-                    agencia_nome,
-                    gerente_gestao,
-                    gerente_gestao_nome,
-                    gerente,
-                    gerente_nome,
-                    participantes,
-                    `rank`,
-                    pontos,
-                    realizado,
-                    meta
+                    funcional,
+                    grupo,
+                    ranking,
+                    realizado
                 FROM " . Tables::F_HISTORICO_RANKING_POBJ . "
                 WHERE 1=1";
     }
@@ -67,34 +63,31 @@ class HistoricoRepository extends BaseRepository
         }
 
         if ($filters->getSegmento() !== null) {
-            $sql .= " AND segmento_id = :segmento";
+            $sql .= " AND id_segmento = :segmento";
             $params[':segmento'] = $filters->getSegmento();
         }
 
         if ($filters->getDiretoria() !== null) {
-            $sql .= " AND diretoria = :diretoria";
+            $sql .= " AND id_diretoria = :diretoria";
             $params[':diretoria'] = $filters->getDiretoria();
         }
 
         if ($filters->getRegional() !== null) {
-            $sql .= " AND gerencia_regional = :regional";
+            $sql .= " AND id_regional = :regional";
             $params[':regional'] = $filters->getRegional();
         }
 
         if ($filters->getAgencia() !== null) {
-            $sql .= " AND agencia = :agencia";
+            $sql .= " AND id_agencia = :agencia";
             $params[':agencia'] = $filters->getAgencia();
         }
 
         if ($filters->getGerenteGestao() !== null) {
-            $sql .= " AND gerente_gestao = :gerente_gestao";
+            $sql .= " AND funcional = :gerente_gestao";
             $params[':gerente_gestao'] = $filters->getGerenteGestao();
         }
 
-        if ($filters->getGerente() !== null) {
-            $sql .= " AND gerente = :gerente";
-            $params[':gerente'] = $filters->getGerente();
-        }
+        // No explicit "gerente" field in new schema, could adapt if such field exists
 
         return ['sql' => $sql, 'params' => $params];
     }
@@ -105,7 +98,8 @@ class HistoricoRepository extends BaseRepository
      */
     protected function getOrderBy(): string
     {
-        return "ORDER BY `database` DESC, nivel, ano";
+        // Supondo que a ordenação principal seja por ranking, depois por realizado desc
+        return "ORDER BY ranking ASC, realizado DESC";
     }
 
     /**
@@ -118,27 +112,27 @@ class HistoricoRepository extends BaseRepository
         $dataIso = DateFormatter::toIsoDate($row['data'] ?? null);
             
         return new HistoricoDTO(
-            $row['nivel'] ?? null,                                    // nivel
-            $row['ano'] ?? null,                                     // ano
-            $dataIso,                                                 // data
-            $dataIso,                                                 // competencia
-            $row['segmento'] ?? null,                                 // segmento
-            $row['segmento_id'] ?? null,                              // segmentoId
-            $row['diretoria'] ?? null,                                // diretoriaId (usando diretoria como ID)
-            $row['diretoria_nome'] ?? null,                           // diretoriaNome
-            $row['gerencia_regional'] ?? null,                        // gerenciaId (usando gerencia_regional como ID)
-            $row['gerencia_regional_nome'] ?? null,                   // gerenciaNome
-            $row['agencia'] ?? null,                                  // agenciaId (usando agencia como ID)
-            $row['agencia_nome'] ?? null,                             // agenciaNome
-            $row['gerente_gestao'] ?? null,                           // gerenteGestaoId (usando gerente_gestao como ID)
-            $row['gerente_gestao_nome'] ?? null,                      // gerenteGestaoNome
-            $row['gerente'] ?? null,                                  // gerenteId (usando gerente como ID)
-            $row['gerente_nome'] ?? null,                             // gerenteNome
-            $row['participantes'] ?? null,                            // participantes
-            $row['rank'] ?? null,                                     // rank
-            ValueFormatter::toFloat($row['pontos'] ?? null),         // pontos
-            ValueFormatter::toFloat($row['realizado'] ?? null),      // realizadoMensal
-            ValueFormatter::toFloat($row['meta'] ?? null)             // metaMensal
+            $row['grupo'] ?? null,                          // nivel -> usando grupo como nivel
+            null,                                           // ano -> não fornecido explicitamente
+            $dataIso,                                       // data
+            $dataIso,                                       // competencia
+            $row['segmento'] ?? null,                       // segmento
+            $row['id_segmento'] ?? null,                    // segmentoId
+            $row['id_diretoria'] ?? null,                   // diretoriaId
+            $row['diretoria'] ?? null,                      // diretoriaNome
+            $row['id_regional'] ?? null,                    // gerenciaId
+            $row['regional'] ?? null,                       // gerenciaNome
+            $row['id_agencia'] ?? null,                     // agenciaId
+            $row['agencia'] ?? null,                        // agenciaNome
+            $row['funcional'] ?? null,                      // gerenteGestaoId (funcional do gerente)
+            null,                                           // gerenteGestaoNome
+            null,                                           // gerenteId
+            null,                                           // gerenteNome
+            null,                                           // participantes (não presente)
+            $row['ranking'] ?? null,                        // rank
+            null,                                           // pontos (não presente)
+            ValueFormatter::toFloat($row['realizado'] ?? null), // realizadoMensal
+            null                                            // metaMensal (não presente)
         );
     }
 }

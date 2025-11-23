@@ -4,7 +4,6 @@ namespace App\Domain\DTO;
 
 class HistoricoDTO extends BaseFactDTO
 {
-    private $ano;
     private $data;
     private $competencia;
     private $segmento;
@@ -27,7 +26,6 @@ class HistoricoDTO extends BaseFactDTO
 
     public function __construct($ano = null, $data = null, $competencia = null, $segmento = null, $segmentoId = null, $diretoriaId = null, $diretoriaNome = null, $gerenciaId = null, $gerenciaNome = null, $agenciaId = null, $agenciaNome = null, $gerenteGestaoId = null, $gerenteGestaoNome = null, $gerenteId = null, $gerenteNome = null, $participantes = null, $rank = null, $pontos = null, $realizadoMensal = null, $metaMensal = null)
     {
-        $this->ano = $ano;
         $this->data = $data;
         $this->competencia = $competencia;
         $this->segmento = $segmento;
@@ -52,7 +50,6 @@ class HistoricoDTO extends BaseFactDTO
     public function toArray()
     {
         return [
-            'ano' => $this->ano,
             'data' => $this->data,
             'competencia' => $this->competencia,
             'segmento' => $this->segmento,
