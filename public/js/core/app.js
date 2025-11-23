@@ -3440,20 +3440,29 @@ function calculatePontosFromApi(period = state.period || {}) {
 function calculateVariavelFromApi(period = state.period || {}) {
   const variavelArray = typeof FACT_VARIAVEL !== "undefined" ? FACT_VARIAVEL : [];
   
-  // Se não houver dados, retorna zero
+  // Se não houver dados, retorna null para indicar que não há dados
   if (!Array.isArray(variavelArray) || variavelArray.length === 0) {
-    return { meta: 0, realizado: 0 };
+    return null;
   }
   
+  const startISO = period.start || "";
+  const endISO = period.end || "";
   const filters = getFilterValues();
   
   let totalMeta = 0;
   let totalRealizado = 0;
+  let hasDataInPeriod = false;
   
   variavelArray.forEach(variavel => {
     if (!variavel) return;
     
-    // Variável não filtra por data - os dados já são agregados por período
+    // Filtra por data se o período estiver definido
+    if (startISO || endISO) {
+      const variavelData = variavel.data || variavel.competencia || "";
+      if (startISO && variavelData && variavelData < startISO) return;
+      if (endISO && variavelData && variavelData > endISO) return;
+      hasDataInPeriod = true;
+    }
     
     // Filtra por estrutura diretamente dos campos da variável
     // Se não houver filtro ativo (selecaoPadrao retorna true), passa automaticamente
@@ -3536,7 +3545,13 @@ function calculateVariavelFromApi(period = state.period || {}) {
     // Soma os valores
     totalMeta += Number(variavel.variavelMeta) || 0;
     totalRealizado += Number(variavel.variavelReal) || 0;
+    hasDataInPeriod = true;
   });
+  
+  // Se há período definido mas não encontrou dados no período, retorna null
+  if ((startISO || endISO) && !hasDataInPeriod) {
+    return null;
+  }
   
   return {
     meta: totalMeta,
@@ -4296,7 +4311,8 @@ function resolveCalendarToday(){
   return todayISO();
 }
 function getCurrentMonthPeriod(){
-  const end = resolveCalendarToday();
+  // No primeiro carregamento, sempre usa a data de hoje (não a última data do calendário)
+  const end = todayISO();
   const start = `${end.slice(0, 7)}-01`;
   return { from: start, to: end };
 }
@@ -10299,17 +10315,17 @@ function renderResumoKPI(summary, context = {}) {
 
   // Calcula variável da API se disponível, senão usa os calculados
   const variavelFromApi = calculateVariavelFromApi(state.period || {});
-  const hasVariavelApi = typeof FACT_VARIAVEL !== "undefined" && Array.isArray(FACT_VARIAVEL) && FACT_VARIAVEL.length > 0;
+  const hasVariavelApi = typeof FACT_VARIAVEL !== "undefined" && Array.isArray(FACT_VARIAVEL) && FACT_VARIAVEL.length > 0 && variavelFromApi !== null;
   const varTotalBase = hasVariavelApi
     ? variavelFromApi.meta
     : (summary.varPossivel != null
       ? toNumber(summary.varPossivel)
-      : (visibleVarMeta != null ? toNumber(visibleVarMeta) : 0));
+      : (visibleVarMeta != null ? toNumber(visibleVarMeta) : null));
   const varRealBase = hasVariavelApi
     ? variavelFromApi.realizado
     : (summary.varAtingido != null
       ? toNumber(summary.varAtingido)
-      : (visibleVarAtingido != null ? toNumber(visibleVarAtingido) : 0));
+      : (visibleVarAtingido != null ? toNumber(visibleVarAtingido) : null));
 
   const resumoAnim = state.animations?.resumo;
   const keyParts = [
@@ -10348,17 +10364,24 @@ function renderResumoKPI(summary, context = {}) {
   };
 
   const buildCard = (titulo, iconClass, atingidos, total, fmtType, visibleAting = null, visibleTotal = null, options = {}) => {
+    // Se ambos atingidos e total forem null, não renderiza o card
+    if (atingidos == null && total == null && visibleAting == null && visibleTotal == null) {
+      return "";
+    }
+    
     const labelText = options.labelText || titulo;
     const labelTitle = escapeHTML(labelText);
     const labelHtml = options.labelHTML || escapeHTML(labelText);
-    const pctRaw = total ? (atingidos / total) * 100 : 0;
+    const atingidosNum = toNumber(atingidos) || 0;
+    const totalNum = toNumber(total) || 0;
+    const pctRaw = totalNum ? (atingidosNum / totalNum) * 100 : 0;
     const pct100 = Math.max(0, Math.min(100, pctRaw));
     const hbClass = hitbarClass(pctRaw);
     const pctLabel = `${pctRaw.toFixed(1)}%`;
     const fillTarget = pct100.toFixed(2);
     const thumbPos = Math.max(0, Math.min(100, pctRaw));
-    const atgTitle = buildTitle("Atingidos", fmtType, atingidos, visibleAting);
-    const totTitle = buildTitle("Total", fmtType, total, visibleTotal);
+    const atgTitle = buildTitle("Atingidos", fmtType, atingidosNum, visibleAting);
+    const totTitle = buildTitle("Total", fmtType, totalNum, visibleTotal);
     const hitbarClasses = ["hitbar", hbClass];
     if (options.emoji) hitbarClasses.push("hitbar--emoji");
     const trackStyle = `style="--target:${fillTarget}%; --thumb:${thumbPos.toFixed(2)}"`;
@@ -10371,8 +10394,8 @@ function renderResumoKPI(summary, context = {}) {
           <div class="kpi-strip__text">
             <span class="kpi-strip__label" title="${labelTitle}">${labelHtml}</span>
             <div class="kpi-strip__stats">
-              <span class="kpi-stat" title="${atgTitle}">Atg: <strong>${formatDisplay(fmtType, atingidos)}</strong></span>
-              <span class="kpi-stat" title="${totTitle}">Total: <strong>${formatDisplay(fmtType, total)}</strong></span>
+              <span class="kpi-stat" title="${atgTitle}">Atg: <strong>${formatDisplay(fmtType, atingidosNum)}</strong></span>
+              <span class="kpi-stat" title="${totTitle}">Total: <strong>${formatDisplay(fmtType, totalNum)}</strong></span>
             </div>
           </div>
         </div>
@@ -10385,23 +10408,31 @@ function renderResumoKPI(summary, context = {}) {
       </div>`;
   };
 
-  kpi.innerHTML = [
+  const cards = [
     buildCard("Indicadores", "ti ti-list-check", indicadoresAtingidos, indicadoresTotal, "int", visibleItemsHitCount),
-    buildCard("Pontos", "ti ti-medal", pontosAtingidos, pontosTotal, "pts", visiblePointsHit),
-    buildCard(
-      "Variável Estimada",
-      "ti ti-cash",
-      varRealBase,
-      varTotalBase,
-      "brl",
-      visibleVarAtingido,
-      visibleVarMeta,
-      {
-        labelText: "Variável Estimada",
-        labelHTML: 'Variável <span class="kpi-label-emphasis">Estimada</span>'
-      }
-    )
-  ].join("");
+    buildCard("Pontos", "ti ti-medal", pontosAtingidos, pontosTotal, "pts", visiblePointsHit)
+  ];
+  
+  // Só adiciona o card de Variável Estimada se houver dados no período
+  if (varRealBase != null || varTotalBase != null || visibleVarAtingido != null || visibleVarMeta != null) {
+    cards.push(
+      buildCard(
+        "Variável Estimada",
+        "ti ti-cash",
+        varRealBase ?? 0,
+        varTotalBase ?? 0,
+        "brl",
+        visibleVarAtingido,
+        visibleVarMeta,
+        {
+          labelText: "Variável Estimada",
+          labelHTML: 'Variável <span class="kpi-label-emphasis">Estimada</span>'
+        }
+      )
+    );
+  }
+  
+  kpi.innerHTML = cards.join("");
 
   triggerBarAnimation(kpi.querySelectorAll('.hitbar'), shouldAnimateResumo);
   if (resumoAnim) resumoAnim.kpiKey = nextResumoKey;
