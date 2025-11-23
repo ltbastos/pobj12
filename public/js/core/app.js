@@ -7791,6 +7791,16 @@ function hierarchyRowMatchesField(row, field, value){
 function filterHierarchyRowsForField(targetField, selection, rows){
   return rows.filter(row => HIERARCHY_FIELDS_DEF.every(field => {
     if (field.key === targetField) return true;
+    
+    // Caso especial: se estamos construindo opções para "ggestao" e não há gerente selecionado,
+    // não filtrar por ggestao (mostrar todos os gerentes de gestão disponíveis)
+    if (targetField === "ggestao" && field.key === "ggestao") {
+      const gerenteDef = HIERARCHY_FIELD_MAP.get("gerente");
+      const gerenteValue = selection.gerente;
+      const gerenteIsDefault = !gerenteValue || gerenteValue === gerenteDef?.defaultValue || selecaoPadrao(gerenteValue);
+      if (gerenteIsDefault) return true; // Não filtrar por ggestao se não há gerente selecionado
+    }
+    
     return hierarchyRowMatchesField(row, field.key, selection[field.key]);
   }));
 }
@@ -8347,12 +8357,107 @@ function adjustHierarchySelection(selection, changedField){
   }
 
   if (changedField === "ggestao" && effective !== def.defaultValue){
-    const meta = findGerenteGestaoMeta(effective) || {};
-    setIf("agencia", meta.agencia);
-    setIf("gerencia", meta.gerencia);
-    setIf("diretoria", meta.diretoria);
-    const agMeta = meta.agencia ? (findAgenciaMeta(meta.agencia) || {}) : {};
-    setIf("segmento", agMeta.segmento || agMeta.segmentoId);
+    // Busca primeiro nos dados de estrutura (DIM_GGESTAO_LOOKUP)
+    const ggIdStr = limparTexto(effective);
+    let agenciaIdStr = "";
+    let regionalIdStr = "";
+    let diretoriaIdStr = "";
+    let segmentoIdStr = "";
+    
+    if (typeof DIM_GGESTAO_LOOKUP !== "undefined" && DIM_GGESTAO_LOOKUP.has(ggIdStr)) {
+      const ggData = DIM_GGESTAO_LOOKUP.get(ggIdStr);
+      agenciaIdStr = String(ggData?.id_agencia || ggData?.agencia || "");
+      
+      if (agenciaIdStr && typeof DIM_AGENCIAS_LOOKUP !== "undefined") {
+        // Tenta buscar por ID primeiro
+        let agenciaData = DIM_AGENCIAS_LOOKUP.get(agenciaIdStr);
+        // Se não encontrou, tenta buscar por todas as chaves possíveis
+        if (!agenciaData) {
+          for (const [key, value] of DIM_AGENCIAS_LOOKUP.entries()) {
+            if (String(value?.id || key) === agenciaIdStr) {
+              agenciaData = value;
+              break;
+            }
+          }
+        }
+        
+        if (agenciaData) {
+          regionalIdStr = String(agenciaData?.id_regional || agenciaData?.regional_id || agenciaData?.gerencia_regional_id || "");
+          
+          if (regionalIdStr && typeof DIM_REGIONAIS_LOOKUP !== "undefined") {
+            let regionalData = DIM_REGIONAIS_LOOKUP.get(regionalIdStr);
+            if (!regionalData) {
+              for (const [key, value] of DIM_REGIONAIS_LOOKUP.entries()) {
+                if (String(value?.id || key) === regionalIdStr) {
+                  regionalData = value;
+                  break;
+                }
+              }
+            }
+            
+            if (regionalData) {
+              diretoriaIdStr = String(regionalData?.id_diretoria || regionalData?.diretoria_id || "");
+              
+              if (diretoriaIdStr && typeof DIM_DIRETORIAS_LOOKUP !== "undefined") {
+                let diretoriaData = DIM_DIRETORIAS_LOOKUP.get(diretoriaIdStr);
+                if (!diretoriaData) {
+                  for (const [key, value] of DIM_DIRETORIAS_LOOKUP.entries()) {
+                    if (String(value?.id || key) === diretoriaIdStr) {
+                      diretoriaData = value;
+                      break;
+                    }
+                  }
+                }
+                
+                if (diretoriaData) {
+                  segmentoIdStr = String(diretoriaData?.id_segmento || diretoriaData?.segmento_id || "");
+                }
+              }
+            }
+          } else if (agenciaData?.id_diretoria) {
+            // Se não tem regional, tenta buscar diretoria diretamente da agência
+            diretoriaIdStr = String(agenciaData.id_diretoria || agenciaData.diretoria_id || "");
+            if (diretoriaIdStr && typeof DIM_DIRETORIAS_LOOKUP !== "undefined") {
+              let diretoriaData = DIM_DIRETORIAS_LOOKUP.get(diretoriaIdStr);
+              if (!diretoriaData) {
+                for (const [key, value] of DIM_DIRETORIAS_LOOKUP.entries()) {
+                  if (String(value?.id || key) === diretoriaIdStr) {
+                    diretoriaData = value;
+                    break;
+                  }
+                }
+              }
+              
+              if (diretoriaData) {
+                segmentoIdStr = String(diretoriaData?.id_segmento || diretoriaData?.segmento_id || "");
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Se não encontrou nos dados de estrutura, tenta buscar no meta antigo
+    if (!agenciaIdStr) {
+      const meta = findGerenteGestaoMeta(effective) || {};
+      agenciaIdStr = meta.agencia || "";
+      regionalIdStr = meta.gerencia || meta.regionalId || meta.regional || "";
+      diretoriaIdStr = meta.diretoria || meta.diretoriaId || "";
+      segmentoIdStr = meta.segmento || meta.segmentoId || "";
+      
+      // Se encontrou agência no meta, tenta buscar regional e diretoria através da agência
+      if (agenciaIdStr && !regionalIdStr) {
+        const agMeta = findAgenciaMeta(agenciaIdStr) || {};
+        regionalIdStr = agMeta.gerencia || agMeta.regionalId || agMeta.regional || regionalIdStr;
+        diretoriaIdStr = agMeta.diretoria || agMeta.diretoriaId || diretoriaIdStr;
+        segmentoIdStr = agMeta.segmento || agMeta.segmentoId || segmentoIdStr;
+      }
+    }
+    
+    setIf("agencia", agenciaIdStr);
+    setIf("gerencia", regionalIdStr);
+    setIf("diretoria", diretoriaIdStr);
+    setIf("segmento", segmentoIdStr);
   }
 
   if (changedField === "gerente" && effective !== def.defaultValue){
