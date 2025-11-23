@@ -22,7 +22,7 @@ function normalizarLinhasCalendario(rows){
     const mes = raw.mes || data.slice(5, 7);
     const mesNome = raw.mes_nome || raw.mesNome || "";
     const dia = raw.dia || data.slice(8, 10);
-    const diaSemana = raw.dia_semana || raw.diaSemana || "";
+    const diaSemana = raw.dia_da_semana || raw.dia_semana || raw.diaSemana || "";
     const semana = raw.semana || "";
     const trimestre = raw.trimestre || "";
     const semestre = raw.semestre || "";
@@ -35,8 +35,16 @@ function normalizarLinhasCalendario(rows){
 /* ===== Função para carregar dados de calendário da API ===== */
 async function loadCalendarioData(){
   try {
-    const calendario = await apiGet('/calendario').catch(() => []);
-    return Array.isArray(calendario) ? calendario : [];
+    const response = await apiGet('/calendario').catch(() => null);
+    if (!response) return [];
+    
+    // Verifica se a resposta está no novo formato { success, data }
+    if (response && typeof response === 'object' && 'success' in response && 'data' in response) {
+      return response.success && Array.isArray(response.data) ? response.data : [];
+    }
+    
+    // Fallback para formato antigo (array direto)
+    return Array.isArray(response) ? response : [];
   } catch (error) {
     console.error('Erro ao carregar dados de calendário:', error);
     return [];

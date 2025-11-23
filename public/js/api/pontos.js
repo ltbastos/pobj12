@@ -34,8 +34,16 @@ function normalizarLinhasFatoPontos(rows){
 /* ===== Função para carregar dados de pontos da API ===== */
 async function loadPontosData(){
   try {
-    const pontos = await apiGet('/pontos').catch(() => []);
-    return Array.isArray(pontos) ? pontos : [];
+    const response = await apiGet('/pontos').catch(() => null);
+    if (!response) return [];
+    
+    // Verifica se a resposta está no novo formato { success, data }
+    if (response && typeof response === 'object' && 'success' in response && 'data' in response) {
+      return response.success && Array.isArray(response.data) ? response.data : [];
+    }
+    
+    // Fallback para formato antigo (array direto)
+    return Array.isArray(response) ? response : [];
   } catch (error) {
     console.error('Erro ao carregar dados de pontos:', error);
     return [];

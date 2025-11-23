@@ -167,7 +167,27 @@ function deriveGerenteGestaoIdFromAgency(agencia){
 /* ===== Função para carregar dados de estrutura da API ===== */
 async function loadEstruturaData(){
   try {
-    const dimensions = await apiGet('/estrutura', { _t: Date.now() }).catch(() => ({}));
+    const response = await apiGet('/estrutura', { _t: Date.now() }).catch(() => null);
+    if (!response) {
+      return {
+        segmentos: [],
+        diretorias: [],
+        regionais: [],
+        agencias: [],
+        gerentesGestao: [],
+        gerentes: [],
+      };
+    }
+    
+    // Verifica se a resposta está no novo formato { success, data }
+    let dimensions = {};
+    if (response && typeof response === 'object' && 'success' in response && 'data' in response) {
+      dimensions = response.success && typeof response.data === 'object' ? response.data : {};
+    } else {
+      // Fallback para formato antigo (objeto direto)
+      dimensions = typeof response === 'object' ? response : {};
+    }
+    
     return {
       segmentos: dimensions.segmentos || [],
       diretorias: dimensions.diretorias || [],

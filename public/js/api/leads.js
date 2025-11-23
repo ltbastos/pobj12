@@ -7,8 +7,16 @@
 /* ===== Função para carregar dados de leads da API ===== */
 async function loadLeadsData(){
   try {
-    const leads = await apiGet('/leads').catch(() => []);
-    return Array.isArray(leads) ? leads : [];
+    const response = await apiGet('/leads').catch(() => null);
+    if (!response) return [];
+    
+    // Verifica se a resposta está no novo formato { success, data }
+    if (response && typeof response === 'object' && 'success' in response && 'data' in response) {
+      return response.success && Array.isArray(response.data) ? response.data : [];
+    }
+    
+    // Fallback para formato antigo (array direto)
+    return Array.isArray(response) ? response : [];
   } catch (error) {
     console.error('Erro ao carregar dados de leads:', error);
     return [];

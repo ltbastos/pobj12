@@ -184,8 +184,16 @@ function normalizarLinhasFatoRealizados(rows){
 /* ===== Função para carregar dados de realizados da API ===== */
 async function loadRealizadosData(){
   try {
-    const realizados = await apiGet('/realizados').catch(() => []);
-    return Array.isArray(realizados) ? realizados : [];
+    const response = await apiGet('/realizados').catch(() => null);
+    if (!response) return [];
+    
+    // Verifica se a resposta está no novo formato { success, data }
+    if (response && typeof response === 'object' && 'success' in response && 'data' in response) {
+      return response.success && Array.isArray(response.data) ? response.data : [];
+    }
+    
+    // Fallback para formato antigo (array direto)
+    return Array.isArray(response) ? response : [];
   } catch (error) {
     console.error('Erro ao carregar dados de realizados:', error);
     return [];

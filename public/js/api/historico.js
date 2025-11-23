@@ -96,8 +96,16 @@ function normalizarLinhasHistoricoRankingPobj(rows){
 /* ===== Função para carregar dados de histórico da API ===== */
 async function loadHistoricoData(){
   try {
-    const historico = await apiGet('/historico').catch(() => []);
-    return Array.isArray(historico) ? historico : [];
+    const response = await apiGet('/historico').catch(() => null);
+    if (!response) return [];
+    
+    // Verifica se a resposta está no novo formato { success, data }
+    if (response && typeof response === 'object' && 'success' in response && 'data' in response) {
+      return response.success && Array.isArray(response.data) ? response.data : [];
+    }
+    
+    // Fallback para formato antigo (array direto)
+    return Array.isArray(response) ? response : [];
   } catch (error) {
     console.error('Erro ao carregar dados de histórico:', error);
     return [];

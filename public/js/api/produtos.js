@@ -74,8 +74,16 @@ function normalizarDimProdutos(rows){
 /* ===== Função para carregar dados de produtos da API ===== */
 async function loadProdutosData(){
   try {
-    const produtos = await apiGet('/produtos').catch(() => []);
-    return Array.isArray(produtos) ? produtos : [];
+    const response = await apiGet('/produtos').catch(() => null);
+    if (!response) return [];
+    
+    // Verifica se a resposta está no novo formato { success, data }
+    if (response && typeof response === 'object' && 'success' in response && 'data' in response) {
+      return response.success && Array.isArray(response.data) ? response.data : [];
+    }
+    
+    // Fallback para formato antigo (array direto)
+    return Array.isArray(response) ? response : [];
   } catch (error) {
     console.error('Erro ao carregar dados de produtos:', error);
     return [];

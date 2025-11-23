@@ -302,8 +302,16 @@ function updateStatusFilterOptions(preserveSelection = true) {
 /* ===== Função para carregar dados de status da API ===== */
 async function loadStatusData(){
   try {
-    const status = await apiGet('/status_indicadores').catch(() => []);
-    return Array.isArray(status) ? status : [];
+    const response = await apiGet('/status_indicadores').catch(() => null);
+    if (!response) return [];
+    
+    // Verifica se a resposta está no novo formato { success, data }
+    if (response && typeof response === 'object' && 'success' in response && 'data' in response) {
+      return response.success && Array.isArray(response.data) ? response.data : [];
+    }
+    
+    // Fallback para formato antigo (array direto)
+    return Array.isArray(response) ? response : [];
   } catch (error) {
     console.error('Erro ao carregar dados de status:', error);
     return [];

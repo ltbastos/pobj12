@@ -97,8 +97,16 @@ function normalizarLinhasMesu(rows){
 /* ===== Função para carregar dados MESU da API ===== */
 async function loadMesuData(){
   try {
-    const mesu = await apiGet('/mesu').catch(() => []);
-    return Array.isArray(mesu) ? mesu : [];
+    const response = await apiGet('/mesu').catch(() => null);
+    if (!response) return [];
+    
+    // Verifica se a resposta está no novo formato { success, data }
+    if (response && typeof response === 'object' && 'success' in response && 'data' in response) {
+      return response.success && Array.isArray(response.data) ? response.data : [];
+    }
+    
+    // Fallback para formato antigo (array direto)
+    return Array.isArray(response) ? response : [];
   } catch (error) {
     console.error('Erro ao carregar dados MESU:', error);
     return [];

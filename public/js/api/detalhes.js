@@ -240,8 +240,16 @@ function normalizarLinhasFatoDetalhes(rows){
 /* ===== Função para carregar dados de detalhes da API ===== */
 async function loadDetalhesData(){
   try {
-    const detalhes = await apiGet('/detalhes').catch(() => []);
-    return Array.isArray(detalhes) ? detalhes : [];
+    const response = await apiGet('/detalhes').catch(() => null);
+    if (!response) return [];
+    
+    // Verifica se a resposta está no novo formato { success, data }
+    if (response && typeof response === 'object' && 'success' in response && 'data' in response) {
+      return response.success && Array.isArray(response.data) ? response.data : [];
+    }
+    
+    // Fallback para formato antigo (array direto)
+    return Array.isArray(response) ? response : [];
   } catch (error) {
     console.error('Erro ao carregar dados de detalhes:', error);
     return [];
