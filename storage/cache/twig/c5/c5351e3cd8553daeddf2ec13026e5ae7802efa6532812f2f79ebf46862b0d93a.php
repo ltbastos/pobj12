@@ -62,6 +62,7 @@ class __TwigTemplate_4027f91da9c4608afa5e2f1546bf3a81648cdddd70307eda3e805679703
   <script src=\"/js/api/pontos.js\"></script>
   
   <!-- Core Application -->
+  <script src=\"/js/core/filters.js\"></script>
   <script src=\"/js/core/app.js\"></script>
   
   <!-- Features -->
@@ -110,6 +111,7 @@ class __TwigTemplate_4027f91da9c4608afa5e2f1546bf3a81648cdddd70307eda3e805679703
   <script src=\"/js/api/pontos.js\"></script>
   
   <!-- Core Application -->
+  <script src=\"/js/core/filters.js\"></script>
   <script src=\"/js/core/app.js\"></script>
   
   <!-- Features -->

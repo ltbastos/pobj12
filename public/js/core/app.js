@@ -525,90 +525,13 @@ function selecaoPadrao(value){
   return DEFAULT_SELECTION_MARKERS.has(simplificarTexto(value));
 }
 
-function matchesSelection(filterValue, ...candidates){
-  const esperado = limparTexto(filterValue);
-  if (!esperado) return false;
-  const esperadoSimple = simplificarTexto(esperado);
-  const lista = [];
-  candidates.forEach(item => {
-    if (Array.isArray(item)) lista.push(...item);
-    else lista.push(item);
-  });
-  return lista.some(candidate => {
-    const valor = limparTexto(candidate);
-    if (!valor) return false;
-    if (valor === esperado) return true;
-    return simplificarTexto(valor) === esperadoSimple;
-  });
-}
+// matchesSelection movido para filters.js
 
-function resolveSelectLabel(selector, value){
-  if (!selector || value == null || selecaoPadrao(value)) return "";
-  const select = document.querySelector(selector);
-  if (!select) return "";
-  const text = limparTexto(value);
-  if (!text) return "";
-  const simple = simplificarTexto(text);
-  const options = Array.from(select.options || []);
-  for (const option of options) {
-    const optionValue = option?.value ?? "";
-    const optionText = option?.textContent?.trim() || "";
-    if (matchesSelection(text, optionValue, optionText)) return optionText;
-    if (simple && simplificarTexto(optionText) === simple) return optionText;
-  }
-  return "";
-}
+// resolveSelectLabel movido para filters.js
 
-const FILTER_LEVEL_CONFIG = [
-  { key: "diretoria", selector: "#f-diretoria", levelKey: "diretoria" },
-  { key: "gerencia", selector: "#f-gerencia", levelKey: "gerencia" },
-  { key: "agencia", selector: "#f-agencia", levelKey: "agencia" },
-  { key: "ggestao", selector: "#f-gerente-gestao", levelKey: "gGestao" },
-  { key: "gerente", selector: "#f-gerente", levelKey: "gerente" },
-];
+// FILTER_LEVEL_CONFIG, buildLineageFromFilters e buildHierarchyLabel movidos para filters.js
 
-function buildLineageFromFilters(filters = {}){
-  const lineage = [];
-  FILTER_LEVEL_CONFIG.forEach(({ key, selector, levelKey }) => {
-    const value = filters?.[key];
-    if (!value || selecaoPadrao(value)) return;
-    const label = resolveSelectLabel(selector, value) || limparTexto(value);
-    lineage.push({ levelKey, value, label });
-  });
-  return lineage;
-}
-
-function buildHierarchyLabel(id, nome){
-  const codigo = limparTexto(id);
-  const label = limparTexto(nome);
-  if (codigo && label){
-    if (label.startsWith(`${codigo} `) || label.startsWith(`${codigo}-`)) return label;
-    if (label.includes(`${codigo} -`) || label.includes(`${codigo}-`)) return label;
-    if (/^\d/.test(codigo)) return `${codigo} - ${label}`;
-  }
-  if (label) return label;
-  if (codigo) return codigo;
-  return "";
-}
-
-function matchesSegmentFilter(filterValue, ...candidates){
-  const esperado = limparTexto(filterValue);
-  if (!esperado) return false;
-  if (matchesSelection(filterValue, ...candidates)) return true;
-  const esperadoScenario = getSegmentScenarioFromValue(esperado);
-  if (!esperadoScenario) return false;
-  const lista = [];
-  candidates.forEach(item => {
-    if (Array.isArray(item)) lista.push(...item);
-    else lista.push(item);
-  });
-  return lista.some(candidate => {
-    const valor = limparTexto(candidate);
-    if (!valor) return false;
-    const scenario = getSegmentScenarioFromValue(valor);
-    return scenario === esperadoScenario;
-  });
-}
+// matchesSegmentFilter movido para filters.js
 
 function getFlatSubIndicatorOptions(indicadorId){
   const key = limparTexto(indicadorId);
@@ -7265,15 +7188,14 @@ function renderAppliedFilters() {
   items.forEach(ch => bar.appendChild(ch));
 }
 
-const HIERARCHY_FIELDS_DEF = [
-  { key: "segmento",  select: "#f-segmento",  defaultValue: "Todos", defaultLabel: "Todos",  idKey: "segmentoId",    labelKey: "segmentoNome",    fallback: () => SEGMENTOS_DATA },
-  { key: "diretoria", select: "#f-diretoria", defaultValue: "Todas", defaultLabel: "Todas", idKey: "diretoriaId",   labelKey: "diretoriaNome",   fallback: () => RANKING_DIRECTORIAS },
-  { key: "gerencia",  select: "#f-gerencia",  defaultValue: "Todas", defaultLabel: "Todas", idKey: "regionalId",    labelKey: "regionalNome",    fallback: () => RANKING_GERENCIAS },
-  { key: "agencia",   select: "#f-agencia",   defaultValue: "Todas", defaultLabel: "Todas", idKey: "agenciaId",     labelKey: "agenciaNome",     fallback: () => RANKING_AGENCIAS },
-  { key: "ggestao",   select: "#f-gerente-gestao",   defaultValue: "Todos", defaultLabel: "Todos", idKey: "gerenteGestaoId", labelKey: "gerenteGestaoNome", fallback: () => GERENTES_GESTAO },
-  { key: "gerente",   select: "#f-gerente",   defaultValue: "Todos", defaultLabel: "Todos", idKey: "gerenteId",      labelKey: "gerenteNome",      fallback: () => RANKING_GERENTES }
-];
-const HIERARCHY_FIELD_MAP = new Map(HIERARCHY_FIELDS_DEF.map(field => [field.key, field]));
+// HIERARCHY_FIELDS_DEF e HIERARCHY_FIELD_MAP movidos para filters.js
+// buildHierarchyFallbackRow, buildHierarchyFallbackRows, resolveFallbackMeta, hierarchyDefaultSelection,
+// getHierarchyRows, buildHierarchyRowsFromEstrutura, getHierarchySelectionFromDOM, hierarchyRowMatchesField,
+// filterHierarchyRowsForField, buildHierarchyOptions, setSelectOptions, refreshHierarchyCombos,
+// adjustHierarchySelection, handleHierarchySelectionChange, ensureSegmentoField, getFilterValues,
+// filterRowsExcept, filterRows, autoSnapViewToFilters, wireClearFiltersButton, clearFilters,
+// setMobileFiltersState, openMobileFilters, closeMobileFilters, setupMobileFilters,
+// ensureStatusFilterInAdvanced, renderAppliedFilters - todas movidas para filters.js
 
 function buildHierarchyFallbackRow(fieldKey, item) {
   const def = HIERARCHY_FIELD_MAP.get(fieldKey);
