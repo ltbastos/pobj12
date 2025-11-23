@@ -6,12 +6,13 @@ return [
 
         'db' => [
             'driver' => 'mysql',
-            'host' => 'localhost:3307',
-            'database' => 'POBJ',
-            'username' => 'root',
-            'password' => '',
-            'charset' => 'utf8',
-            'collation' => 'utf8_unicode_ci',
+            'host' => getenv('DB_HOST'),
+            'port' => getenv('DB_PORT'),
+            'database' => getenv('DB_NAME'),
+            'username' => getenv('DB_USER'),
+            'password' => getenv('DB_PASS'),
+            'charset' => getenv('DB_CHARSET'),
+            'collation' => getenv('DB_COLLATION'),
         ],
 
         'view' => [

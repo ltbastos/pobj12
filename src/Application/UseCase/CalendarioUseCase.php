@@ -13,5 +13,15 @@ class CalendarioUseCase extends AbstractUseCase
     {
         parent::__construct($repository);
     }
+
+    /**
+     * Retorna todos os registros do calendário
+     * Calendário não utiliza filtros nem paginação
+     * @return array
+     */
+    public function getAll(): array
+    {
+        return $this->repository->fetch(null);
+    }
 }
 

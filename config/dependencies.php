@@ -9,14 +9,14 @@ return function ($container) {
 
 function registerDatabase($container)
 {
-    // O Pimple gerencia singletons por padrão - esta função será executada apenas uma vez por requisição
-    // Cada chamada a $c->get(PDO::class) retornará a mesma instância dentro da mesma requisição
+
     $container[PDO::class] = function ($c) {
         $settings = $c->get('settings')['db'];
         $dsn = sprintf(
-            '%s:host=%s;dbname=%s;charset=%s',
+            '%s:host=%s;port=%s;dbname=%s;charset=%s',
             $settings['driver'],
             $settings['host'],
+            $settings['port'],
             $settings['database'],
             $settings['charset']
         );
