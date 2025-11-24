@@ -11655,13 +11655,70 @@ function buildResumoLegacySections(sections = []) {
       const key = simplificarTexto(def.id || def.nome);
       const existingNode = key ? map.get(key) : null;
       if (key) map.delete(key);
+      
+      // Busca métrica de PRODUCT_INDEX para subindicador
+      const subProdutoId = def.id || def.slug;
+      const subProdutoMeta = subProdutoId ? PRODUCT_INDEX.get(subProdutoId) : null;
+      const subMetricaFromProdutos = subProdutoMeta?.metrica || subProdutoMeta?.metric || def.metrica || def.metric || fallbackMetric;
+      
+      // Agrega meta_mens do API META por subindicador
+      const metasArray = typeof FACT_METAS !== "undefined" ? FACT_METAS : [];
+      let subMetaAgregada = 0;
+      const processedSubMetaRegistros = new Set();
+      metasArray.forEach(meta => {
+        if (!meta) return;
+        // Só considera se for subindicador (tem subprodutoId)
+        const metaSubProdutoId = meta.subprodutoId || meta.subId || meta.subindicadorId;
+        if (!metaSubProdutoId) return;
+        
+        const metaSubSlug = simplificarTexto(metaSubProdutoId);
+        const subProdutoSlug = simplificarTexto(subProdutoId);
+        const matches = metaSubSlug === subProdutoSlug || 
+          simplificarTexto(def.id) === metaSubSlug ||
+          simplificarTexto(def.nome) === metaSubSlug;
+        
+        if (matches) {
+          const metaRegistroId = meta.registroId || meta.registro_id || "";
+          if (metaRegistroId && processedSubMetaRegistros.has(metaRegistroId)) {
+            return; // Evita duplicação
+          }
+          if (metaRegistroId) {
+            processedSubMetaRegistros.add(metaRegistroId);
+          }
+          const metaMens = toNumber(meta.meta_mens ?? meta.meta ?? 0);
+          subMetaAgregada += metaMens;
+        }
+      });
+      
+      // Agrega real_mens do API REALIZADO por subindicador (SOMA)
+      const realizadosArray = typeof FACT_REALIZADOS !== "undefined" ? FACT_REALIZADOS : [];
+      let subRealizadoAgregado = 0;
+      realizadosArray.forEach(realizado => {
+        if (!realizado) return;
+        // Só considera se for subindicador (tem subprodutoId)
+        const realSubProdutoId = realizado.subprodutoId || realizado.subId || realizado.subindicadorId;
+        if (!realSubProdutoId) return;
+        
+        const realSubSlug = simplificarTexto(realSubProdutoId);
+        const subProdutoSlug = simplificarTexto(subProdutoId);
+        const matches = realSubSlug === subProdutoSlug || 
+          simplificarTexto(def.id) === realSubSlug ||
+          simplificarTexto(def.nome) === realSubSlug;
+        
+        if (matches) {
+          const realMens = toNumber(realizado.real_mens ?? realizado.realizado ?? 0);
+          subRealizadoAgregado += realMens;
+        }
+      });
+      
       const baseNode = existingNode || normalizeNodeMetrics({
         id: def.id,
         nome: def.nome,
         label: def.nome,
-        metrica: def.metrica || def.metric || fallbackMetric,
-        meta: 0,
-        realizado: 0,
+        metrica: subMetricaFromProdutos,
+        metric: subMetricaFromProdutos,
+        meta: subMetaAgregada,
+        realizado: subRealizadoAgregado,
         variavelMeta: 0,
         variavelReal: 0,
         peso: Number(def.peso) || 0,
@@ -11672,7 +11729,16 @@ function buildResumoLegacySections(sections = []) {
         metaDiariaNecessaria: 0,
         projecao: 0,
         ultimaAtualizacao: ""
-      }, def.metrica || def.metric || fallbackMetric);
+      }, subMetricaFromProdutos);
+      
+      // Se já existe um nó, atualiza com dados agregados das APIs
+      if (existingNode) {
+        baseNode.meta = subMetaAgregada;
+        baseNode.realizado = subRealizadoAgregado;
+        baseNode.metrica = subMetricaFromProdutos;
+        baseNode.metric = subMetricaFromProdutos;
+      }
+      
       baseNode.id = baseNode.id || def.id || key || baseNode.nome;
       baseNode.nome = def.nome || baseNode.nome;
       baseNode.label = baseNode.nome;
@@ -11870,16 +11936,81 @@ function buildResumoLegacySections(sections = []) {
           }
         }
 
+        // Busca métrica de PRODUCT_INDEX (d_produtos.metrica)
+        const produtoId = indDef.id || indDef.slug || match?.id;
+        const produtoMeta = produtoId ? PRODUCT_INDEX.get(produtoId) : null;
+        const metricaFromProdutos = produtoMeta?.metrica || produtoMeta?.metric || match?.metrica || match?.metric || "valor";
+        
+        // Agrega meta_mens do API META por produto (apenas indicadores, não subindicadores)
+        const metasArray = typeof FACT_METAS !== "undefined" ? FACT_METAS : [];
+        let metaAgregada = 0;
+        const processedMetaRegistros = new Set();
+        metasArray.forEach(meta => {
+          if (!meta) return;
+          // Só considera se não for subindicador (subprodutoId vazio)
+          if (meta.subprodutoId || meta.subId || meta.subindicadorId) return;
+          
+          const metaProdutoId = meta.produtoId || meta.produto || meta.indicadorId;
+          if (!metaProdutoId) return;
+          
+          // Verifica se o produto corresponde
+          const metaSlug = simplificarTexto(metaProdutoId);
+          const produtoSlug = simplificarTexto(produtoId);
+          const matches = metaSlug === produtoSlug || 
+            candidates.some(c => simplificarTexto(c) === metaSlug);
+          
+          if (matches) {
+            const metaRegistroId = meta.registroId || meta.registro_id || "";
+            if (metaRegistroId && processedMetaRegistros.has(metaRegistroId)) {
+              return; // Evita duplicação
+            }
+            if (metaRegistroId) {
+              processedMetaRegistros.add(metaRegistroId);
+            }
+            const metaMens = toNumber(meta.meta_mens ?? meta.meta ?? 0);
+            metaAgregada += metaMens;
+          }
+        });
+        
+        // Agrega real_mens do API REALIZADO por produto (SOMA) - apenas indicadores, não subindicadores
+        const realizadosArray = typeof FACT_REALIZADOS !== "undefined" ? FACT_REALIZADOS : [];
+        let realizadoAgregado = 0;
+        realizadosArray.forEach(realizado => {
+          if (!realizado) return;
+          // Só considera se não for subindicador (subprodutoId vazio)
+          if (realizado.subprodutoId || realizado.subId || realizado.subindicadorId) return;
+          
+          const realProdutoId = realizado.produtoId || realizado.produto || realizado.indicadorId;
+          if (!realProdutoId) return;
+          
+          // Verifica se o produto corresponde
+          const realSlug = simplificarTexto(realProdutoId);
+          const produtoSlug = simplificarTexto(produtoId);
+          const matches = realSlug === produtoSlug || 
+            candidates.some(c => simplificarTexto(c) === realSlug);
+          
+          if (matches) {
+            const realMens = toNumber(realizado.real_mens ?? realizado.realizado ?? 0);
+            realizadoAgregado += realMens;
+          }
+        });
+
         let rowItem;
         if (match) {
           rowItem = cloneItem(match, indDef.nome);
+          // Sobrescreve com dados agregados das APIs
+          rowItem.meta = metaAgregada;
+          rowItem.realizado = realizadoAgregado;
+          rowItem.metrica = metricaFromProdutos;
+          rowItem.metric = metricaFromProdutos;
         } else {
           rowItem = {
             id: indDef.id || indDef.slug,
             nome: indDef.nome,
-            metric: "valor",
-            meta: 0,
-            realizado: 0,
+            metric: metricaFromProdutos,
+            metrica: metricaFromProdutos,
+            meta: metaAgregada,
+            realizado: realizadoAgregado,
             variavelMeta: 0,
             variavelReal: 0,
             pontosMeta: 0,
@@ -11897,7 +12028,7 @@ function buildResumoLegacySections(sections = []) {
           };
         }
 
-        rowItem = normalizeNodeMetrics(rowItem, rowItem.metric || match?.metric || "valor");
+        rowItem = normalizeNodeMetrics(rowItem, rowItem.metric || rowItem.metrica || metricaFromProdutos || "valor");
 
         if (!rowItem.familiaId) rowItem.familiaId = famDef.id;
         rowItem.familiaNome = famDef.nome;
