@@ -141,6 +141,15 @@ class RealizadosRepository extends BaseRepository
             $params[':subindicador'] = $filters->getSubindicador();
         }
 
+        if ($filters->getDataInicio() !== null) {
+            $sql .= " AND r.data_realizado >= :dataInicio";
+            $params[':dataInicio'] = $filters->getDataInicio();
+        }
+        if ($filters->getDataFim() !== null) {
+            $sql .= " AND r.data_realizado <= :dataFim";
+            $params[':dataFim'] = $filters->getDataFim();
+        }
+        
         return ['sql' => $sql, 'params' => $params];
     }
 

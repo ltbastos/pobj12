@@ -133,6 +133,15 @@ class MetasRepository extends BaseRepository
             $sql .= " AND m.id_subindicador = :subindicador";
             $params[':subindicador'] = $filters->getSubindicador();
         }
+        
+        if ($filters->getDataInicio() !== null) {
+            $sql .= " AND m.data_meta >= :dataInicio";
+            $params[':dataInicio'] = $filters->getDataInicio();
+        }
+        if ($filters->getDataFim() !== null) {
+            $sql .= " AND m.data_meta <= :dataFim";
+            $params[':dataFim'] = $filters->getDataFim();
+        }
 
         return ['sql' => $sql, 'params' => $params];
     }
