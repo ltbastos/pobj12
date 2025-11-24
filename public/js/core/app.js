@@ -5663,6 +5663,18 @@ async function getData(){
     };
   }
 
+  // Se não há dados reais, retorna estrutura vazia com valores zerados em vez de gerar dados aleatórios
+  const emptyDashboard = buildDashboardDatasetFromRows([], period);
+  return {
+    sections: emptyDashboard.sections,
+    summary: emptyDashboard.summary,
+    ranking: [],
+    period,
+    facts: { dados: [], variavel: [], campanhas: [], historico: typeof FACT_HISTORICO_RANKING_POBJ !== "undefined" ? FACT_HISTORICO_RANKING_POBJ : [] }
+  };
+
+  // Código abaixo não será mais executado - mantido apenas para referência
+  /*
   const startDt = dateUTCFromISO(period.start);
   const endDt = dateUTCFromISO(period.end);
   let startRef = startDt;
@@ -5981,6 +5993,7 @@ async function getData(){
     period,
     facts: { dados: fDados, variavel: fVariavel, campanhas: fCampanhas, historico: typeof FACT_HISTORICO_RANKING_POBJ !== "undefined" ? FACT_HISTORICO_RANKING_POBJ : [] }
   };
+  */
 }
 
 /* ===== Aqui eu monto a sidebar retrátil direto via JS, sem depender do CSS ===== */
@@ -6007,6 +6020,7 @@ const state = {
   compact:false,
   contractIndex:[],
   lastNonContractView:"diretoria",
+  _filtersApplied:false,
 
   exec:{ heatmapMode:"secoes", seriesColors:new Map() },
 
@@ -6473,6 +6487,8 @@ function openDatePopover(anchor){
     document.getElementById("lbl-periodo-inicio").textContent = formatBRDate(s);
     document.getElementById("lbl-periodo-fim").textContent    = formatBRDate(e);
     closeDatePopover();
+    // Marca que os filtros foram aplicados pelo usuário
+    state._filtersApplied = true;
     // Recarrega dados de período quando data muda
     try {
       await loadPeriodData();
@@ -6517,6 +6533,8 @@ function wireClearFiltersButton() {
 async function clearFilters() {
   // Flag para indicar que estamos limpando (evita chamadas de API)
   state._isClearingFilters = true;
+  // Reseta a flag de filtros aplicados
+  state._filtersApplied = false;
   
   try {
     // Limpa filtros de hierarquia (segmento, diretoria, gerencia) deixando vazios
@@ -9970,6 +9988,8 @@ function bindEvents() {
   // Função para aplicar filtros (chamada pelo botão "Filtrar")
   async function applyFilters() {
     await withSpinner(async () => {
+      // Marca que os filtros foram aplicados pelo usuário
+      state._filtersApplied = true;
       // Recarrega dados de período quando filtro é aplicado
       await loadPeriodData();
       // Processa os dados e popula state.facts e fDados para exibir os cards
@@ -12865,6 +12885,83 @@ function buildDashboardDatasetFromRows(rows = [], period = state.period || {}) {
   return { sections, summary };
 }
 
+// Função para exibir modal informando que não há dados
+function showNoDataModal() {
+  // Remove modal anterior se existir
+  const existingModal = document.getElementById("no-data-modal");
+  if (existingModal) {
+    existingModal.remove();
+  }
+
+  // Cria o modal
+  const modal = document.createElement("div");
+  modal.id = "no-data-modal";
+  modal.className = "no-data-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-labelledby", "no-data-modal-title");
+  
+  const period = state.period || getDefaultPeriodRange();
+  const startDate = period.start ? formatBRDate(period.start) : "";
+  const endDate = period.end ? formatBRDate(period.end) : "";
+  const periodText = startDate && endDate ? ` para o período de ${startDate} até ${endDate}` : "";
+  
+  modal.innerHTML = `
+    <div class="no-data-modal__overlay" data-no-data-close></div>
+    <div class="no-data-modal__panel">
+      <header class="no-data-modal__header">
+        <div class="no-data-modal__icon">
+          <i class="ti ti-info-circle"></i>
+        </div>
+        <h3 id="no-data-modal-title" class="no-data-modal__title">Nenhum dado encontrado</h3>
+      </header>
+      <div class="no-data-modal__body">
+        <p>Não foram encontrados dados${periodText} com os filtros aplicados.</p>
+        <p>Tente ajustar os filtros ou selecionar outro período.</p>
+      </div>
+      <footer class="no-data-modal__footer">
+        <button type="button" class="btn btn--primary" data-no-data-close>Entendi</button>
+      </footer>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  document.body.classList.add("has-no-data-modal-open");
+
+  // Função para fechar o modal
+  const closeModal = () => {
+    modal.setAttribute("data-closing", "true");
+    setTimeout(() => {
+      if (modal.parentNode) {
+        modal.remove();
+      }
+      document.body.classList.remove("has-no-data-modal-open");
+    }, 200);
+  };
+
+  // Event listeners para fechar
+  modal.querySelectorAll("[data-no-data-close]").forEach(btn => {
+    btn.addEventListener("click", closeModal);
+  });
+
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal || e.target.classList.contains("no-data-modal__overlay")) {
+      closeModal();
+    }
+  });
+
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !modal.hidden) {
+      closeModal();
+    }
+  });
+
+  // Anima a entrada do modal
+  requestAnimationFrame(() => {
+    modal.setAttribute("data-visible", "true");
+  });
+}
+
 function updateDashboardCards() {
   const factRows = state.facts?.dados || fDados;
   if (!Array.isArray(factRows) || !factRows.length) {
@@ -12872,6 +12969,10 @@ function updateDashboardCards() {
     state.dashboard = empty;
     refreshSimulatorCatalog();
     renderFamilias(empty.sections, empty.summary);
+    // Exibe modal informando que não há dados apenas se os filtros foram aplicados pelo usuário
+    if (state._filtersApplied) {
+      showNoDataModal();
+    }
     return;
   }
   // Garante que o mapa de pontos está atualizado antes de calcular o summary
