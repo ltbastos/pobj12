@@ -66,12 +66,72 @@
       if (!Array.isArray(rows)) return [];
   
       return uniqById(
-        rows.map(r =>
-          normOpt({
-            id: r.id ?? "",
+        rows.map(r => {
+          // Garante que o ID seja uma string (preserva números como strings)
+          const rawId = r.id ?? "";
+          const idStr = rawId != null && rawId !== "" ? String(rawId).trim() : "";
+          
+          // Preserva campos adicionais ANTES de chamar normOpt
+          const familiaId = r.familia_id !== undefined && r.familia_id != null 
+            ? String(r.familia_id).trim() 
+            : (r.familiaId !== undefined && r.familiaId != null ? String(r.familiaId).trim() : undefined);
+          
+          const indicadorId = r.indicador_id !== undefined && r.indicador_id != null 
+            ? String(r.indicador_id).trim() 
+            : (r.indicadorId !== undefined && r.indicadorId != null ? String(r.indicadorId).trim() : undefined);
+          
+          // Preserva campos de relacionamento hierárquico
+          const idSegmento = r.id_segmento !== undefined && r.id_segmento != null 
+            ? String(r.id_segmento).trim() 
+            : (r.idSegmento !== undefined && r.idSegmento != null ? String(r.idSegmento).trim() : undefined);
+          
+          const idDiretoria = r.id_diretoria !== undefined && r.id_diretoria != null 
+            ? String(r.id_diretoria).trim() 
+            : (r.idDiretoria !== undefined && r.idDiretoria != null ? String(r.idDiretoria).trim() : undefined);
+          
+          const idRegional = r.id_regional !== undefined && r.id_regional != null 
+            ? String(r.id_regional).trim() 
+            : (r.idRegional !== undefined && r.idRegional != null ? String(r.idRegional).trim() : undefined);
+          
+          const idAgencia = r.id_agencia !== undefined && r.id_agencia != null 
+            ? String(r.id_agencia).trim() 
+            : (r.idAgencia !== undefined && r.idAgencia != null ? String(r.idAgencia).trim() : undefined);
+          
+          const idGestor = r.id_gestor !== undefined && r.id_gestor != null 
+            ? String(r.id_gestor).trim() 
+            : (r.idGestor !== undefined && r.idGestor != null ? String(r.idGestor).trim() : undefined);
+          
+          const normalized = normOpt({
+            id: idStr,
             label: normalizeLabel(r) || "",
-          })
-        )
+          });
+          
+          // Preserva campos adicionais necessários para filtros APÓS normOpt
+          // (normOpt retorna apenas {id, label}, então precisamos adicionar de volta)
+          if (familiaId !== undefined) {
+            normalized.familia_id = familiaId;
+          }
+          if (indicadorId !== undefined) {
+            normalized.indicador_id = indicadorId;
+          }
+          if (idSegmento !== undefined) {
+            normalized.id_segmento = idSegmento;
+          }
+          if (idDiretoria !== undefined) {
+            normalized.id_diretoria = idDiretoria;
+          }
+          if (idRegional !== undefined) {
+            normalized.id_regional = idRegional;
+          }
+          if (idAgencia !== undefined) {
+            normalized.id_agencia = idAgencia;
+          }
+          if (idGestor !== undefined) {
+            normalized.id_gestor = idGestor;
+          }
+          
+          return normalized;
+        })
       );
     }
   

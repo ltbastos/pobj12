@@ -62,9 +62,9 @@ class __TwigTemplate_5e7e4734f123ff9d66a6b6a96704b668e7729a60a5a845777c8bcc7995d
         </button>
         <div class=\"userbox__menu\" id=\"user-menu\" role=\"menu\" aria-hidden=\"true\" hidden>
           <span class=\"userbox__menu-title\">Links úteis</span>
-          <button class=\"userbox__menu-item\" type=\"button\" data-action=\"omega\">Omega</button>
-          <button class=\"userbox__menu-item\" type=\"button\" data-action=\"leads\">Leads propensos</button>
-          <button class=\"userbox__menu-item\" type=\"button\" data-action=\"portal\">Portal PJ</button>
+          ";
+        // line 31
+        echo "          <button class=\"userbox__menu-item\" type=\"button\" data-action=\"portal\">Portal PJ</button>
           <div class=\"userbox__submenu\">
             <button class=\"userbox__menu-item userbox__menu-item--has-sub\" type=\"button\" data-submenu=\"manuais\" aria-expanded=\"false\">
               Manuais
@@ -96,7 +96,7 @@ class __TwigTemplate_5e7e4734f123ff9d66a6b6a96704b668e7729a60a5a845777c8bcc7995d
 
     public function getDebugInfo()
     {
-        return array (  37 => 1,);
+        return array (  67 => 31,  37 => 1,);
     }
 
     public function getSourceContext()
@@ -129,8 +129,8 @@ class __TwigTemplate_5e7e4734f123ff9d66a6b6a96704b668e7729a60a5a845777c8bcc7995d
         </button>
         <div class=\"userbox__menu\" id=\"user-menu\" role=\"menu\" aria-hidden=\"true\" hidden>
           <span class=\"userbox__menu-title\">Links úteis</span>
-          <button class=\"userbox__menu-item\" type=\"button\" data-action=\"omega\">Omega</button>
-          <button class=\"userbox__menu-item\" type=\"button\" data-action=\"leads\">Leads propensos</button>
+          {# <button class=\"userbox__menu-item\" type=\"button\" data-action=\"omega\">Omega</button>
+          <button class=\"userbox__menu-item\" type=\"button\" data-action=\"leads\">Leads propensos</button> #}
           <button class=\"userbox__menu-item\" type=\"button\" data-action=\"portal\">Portal PJ</button>
           <div class=\"userbox__submenu\">
             <button class=\"userbox__menu-item userbox__menu-item--has-sub\" type=\"button\" data-submenu=\"manuais\" aria-expanded=\"false\">

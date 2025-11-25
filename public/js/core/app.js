@@ -110,8 +110,12 @@ function uniqById(arr) {
     const id = item.id != null ? String(item.id).trim() : '';
     if (!id || seen.has(id)) return;
     seen.add(id);
-    const label = item.label != null ? String(item.label).trim() : '';
-    result.push({ id, label });
+    // Preserva todos os campos do objeto original, não apenas id e label
+    const preserved = { ...item };
+    // Garante que id e label estão normalizados
+    preserved.id = id;
+    preserved.label = item.label != null ? String(item.label).trim() : '';
+    result.push(preserved);
   });
   return result;
 }
@@ -2597,6 +2601,17 @@ function processBaseDataSources({
   const gerentesGestaoDim = estruturaProcessed.dimGerentesGestao;
   const gerentesDim = estruturaProcessed.dimGerentes;
 
+  // Define DIMENSION_FILTER_OPTIONS globalmente a partir de Estrutura.filterOptions
+  if (typeof Estrutura !== "undefined" && Estrutura.filterOptions) {
+    const globalScope = (function() {
+      if (typeof window !== "undefined") return window;
+      if (typeof global !== "undefined") return global;
+      if (typeof globalThis !== "undefined") return globalThis;
+      return this;
+    })();
+    globalScope.DIMENSION_FILTER_OPTIONS = Estrutura.filterOptions;
+  }
+
   // Processa dados de status usando função de status.js
   processStatusData(statusRaw);
 
@@ -2863,6 +2878,17 @@ function processInitialData({
   const agenciasDim = estruturaProcessed.dimAgencias;
   const gerentesGestaoDim = estruturaProcessed.dimGerentesGestao;
   const gerentesDim = estruturaProcessed.dimGerentes;
+
+  // Define DIMENSION_FILTER_OPTIONS globalmente a partir de Estrutura.filterOptions
+  if (typeof Estrutura !== "undefined" && Estrutura.filterOptions) {
+    const globalScope = (function() {
+      if (typeof window !== "undefined") return window;
+      if (typeof global !== "undefined") return global;
+      if (typeof globalThis !== "undefined") return globalThis;
+      return this;
+    })();
+    globalScope.DIMENSION_FILTER_OPTIONS = Estrutura.filterOptions;
+  }
 
   // Processa dados de status usando função de status.js
   processStatusData(statusRaw);
@@ -8288,11 +8314,43 @@ function buildHierarchyOptions(fieldKey, selection, rows){
   const hasDimensionPreset = Array.isArray(DIMENSION_FILTER_OPTIONS[dimensionKey])
     && DIMENSION_FILTER_OPTIONS[dimensionKey].length > 0;
   
-  // Se há preset e não há rows, usa diretamente as opções de dimensão
+  // Se há preset e não há rows, usa diretamente as opções de dimensão (com filtro hierárquico)
   if (hasDimensionPreset && (!Array.isArray(rows) || !rows.length)) {
     const baseOption = { value: def.defaultValue, label: def.defaultLabel };
+    
+    // Mapeamento de campos de relacionamento para cada nível hierárquico
+    const hierarchyFilterMap = {
+      'diretoria': { parentField: 'segmento', relationField: 'id_segmento' },
+      'gerencia': { parentField: 'diretoria', relationField: 'id_diretoria' },
+      'agencia': { parentField: 'gerencia', relationField: 'id_regional' },
+      'gerenteGestao': { parentField: 'agencia', relationField: 'id_agencia' },
+      'gerente': { parentField: 'ggestao', relationField: 'id_gestor' }
+    };
+    
+    const filterConfig = hierarchyFilterMap[dimensionKey];
+    const normalizeId = (val) => {
+      if (val == null || val === "") return "";
+      if (typeof limparTexto === "function") return limparTexto(val);
+      return String(val).trim();
+    };
+    
+    // Filtra opções baseado na seleção do nível superior
+    let filteredOptions = DIMENSION_FILTER_OPTIONS[dimensionKey];
+    if (filterConfig && selection[filterConfig.parentField]) {
+      const parentValue = normalizeId(selection[filterConfig.parentField]);
+      const parentDef = HIERARCHY_FIELD_MAP.get(filterConfig.parentField);
+      const parentDefaultValue = parentDef?.defaultValue || "";
+      // Filtra apenas se o valor do pai não for o padrão (Todos/Todas) e não for vazio
+      if (parentValue && parentValue !== parentDefaultValue && !selecaoPadrao(parentValue)) {
+        filteredOptions = DIMENSION_FILTER_OPTIONS[dimensionKey].filter(opt => {
+          const relationValue = normalizeId(opt[filterConfig.relationField] || opt[filterConfig.relationField.replace('id_', '')] || "");
+          return relationValue && String(relationValue) === String(parentValue);
+        });
+      }
+    }
+    
     const options = [baseOption].concat(
-      DIMENSION_FILTER_OPTIONS[dimensionKey].map(opt => {
+      filteredOptions.map(opt => {
         const normalized = normOpt(opt);
         let label = normalized.label || normalized.id;
         
@@ -8325,8 +8383,39 @@ function buildHierarchyOptions(fieldKey, selection, rows){
     ? (fallbackRows.length ? rows.concat(fallbackRows) : rows)
     : fallbackRows;
   const filtered = filterHierarchyRowsForField(fieldKey, selection, sourceRows);
+  
+  // Mapeamento de campos de relacionamento para cada nível hierárquico
+  const hierarchyFilterMap = {
+    'diretoria': { parentField: 'segmento', relationField: 'id_segmento' },
+    'gerencia': { parentField: 'diretoria', relationField: 'id_diretoria' },
+    'agencia': { parentField: 'gerencia', relationField: 'id_regional' },
+    'gerenteGestao': { parentField: 'agencia', relationField: 'id_agencia' },
+    'gerente': { parentField: 'ggestao', relationField: 'id_gestor' }
+  };
+  
+  // Filtra opções de DIMENSION_FILTER_OPTIONS baseado na seleção do nível superior
+  let dimensionOptions = DIMENSION_FILTER_OPTIONS[dimensionKey] || [];
+  const filterConfig = hierarchyFilterMap[dimensionKey];
+  if (filterConfig && hasDimensionPreset && selection[filterConfig.parentField]) {
+    const normalizeId = (val) => {
+      if (val == null || val === "") return "";
+      if (typeof limparTexto === "function") return limparTexto(val);
+      return String(val).trim();
+    };
+    const parentValue = normalizeId(selection[filterConfig.parentField]);
+    const parentDef = HIERARCHY_FIELD_MAP.get(filterConfig.parentField);
+    const parentDefaultValue = parentDef?.defaultValue || "";
+    // Filtra apenas se o valor do pai não for o padrão (Todos/Todas) e não for vazio
+    if (parentValue && parentValue !== parentDefaultValue && !selecaoPadrao(parentValue)) {
+      dimensionOptions = dimensionOptions.filter(opt => {
+        const relationValue = normalizeId(opt[filterConfig.relationField] || opt[filterConfig.relationField.replace('id_', '')] || "");
+        return relationValue && String(relationValue) === String(parentValue);
+      });
+    }
+  }
+  
   const dimensionOptionMap = new Map(
-    (DIMENSION_FILTER_OPTIONS[dimensionKey] || [])
+    dimensionOptions
       .map(opt => normOpt(opt))
       .filter(opt => opt.id)
       .map(opt => [limparTexto(opt.id), opt.label])
@@ -8800,32 +8889,203 @@ function adjustHierarchySelection(selection, changedField){
 
   // Quando um nível é selecionado, preenche automaticamente os níveis superiores se possível
   if (changedField === "agencia" && effective !== def.defaultValue){
-    const meta = findAgenciaMeta(effective) || {};
-    setIf("gerencia", meta.gerencia || meta.regionalId || meta.regional);
-    setIf("diretoria", meta.diretoria || meta.diretoriaId);
-    setIf("segmento", meta.segmento || meta.segmentoId);
+    const agenciaIdStr = limparTexto(effective);
+    let regionalIdStr = "";
+    let diretoriaIdStr = "";
+    let segmentoIdStr = "";
+    
+    // Tenta buscar em DIMENSION_FILTER_OPTIONS primeiro
+    if (typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+        Array.isArray(DIMENSION_FILTER_OPTIONS.agencia)) {
+      const agOpt = DIMENSION_FILTER_OPTIONS.agencia.find(opt => {
+        const optId = limparTexto(opt.id);
+        return optId === agenciaIdStr;
+      });
+      if (agOpt) {
+        if (agOpt.id_regional) regionalIdStr = String(agOpt.id_regional).trim();
+        if (agOpt.id_diretoria) diretoriaIdStr = String(agOpt.id_diretoria).trim();
+        if (agOpt.id_segmento) segmentoIdStr = String(agOpt.id_segmento).trim();
+      }
+    }
+    
+    // Se não encontrou tudo, usa o método antigo
+    if (!regionalIdStr || !diretoriaIdStr) {
+      const meta = findAgenciaMeta(effective) || {};
+      if (!regionalIdStr) regionalIdStr = meta.gerencia || meta.regionalId || meta.regional || "";
+      if (!diretoriaIdStr) diretoriaIdStr = meta.diretoria || meta.diretoriaId || "";
+      if (!segmentoIdStr) segmentoIdStr = meta.segmento || meta.segmentoId || "";
+    }
+    
+    // Se encontrou regional mas não diretoria/segmento, busca da regional
+    if (regionalIdStr && (!diretoriaIdStr || !segmentoIdStr) && 
+        typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+        Array.isArray(DIMENSION_FILTER_OPTIONS.gerencia)) {
+      const regOpt = DIMENSION_FILTER_OPTIONS.gerencia.find(opt => {
+        const optId = limparTexto(opt.id);
+        return optId === limparTexto(regionalIdStr);
+      });
+      if (regOpt) {
+        if (regOpt.id_diretoria && !diretoriaIdStr) {
+          diretoriaIdStr = String(regOpt.id_diretoria).trim();
+        }
+        if (regOpt.id_segmento && !segmentoIdStr) {
+          segmentoIdStr = String(regOpt.id_segmento).trim();
+        }
+      }
+    }
+    
+    // Se encontrou diretoria mas não segmento, busca da diretoria
+    if (diretoriaIdStr && !segmentoIdStr && 
+        typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+        Array.isArray(DIMENSION_FILTER_OPTIONS.diretoria)) {
+      const dirOpt = DIMENSION_FILTER_OPTIONS.diretoria.find(opt => {
+        const optId = limparTexto(opt.id);
+        return optId === limparTexto(diretoriaIdStr);
+      });
+      if (dirOpt && dirOpt.id_segmento) {
+        segmentoIdStr = String(dirOpt.id_segmento).trim();
+      }
+    }
+    
+    setIf("gerencia", regionalIdStr);
+    setIf("diretoria", diretoriaIdStr);
+    setIf("segmento", segmentoIdStr);
   }
 
   if (changedField === "gerencia" && effective !== def.defaultValue){
-    const meta = findGerenciaMeta(effective) || {};
-    setIf("diretoria", meta.diretoria);
-    setIf("segmento", meta.segmentoId);
+    const gerenciaIdStr = limparTexto(effective);
+    let diretoriaIdStr = "";
+    let segmentoIdStr = "";
+    
+    // Tenta buscar em DIMENSION_FILTER_OPTIONS primeiro
+    if (typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+        Array.isArray(DIMENSION_FILTER_OPTIONS.gerencia)) {
+      const regOpt = DIMENSION_FILTER_OPTIONS.gerencia.find(opt => {
+        const optId = limparTexto(opt.id);
+        return optId === gerenciaIdStr;
+      });
+      if (regOpt) {
+        if (regOpt.id_diretoria) diretoriaIdStr = String(regOpt.id_diretoria).trim();
+        if (regOpt.id_segmento) segmentoIdStr = String(regOpt.id_segmento).trim();
+      }
+    }
+    
+    // Se não encontrou, usa o método antigo
+    if (!diretoriaIdStr || !segmentoIdStr) {
+      const meta = findGerenciaMeta(effective) || {};
+      if (!diretoriaIdStr) diretoriaIdStr = meta.diretoria || "";
+      if (!segmentoIdStr) segmentoIdStr = meta.segmentoId || "";
+    }
+    
+    // Se encontrou diretoria mas não segmento, busca da diretoria
+    if (diretoriaIdStr && !segmentoIdStr && 
+        typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+        Array.isArray(DIMENSION_FILTER_OPTIONS.diretoria)) {
+      const dirOpt = DIMENSION_FILTER_OPTIONS.diretoria.find(opt => {
+        const optId = limparTexto(opt.id);
+        return optId === limparTexto(diretoriaIdStr);
+      });
+      if (dirOpt && dirOpt.id_segmento) {
+        segmentoIdStr = String(dirOpt.id_segmento).trim();
+      }
+    }
+    
+    setIf("diretoria", diretoriaIdStr);
+    setIf("segmento", segmentoIdStr);
   }
 
   if (changedField === "diretoria" && effective !== def.defaultValue){
-    const meta = findDiretoriaMeta(effective) || {};
-    setIf("segmento", meta.segmento);
+    const diretoriaIdStr = limparTexto(effective);
+    let segmentoIdStr = "";
+    
+    // Tenta buscar em DIMENSION_FILTER_OPTIONS primeiro
+    if (typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+        Array.isArray(DIMENSION_FILTER_OPTIONS.diretoria)) {
+      const dirOpt = DIMENSION_FILTER_OPTIONS.diretoria.find(opt => {
+        const optId = limparTexto(opt.id);
+        return optId === diretoriaIdStr;
+      });
+      if (dirOpt && dirOpt.id_segmento) {
+        segmentoIdStr = String(dirOpt.id_segmento).trim();
+      }
+    }
+    
+    // Se não encontrou, usa o método antigo
+    if (!segmentoIdStr) {
+      const meta = findDiretoriaMeta(effective) || {};
+      segmentoIdStr = meta.segmento || "";
+    }
+    
+    setIf("segmento", segmentoIdStr);
   }
 
   if (changedField === "ggestao" && effective !== def.defaultValue){
-    // Busca primeiro nos dados de estrutura (DIM_GGESTAO_LOOKUP)
+    // Busca primeiro em DIMENSION_FILTER_OPTIONS se disponível
     const ggIdStr = limparTexto(effective);
     let agenciaIdStr = "";
     let regionalIdStr = "";
     let diretoriaIdStr = "";
     let segmentoIdStr = "";
     
-    if (typeof DIM_GGESTAO_LOOKUP !== "undefined" && DIM_GGESTAO_LOOKUP.has(ggIdStr)) {
+    // Tenta buscar em DIMENSION_FILTER_OPTIONS primeiro
+    if (typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+        Array.isArray(DIMENSION_FILTER_OPTIONS.gerenteGestao)) {
+      const ggOpt = DIMENSION_FILTER_OPTIONS.gerenteGestao.find(opt => {
+        const optId = limparTexto(opt.id);
+        return optId === ggIdStr;
+      });
+      if (ggOpt) {
+        if (ggOpt.id_agencia) agenciaIdStr = String(ggOpt.id_agencia).trim();
+        
+        // Se encontrou agência, busca regional, diretoria e segmento
+        if (agenciaIdStr && typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+            Array.isArray(DIMENSION_FILTER_OPTIONS.agencia)) {
+          const agOpt = DIMENSION_FILTER_OPTIONS.agencia.find(opt => {
+            const optId = limparTexto(opt.id);
+            return optId === limparTexto(agenciaIdStr);
+          });
+          if (agOpt) {
+            if (agOpt.id_regional) regionalIdStr = String(agOpt.id_regional).trim();
+            if (agOpt.id_diretoria) diretoriaIdStr = String(agOpt.id_diretoria).trim();
+            if (agOpt.id_segmento) segmentoIdStr = String(agOpt.id_segmento).trim();
+          }
+        }
+        
+        // Se encontrou regional mas não diretoria/segmento, busca da regional
+        if (regionalIdStr && (!diretoriaIdStr || !segmentoIdStr) && 
+            typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+            Array.isArray(DIMENSION_FILTER_OPTIONS.gerencia)) {
+          const regOpt = DIMENSION_FILTER_OPTIONS.gerencia.find(opt => {
+            const optId = limparTexto(opt.id);
+            return optId === limparTexto(regionalIdStr);
+          });
+          if (regOpt) {
+            if (regOpt.id_diretoria && !diretoriaIdStr) {
+              diretoriaIdStr = String(regOpt.id_diretoria).trim();
+            }
+            if (regOpt.id_segmento && !segmentoIdStr) {
+              segmentoIdStr = String(regOpt.id_segmento).trim();
+            }
+          }
+        }
+        
+        // Se encontrou diretoria mas não segmento, busca da diretoria
+        if (diretoriaIdStr && !segmentoIdStr && 
+            typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+            Array.isArray(DIMENSION_FILTER_OPTIONS.diretoria)) {
+          const dirOpt = DIMENSION_FILTER_OPTIONS.diretoria.find(opt => {
+            const optId = limparTexto(opt.id);
+            return optId === limparTexto(diretoriaIdStr);
+          });
+          if (dirOpt && dirOpt.id_segmento) {
+            segmentoIdStr = String(dirOpt.id_segmento).trim();
+          }
+        }
+      }
+    }
+    
+    // Se não encontrou, busca nos dados de estrutura (DIM_GGESTAO_LOOKUP)
+    if (!agenciaIdStr && typeof DIM_GGESTAO_LOOKUP !== "undefined" && DIM_GGESTAO_LOOKUP.has(ggIdStr)) {
       const ggData = DIM_GGESTAO_LOOKUP.get(ggIdStr);
       agenciaIdStr = String(ggData?.id_agencia || ggData?.agencia || "");
       
@@ -8922,13 +9182,102 @@ function adjustHierarchySelection(selection, changedField){
   }
 
   if (changedField === "gerente" && effective !== def.defaultValue){
-    const meta = findGerenteMeta(effective) || {};
-    setIf("agencia", meta.agencia);
-    setIf("ggestao", meta.gerenteGestao || meta.id_gestor);
-    setIf("gerencia", meta.gerencia);
-    setIf("diretoria", meta.diretoria);
-    const agMeta = meta.agencia ? (findAgenciaMeta(meta.agencia) || {}) : {};
-    setIf("segmento", agMeta.segmento || agMeta.segmentoId);
+    const gerenteIdStr = limparTexto(effective);
+    let ggestaoIdStr = "";
+    let agenciaIdStr = "";
+    let regionalIdStr = "";
+    let diretoriaIdStr = "";
+    let segmentoIdStr = "";
+    
+    // Tenta buscar em DIMENSION_FILTER_OPTIONS primeiro
+    if (typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+        Array.isArray(DIMENSION_FILTER_OPTIONS.gerente)) {
+      const gerenteOpt = DIMENSION_FILTER_OPTIONS.gerente.find(opt => {
+        const optId = limparTexto(opt.id);
+        return optId === gerenteIdStr;
+      });
+      if (gerenteOpt) {
+        ggestaoIdStr = String(gerenteOpt.id_gestor || gerenteOpt.idGestor || "").trim();
+      }
+    }
+    
+    // Se encontrou gerente de gestão, busca a agência
+    if (ggestaoIdStr && typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+        Array.isArray(DIMENSION_FILTER_OPTIONS.gerenteGestao)) {
+      const ggOpt = DIMENSION_FILTER_OPTIONS.gerenteGestao.find(opt => {
+        const optId = limparTexto(opt.id);
+        return optId === limparTexto(ggestaoIdStr);
+      });
+      if (ggOpt && ggOpt.id_agencia) {
+        agenciaIdStr = String(ggOpt.id_agencia).trim();
+      }
+    }
+    
+    // Se não encontrou, usa o método antigo
+    if (!ggestaoIdStr || !agenciaIdStr) {
+      const meta = findGerenteMeta(effective) || {};
+      if (!ggestaoIdStr) ggestaoIdStr = meta.gerenteGestao || meta.id_gestor || "";
+      if (!agenciaIdStr) agenciaIdStr = meta.agencia || "";
+      regionalIdStr = meta.gerencia || "";
+      diretoriaIdStr = meta.diretoria || "";
+      const agMeta = agenciaIdStr ? (findAgenciaMeta(agenciaIdStr) || {}) : {};
+      segmentoIdStr = agMeta.segmento || agMeta.segmentoId || "";
+    }
+    
+    // Se encontrou agência, busca regional, diretoria e segmento
+    if (agenciaIdStr && typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+        Array.isArray(DIMENSION_FILTER_OPTIONS.agencia)) {
+      const agOpt = DIMENSION_FILTER_OPTIONS.agencia.find(opt => {
+        const optId = limparTexto(opt.id);
+        return optId === limparTexto(agenciaIdStr);
+      });
+      if (agOpt) {
+        if (agOpt.id_regional && !regionalIdStr) {
+          regionalIdStr = String(agOpt.id_regional).trim();
+        }
+        if (agOpt.id_diretoria && !diretoriaIdStr) {
+          diretoriaIdStr = String(agOpt.id_diretoria).trim();
+        }
+        if (agOpt.id_segmento && !segmentoIdStr) {
+          segmentoIdStr = String(agOpt.id_segmento).trim();
+        }
+      }
+    }
+    
+    // Se encontrou regional, busca diretoria e segmento
+    if (regionalIdStr && !diretoriaIdStr && typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+        Array.isArray(DIMENSION_FILTER_OPTIONS.gerencia)) {
+      const regOpt = DIMENSION_FILTER_OPTIONS.gerencia.find(opt => {
+        const optId = limparTexto(opt.id);
+        return optId === limparTexto(regionalIdStr);
+      });
+      if (regOpt) {
+        if (regOpt.id_diretoria && !diretoriaIdStr) {
+          diretoriaIdStr = String(regOpt.id_diretoria).trim();
+        }
+        if (regOpt.id_segmento && !segmentoIdStr) {
+          segmentoIdStr = String(regOpt.id_segmento).trim();
+        }
+      }
+    }
+    
+    // Se encontrou diretoria, busca segmento
+    if (diretoriaIdStr && !segmentoIdStr && typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+        Array.isArray(DIMENSION_FILTER_OPTIONS.diretoria)) {
+      const dirOpt = DIMENSION_FILTER_OPTIONS.diretoria.find(opt => {
+        const optId = limparTexto(opt.id);
+        return optId === limparTexto(diretoriaIdStr);
+      });
+      if (dirOpt && dirOpt.id_segmento) {
+        segmentoIdStr = String(dirOpt.id_segmento).trim();
+      }
+    }
+    
+    setIf("ggestao", ggestaoIdStr);
+    setIf("agencia", agenciaIdStr);
+    setIf("gerencia", regionalIdStr);
+    setIf("diretoria", diretoriaIdStr);
+    setIf("segmento", segmentoIdStr);
   }
 
   if (changedField === "segmento" && effective !== def.defaultValue){
@@ -9860,13 +10209,42 @@ function initCombos() {
     el.addEventListener("change", () => handleHierarchySelectionChange(key));
   });
 
-  const secaoOptions = [{ value: "Todas", label: "Todas", aliases: ["Todas", "Todos"] }].concat(
-    CARD_SECTIONS_DEF.map(sec => ({
+  // Popula família (secao) usando DIMENSION_FILTER_OPTIONS.familia se disponível
+  const buildFamiliaOptions = () => {
+    const base = [{ value: "Todas", label: "Todas", aliases: ["Todas", "Todos"] }];
+    
+    // Usa DIMENSION_FILTER_OPTIONS.familia se disponível
+    const hasFamiliaPreset = typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+      Array.isArray(DIMENSION_FILTER_OPTIONS.familia) && 
+      DIMENSION_FILTER_OPTIONS.familia.length > 0;
+    
+    if (hasFamiliaPreset) {
+      const options = DIMENSION_FILTER_OPTIONS.familia.map(opt => {
+        const normalized = typeof normOpt === "function" ? normOpt(opt) : opt;
+        // Normaliza o ID para string para garantir consistência
+        const id = String(normalized.id || opt.id || "").trim();
+        const label = String(normalized.label || opt.label || "").trim();
+        return {
+          value: id,
+          label: label || id,
+          aliases: [id, label, String(opt.id || ""), String(opt.label || "")].filter(Boolean),
+        };
+      }).filter(opt => opt.value); // Remove opções sem ID
+      if (options.length > 0) {
+        return base.concat(options);
+      }
+    }
+    
+    // Fallback para CARD_SECTIONS_DEF
+    const fallbackOptions = CARD_SECTIONS_DEF.map(sec => ({
       value: sec.id,
       label: formatTitleCase(sec.label || sec.id),
       aliases: [sec.id, sec.label, formatTitleCase(sec.label || sec.id)].filter(Boolean),
-    }))
-  );
+    }));
+    return base.concat(fallbackOptions);
+  };
+  
+  const secaoOptions = buildFamiliaOptions();
   fill("#f-secao", secaoOptions);
 
   const familiaSelect = $("#f-familia");
@@ -9875,8 +10253,50 @@ function initCombos() {
   const buildIndicatorOptions = (secaoId) => {
     const base = [{ value: "Todas", label: "Todos", aliases: ["Todos", "Todas"] }];
     const filtroSecao = secaoId && secaoId !== "Todas" ? secaoId : "";
+    const normalizeId = (val) => {
+      if (val == null || val === "") return "";
+      if (typeof limparTexto === "function") return limparTexto(val);
+      return String(val).trim();
+    };
     const added = new Set();
     const indicadores = [];
+    
+    // Usa DIMENSION_FILTER_OPTIONS.indicador se disponível (seguindo o padrão dos outros campos)
+    const hasIndicadorPreset = typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+      Array.isArray(DIMENSION_FILTER_OPTIONS.indicador) && 
+      DIMENSION_FILTER_OPTIONS.indicador.length > 0;
+    
+    if (hasIndicadorPreset) {
+      DIMENSION_FILTER_OPTIONS.indicador.forEach(opt => {
+        const normalized = typeof normOpt === "function" ? normOpt(opt) : opt;
+        // Normaliza o ID para string
+        const id = String(normalized.id || opt.id || "").trim();
+        const label = String(normalized.label || opt.label || "").trim();
+        
+        if (!id) return;
+        
+        // Filtra por familia_id se há filtro de seção
+        if (filtroSecao) {
+          const familiaId = normalizeId(filtroSecao);
+          const indicadorFamiliaId = normalizeId(opt.familia_id || opt.familiaId || normalized.familia_id || "");
+          if (familiaId && indicadorFamiliaId && String(familiaId) !== String(indicadorFamiliaId)) {
+            return; // Pula este indicador se não pertence à família selecionada
+          }
+        }
+        
+        // Usa o ID normalizado como chave para evitar duplicatas
+        const idKey = normalizeId(id);
+        if (!idKey || added.has(idKey)) return;
+        added.add(idKey);
+        indicadores.push({
+          value: id,
+          label: label || id,
+          aliases: [id, label].filter(Boolean),
+        });
+      });
+    }
+    
+    // Também adiciona opções de produtos se disponíveis (fallback)
     const consider = (prod) => {
       if (!prod || !prod.id || added.has(prod.id)) return;
       if (filtroSecao && prod.secaoId && prod.secaoId !== filtroSecao) return;
@@ -9907,9 +10327,63 @@ function initCombos() {
     const base = [{ value: "Todos", label: "Todos", aliases: ["Todos", "Todas"] }];
     const resolved = resolverIndicadorPorAlias(indicadorId) || limparTexto(indicadorId);
     if (!resolved || resolved === "Todas" || resolved === "Todos") return base;
+    
+    const normalizeId = (val) => {
+      if (val == null || val === "") return "";
+      if (typeof limparTexto === "function") return limparTexto(val);
+      return String(val).trim();
+    };
+    const resolvedId = normalizeId(resolved);
+    const added = new Set();
+    const subindicadores = [];
+    
+    // Usa DIMENSION_FILTER_OPTIONS.subindicador se disponível (seguindo o padrão dos outros campos)
+    const hasSubindicadorPreset = typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+      Array.isArray(DIMENSION_FILTER_OPTIONS.subindicador) && 
+      DIMENSION_FILTER_OPTIONS.subindicador.length > 0;
+    
+    if (hasSubindicadorPreset) {
+      DIMENSION_FILTER_OPTIONS.subindicador.forEach(opt => {
+        const normalized = typeof normOpt === "function" ? normOpt(opt) : opt;
+        // Normaliza o ID para string
+        const id = String(normalized.id || opt.id || "").trim();
+        const label = String(normalized.label || opt.label || "").trim();
+        
+        if (!id) return;
+        
+        const indicadorIdFromOpt = normalizeId(opt.indicador_id || opt.indicadorId || normalized.indicador_id || "");
+        
+        // Filtra por indicador_id se fornecido
+        if (indicadorIdFromOpt && resolvedId && String(indicadorIdFromOpt) !== String(resolvedId)) {
+          return; // Pula este subindicador se não pertence ao indicador selecionado
+        }
+        
+        // Usa o ID normalizado como chave para evitar duplicatas
+        const idKey = normalizeId(id);
+        if (!idKey || added.has(idKey)) return;
+        added.add(idKey);
+        subindicadores.push({
+          value: id,
+          label: label || id,
+          aliases: [id, label].filter(Boolean),
+        });
+      });
+    }
+    
+    // Combina com opções de getFlatSubIndicatorOptions (fallback)
     const entries = getFlatSubIndicatorOptions(resolved);
-    if (!entries.length) return base;
-    return base.concat(entries);
+    if (Array.isArray(entries) && entries.length > 0) {
+      entries.forEach(entry => {
+        const entryId = normalizeId(entry.value || entry.id || "");
+        if (entryId && !added.has(entryId)) {
+          subindicadores.push(entry);
+          added.add(entryId);
+        }
+      });
+    }
+    
+    if (!subindicadores.length) return base;
+    return base.concat(subindicadores);
   };
 
   const applySubIndicadorOptions = (preserveValue = true) => {
@@ -9953,6 +10427,99 @@ function initCombos() {
     secaoSelect.dataset.bound = "1";
     secaoSelect.addEventListener("change", () => {
       applyIndicatorOptions(true);
+    });
+  }
+
+  // Quando um subindicador é selecionado, seleciona automaticamente o indicador e família correspondentes
+  if (produtoSelect && !produtoSelect.dataset.bound) {
+    produtoSelect.dataset.bound = "1";
+    produtoSelect.addEventListener("change", () => {
+      const subindicadorId = produtoSelect.value;
+      if (!subindicadorId || subindicadorId === "Todos" || subindicadorId === "Todas") return;
+      
+      // Busca o subindicador em DIMENSION_FILTER_OPTIONS ou DIM_SUBINDICADORES_LOOKUP
+      const normalizeId = (val) => {
+        if (val == null || val === "") return "";
+        if (typeof limparTexto === "function") return limparTexto(val);
+        return String(val).trim();
+      };
+      const subindicadorIdNormalized = normalizeId(subindicadorId);
+      
+      let indicadorId = null;
+      let familiaId = null;
+      
+      // Tenta encontrar em DIMENSION_FILTER_OPTIONS
+      if (typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+          Array.isArray(DIMENSION_FILTER_OPTIONS.subindicador)) {
+        const subindicadorOpt = DIMENSION_FILTER_OPTIONS.subindicador.find(opt => {
+          const optId = normalizeId(opt.id);
+          return optId === subindicadorIdNormalized;
+        });
+        if (subindicadorOpt) {
+          indicadorId = subindicadorOpt.indicador_id || subindicadorOpt.indicadorId;
+        }
+      }
+      
+      // Se não encontrou, tenta em DIM_SUBINDICADORES_LOOKUP
+      if (!indicadorId && typeof DIM_SUBINDICADORES_LOOKUP !== "undefined") {
+        const subindicadorEntry = DIM_SUBINDICADORES_LOOKUP.get(subindicadorIdNormalized);
+        if (subindicadorEntry) {
+          indicadorId = subindicadorEntry.indicador_id || subindicadorEntry.indicadorId;
+        }
+      }
+      
+      // Se encontrou o indicador, busca a família
+      if (indicadorId) {
+        const indicadorIdNormalized = normalizeId(indicadorId);
+        
+        // Tenta encontrar em DIMENSION_FILTER_OPTIONS
+        if (typeof DIMENSION_FILTER_OPTIONS !== "undefined" && 
+            Array.isArray(DIMENSION_FILTER_OPTIONS.indicador)) {
+          const indicadorOpt = DIMENSION_FILTER_OPTIONS.indicador.find(opt => {
+            const optId = normalizeId(opt.id);
+            return optId === indicadorIdNormalized;
+          });
+          if (indicadorOpt) {
+            familiaId = indicadorOpt.familia_id || indicadorOpt.familiaId;
+          }
+        }
+        
+        // Se não encontrou, tenta em DIM_INDICADORES_LOOKUP
+        if (!familiaId && typeof DIM_INDICADORES_LOOKUP !== "undefined") {
+          const indicadorEntry = DIM_INDICADORES_LOOKUP.get(indicadorIdNormalized);
+          if (indicadorEntry) {
+            familiaId = indicadorEntry.familia_id || indicadorEntry.familiaId;
+          }
+        }
+        
+        // Seleciona o indicador se encontrado
+        if (indicadorId && familiaSelect) {
+          const indicadorIdStr = String(indicadorId).trim();
+          // Verifica se o indicador está disponível nas opções
+          const indicadorOption = Array.from(familiaSelect.options).find(opt => {
+            const optId = normalizeId(opt.value);
+            return optId === normalizeId(indicadorIdStr);
+          });
+          if (indicadorOption) {
+            familiaSelect.value = indicadorIdStr;
+            familiaSelect.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+        
+        // Seleciona a família se encontrada
+        if (familiaId && secaoSelect) {
+          const familiaIdStr = String(familiaId).trim();
+          // Verifica se a família está disponível nas opções
+          const familiaOption = Array.from(secaoSelect.options).find(opt => {
+            const optId = normalizeId(opt.value);
+            return optId === normalizeId(familiaIdStr);
+          });
+          if (familiaOption) {
+            secaoSelect.value = familiaIdStr;
+            secaoSelect.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+      }
     });
   }
 

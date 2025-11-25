@@ -13,9 +13,9 @@ const FILTER_LEVEL_CONFIG = [
 ];
 
 const HIERARCHY_FIELDS_DEF = [
-  { key: "segmento",  select: "#f-segmento",  defaultValue: "", defaultLabel: "",  idKey: "segmentoId",    labelKey: "segmentoNome",    fallback: () => typeof SEGMENTOS_DATA !== "undefined" ? SEGMENTOS_DATA : [] },
-  { key: "diretoria", select: "#f-diretoria", defaultValue: "", defaultLabel: "", idKey: "diretoriaId",   labelKey: "diretoriaNome",   fallback: () => typeof RANKING_DIRECTORIAS !== "undefined" ? RANKING_DIRECTORIAS : [] },
-  { key: "gerencia",  select: "#f-gerencia",  defaultValue: "", defaultLabel: "", idKey: "regionalId",    labelKey: "regionalNome",    fallback: () => typeof RANKING_GERENCIAS !== "undefined" ? RANKING_GERENCIAS : [] },
+  { key: "segmento",  select: "#f-segmento",  defaultValue: "Todos", defaultLabel: "Todos",  idKey: "segmentoId",    labelKey: "segmentoNome",    fallback: () => typeof SEGMENTOS_DATA !== "undefined" ? SEGMENTOS_DATA : [] },
+  { key: "diretoria", select: "#f-diretoria", defaultValue: "Todas", defaultLabel: "Todas", idKey: "diretoriaId",   labelKey: "diretoriaNome",   fallback: () => typeof RANKING_DIRECTORIAS !== "undefined" ? RANKING_DIRECTORIAS : [] },
+  { key: "gerencia",  select: "#f-gerencia",  defaultValue: "Todas", defaultLabel: "Todas", idKey: "regionalId",    labelKey: "regionalNome",    fallback: () => typeof RANKING_GERENCIAS !== "undefined" ? RANKING_GERENCIAS : [] },
   { key: "agencia",   select: "#f-agencia",   defaultValue: "Todas", defaultLabel: "Todas", idKey: "agenciaId",     labelKey: "agenciaNome",     fallback: () => typeof RANKING_AGENCIAS !== "undefined" ? RANKING_AGENCIAS : [] },
   { key: "ggestao",   select: "#f-gerente-gestao",   defaultValue: "Todos", defaultLabel: "Todos", idKey: "gerenteGestaoId", labelKey: "gerenteGestaoNome", fallback: () => typeof GERENTES_GESTAO !== "undefined" ? GERENTES_GESTAO : [] },
   { key: "gerente",   select: "#f-gerente",   defaultValue: "Todos", defaultLabel: "Todos", idKey: "gerenteId",      labelKey: "gerenteNome",      fallback: () => typeof RANKING_GERENTES !== "undefined" ? RANKING_GERENTES : [] }
@@ -678,14 +678,45 @@ function buildHierarchyOptions(fieldKey, selection, rows){
     Array.isArray(DIMENSION_FILTER_OPTIONS[dimensionKey]) &&
     DIMENSION_FILTER_OPTIONS[dimensionKey].length > 0;
   
-  // Se há preset e não há rows, usa diretamente as opções de dimensão
+  // Se há preset e não há rows, usa diretamente as opções de dimensão (com filtro hierárquico)
   if (hasDimensionPreset && (!Array.isArray(rows) || !rows.length)) {
+    // Mapeamento de campos de relacionamento para cada nível hierárquico
+    const hierarchyFilterMap = {
+      'diretoria': { parentField: 'segmento', relationField: 'id_segmento' },
+      'gerencia': { parentField: 'diretoria', relationField: 'id_diretoria' },
+      'agencia': { parentField: 'gerencia', relationField: 'id_regional' },
+      'gerenteGestao': { parentField: 'agencia', relationField: 'id_agencia' },
+      'gerente': { parentField: 'ggestao', relationField: 'id_gestor' }
+    };
+    
+    const filterConfig = hierarchyFilterMap[dimensionKey];
+    const normalizeId = (val) => {
+      if (val == null || val === "") return "";
+      if (typeof limparTexto === "function") return limparTexto(val);
+      return String(val).trim();
+    };
+    
+    // Filtra opções baseado na seleção do nível superior
+    let filteredOptions = DIMENSION_FILTER_OPTIONS[dimensionKey];
+    if (filterConfig && selection[filterConfig.parentField]) {
+      const parentValue = normalizeId(selection[filterConfig.parentField]);
+      const parentDef = HIERARCHY_FIELD_MAP.get(filterConfig.parentField);
+      const parentDefaultValue = parentDef?.defaultValue || "";
+      // Filtra apenas se o valor do pai não for o padrão (Todos/Todas) e não for vazio
+      if (parentValue && parentValue !== parentDefaultValue && !selecaoPadrao(parentValue)) {
+        filteredOptions = DIMENSION_FILTER_OPTIONS[dimensionKey].filter(opt => {
+          const relationValue = normalizeId(opt[filterConfig.relationField] || opt[filterConfig.relationField.replace('id_', '')] || "");
+          return relationValue && String(relationValue) === String(parentValue);
+        });
+      }
+    }
+    
     const options = [];
     // Só adiciona opção padrão se defaultValue não for vazio
     if (def.defaultValue && def.defaultLabel) {
       options.push({ value: def.defaultValue, label: def.defaultLabel });
     }
-    options.push(...DIMENSION_FILTER_OPTIONS[dimensionKey].map(opt => {
+    options.push(...filteredOptions.map(opt => {
         const normalized = typeof normOpt === "function" ? normOpt(opt) : opt;
         let label = normalized.label || normalized.id;
         
@@ -718,8 +749,37 @@ function buildHierarchyOptions(fieldKey, selection, rows){
     ? (fallbackRows.length ? rows.concat(fallbackRows) : rows)
     : fallbackRows;
   const filtered = filterHierarchyRowsForField(fieldKey, selection, sourceRows);
+  
+  // Mapeamento de campos de relacionamento para cada nível hierárquico
+  const hierarchyFilterMap = {
+    'diretoria': { parentField: 'segmento', relationField: 'id_segmento' },
+    'gerencia': { parentField: 'diretoria', relationField: 'id_diretoria' },
+    'agencia': { parentField: 'gerencia', relationField: 'id_regional' },
+    'gerenteGestao': { parentField: 'agencia', relationField: 'id_agencia' },
+    'gerente': { parentField: 'ggestao', relationField: 'id_gestor' }
+  };
+  
+  // Filtra opções de DIMENSION_FILTER_OPTIONS baseado na seleção do nível superior
+  let dimensionOptions = typeof DIMENSION_FILTER_OPTIONS !== "undefined" ? (DIMENSION_FILTER_OPTIONS[dimensionKey] || []) : [];
+  const filterConfig = hierarchyFilterMap[dimensionKey];
+  if (filterConfig && hasDimensionPreset && selection[filterConfig.parentField]) {
+    const normalizeId = (val) => {
+      if (val == null || val === "") return "";
+      if (typeof limparTexto === "function") return limparTexto(val);
+      return String(val).trim();
+    };
+    const parentValue = normalizeId(selection[filterConfig.parentField]);
+    const parentDef = HIERARCHY_FIELD_MAP.get(filterConfig.parentField);
+    if (parentValue && parentValue !== (parentDef?.defaultValue || "")) {
+      dimensionOptions = dimensionOptions.filter(opt => {
+        const relationValue = normalizeId(opt[filterConfig.relationField] || opt[filterConfig.relationField.replace('id_', '')] || "");
+        return relationValue && String(relationValue) === String(parentValue);
+      });
+    }
+  }
+  
   const dimensionOptionMap = typeof DIMENSION_FILTER_OPTIONS !== "undefined" ? new Map(
-    (DIMENSION_FILTER_OPTIONS[dimensionKey] || [])
+    dimensionOptions
       .map(opt => typeof normOpt === "function" ? normOpt(opt) : opt)
       .filter(opt => opt.id)
       .map(opt => [limparTexto(opt.id), opt.label])
