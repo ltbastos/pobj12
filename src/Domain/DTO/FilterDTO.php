@@ -78,6 +78,8 @@ class FilterDTO
             'familia' => ['familiaId', 'familia'],
             'indicador' => ['indicadorId', 'indicador'],
             'subindicador' => ['subindicadorId', 'subindicador'],
+            'dataInicio' => ['dataInicio'],
+            'dataFim' => ['dataFim'],
         ];
 
         return $normalizations[$key][0] ?? $key;
@@ -129,6 +131,15 @@ class FilterDTO
         return $this->get('subindicador');
     }
 
+    public function getDataInicio()
+    {
+        return $this->get('dataInicio');
+    }
+
+    public function getDataFim()
+    {
+        return $this->get('dataFim');
+    }
     public function toArray(): array
     {
         return [

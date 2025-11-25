@@ -13,9 +13,9 @@ const FILTER_LEVEL_CONFIG = [
 ];
 
 const HIERARCHY_FIELDS_DEF = [
-  { key: "segmento",  select: "#f-segmento",  defaultValue: "Todos", defaultLabel: "Todos",  idKey: "segmentoId",    labelKey: "segmentoNome",    fallback: () => typeof SEGMENTOS_DATA !== "undefined" ? SEGMENTOS_DATA : [] },
-  { key: "diretoria", select: "#f-diretoria", defaultValue: "Todas", defaultLabel: "Todas", idKey: "diretoriaId",   labelKey: "diretoriaNome",   fallback: () => typeof RANKING_DIRECTORIAS !== "undefined" ? RANKING_DIRECTORIAS : [] },
-  { key: "gerencia",  select: "#f-gerencia",  defaultValue: "Todas", defaultLabel: "Todas", idKey: "regionalId",    labelKey: "regionalNome",    fallback: () => typeof RANKING_GERENCIAS !== "undefined" ? RANKING_GERENCIAS : [] },
+  { key: "segmento",  select: "#f-segmento",  defaultValue: "", defaultLabel: "",  idKey: "segmentoId",    labelKey: "segmentoNome",    fallback: () => typeof SEGMENTOS_DATA !== "undefined" ? SEGMENTOS_DATA : [] },
+  { key: "diretoria", select: "#f-diretoria", defaultValue: "", defaultLabel: "", idKey: "diretoriaId",   labelKey: "diretoriaNome",   fallback: () => typeof RANKING_DIRECTORIAS !== "undefined" ? RANKING_DIRECTORIAS : [] },
+  { key: "gerencia",  select: "#f-gerencia",  defaultValue: "", defaultLabel: "", idKey: "regionalId",    labelKey: "regionalNome",    fallback: () => typeof RANKING_GERENCIAS !== "undefined" ? RANKING_GERENCIAS : [] },
   { key: "agencia",   select: "#f-agencia",   defaultValue: "Todas", defaultLabel: "Todas", idKey: "agenciaId",     labelKey: "agenciaNome",     fallback: () => typeof RANKING_AGENCIAS !== "undefined" ? RANKING_AGENCIAS : [] },
   { key: "ggestao",   select: "#f-gerente-gestao",   defaultValue: "Todos", defaultLabel: "Todos", idKey: "gerenteGestaoId", labelKey: "gerenteGestaoNome", fallback: () => typeof GERENTES_GESTAO !== "undefined" ? GERENTES_GESTAO : [] },
   { key: "gerente",   select: "#f-gerente",   defaultValue: "Todos", defaultLabel: "Todos", idKey: "gerenteId",      labelKey: "gerenteNome",      fallback: () => typeof RANKING_GERENTES !== "undefined" ? RANKING_GERENTES : [] }
@@ -680,9 +680,12 @@ function buildHierarchyOptions(fieldKey, selection, rows){
   
   // Se há preset e não há rows, usa diretamente as opções de dimensão
   if (hasDimensionPreset && (!Array.isArray(rows) || !rows.length)) {
-    const baseOption = { value: def.defaultValue, label: def.defaultLabel };
-    const options = [baseOption].concat(
-      DIMENSION_FILTER_OPTIONS[dimensionKey].map(opt => {
+    const options = [];
+    // Só adiciona opção padrão se defaultValue não for vazio
+    if (def.defaultValue && def.defaultLabel) {
+      options.push({ value: def.defaultValue, label: def.defaultLabel });
+    }
+    options.push(...DIMENSION_FILTER_OPTIONS[dimensionKey].map(opt => {
         const normalized = typeof normOpt === "function" ? normOpt(opt) : opt;
         let label = normalized.label || normalized.id;
         
@@ -941,12 +944,16 @@ function buildHierarchyOptions(fieldKey, selection, rows){
   });
 
   const visibleOptions = options.filter(opt => !opt.hidden);
-  const defaultEntry = {
-    value: def.defaultValue,
-    label: def.defaultLabel,
-    aliases: [def.defaultValue]
-  };
-  return [defaultEntry].concat(visibleOptions);
+  // Só adiciona opção padrão se defaultValue não for vazio
+  if (def.defaultValue && def.defaultLabel) {
+    const defaultEntry = {
+      value: def.defaultValue,
+      label: def.defaultLabel,
+      aliases: [def.defaultValue]
+    };
+    return [defaultEntry].concat(visibleOptions);
+  }
+  return visibleOptions;
 }
 
 function setSelectOptions(select, options, desiredValue, defaultValue){
@@ -963,12 +970,24 @@ function setSelectOptions(select, options, desiredValue, defaultValue){
     }
   });
   if (!chosen) {
-    chosen = options.find(opt => typeof optionMatchesValue === "function" ? optionMatchesValue(opt, defaultValue) : (opt.value === defaultValue)) || options[0] || null;
+    // Se defaultValue for vazio, não seleciona automaticamente
+    if (defaultValue && defaultValue !== "") {
+      chosen = options.find(opt => typeof optionMatchesValue === "function" ? optionMatchesValue(opt, defaultValue) : (opt.value === defaultValue)) || null;
+    }
+    // Se ainda não escolheu e há opções, escolhe a primeira (mas não se defaultValue for vazio e desiredValue também for vazio)
+    if (!chosen && options.length > 0 && (defaultValue !== "" || current !== "")) {
+      chosen = options[0];
+    }
   }
   const nextValue = chosen ? chosen.value : "";
   select.value = nextValue;
   if (select.value !== nextValue) {
-    select.selectedIndex = 0;
+    // Se não há valor selecionado e defaultValue é vazio, deixa vazio
+    if (!nextValue && defaultValue === "") {
+      select.selectedIndex = -1;
+    } else {
+      select.selectedIndex = 0;
+    }
   }
   if (select.dataset.search === "true") {
     if (typeof ensureSelectSearch === "function") ensureSelectSearch(select);
@@ -1328,8 +1347,19 @@ function wireClearFiltersButton() {
 }
 
 async function clearFilters() {
+  // Limpa filtros de hierarquia (segmento, diretoria, gerencia) deixando vazios
+  const hierarchyFilters = ["#f-segmento", "#f-diretoria", "#f-gerencia"];
+  hierarchyFilters.forEach(sel => {
+    const el = $(sel);
+    if (el && el.tagName === "SELECT") {
+      el.selectedIndex = -1; // Deixa vazio
+      el.value = "";
+    }
+  });
+  
+  // Limpa outros filtros
   [
-    "#f-segmento","#f-diretoria","#f-gerencia","#f-gerente",
+    "#f-gerente",
     "#f-agencia","#f-gerente-gestao","#f-secao","#f-familia","#f-produto",
     "#f-status-kpi","#f-visao"
   ].forEach(sel => {
@@ -1344,14 +1374,25 @@ async function clearFilters() {
   const visaoSelect = $("#f-visao");
   if (visaoSelect) visaoSelect.value = "mensal";
   if (typeof state !== "undefined") state.accumulatedView = "mensal";
+  
+  // Não dispara eventos "change" para evitar chamadas de API
   const secaoSelect = $("#f-secao");
-  if (secaoSelect) secaoSelect.dispatchEvent(new Event("change"));
+  if (secaoSelect) {
+    secaoSelect.value = "Todas";
+    // Não dispara evento change
+  }
   const familiaSelect = $("#f-familia");
-  if (familiaSelect) familiaSelect.dispatchEvent(new Event("change"));
+  if (familiaSelect) {
+    familiaSelect.value = "Todas";
+    // Não dispara evento change
+  }
   const produtoSelect = $("#f-produto");
-  if (produtoSelect) produtoSelect.dispatchEvent(new Event("change"));
+  if (produtoSelect) {
+    produtoSelect.value = "Todos";
+    // Não dispara evento change
+  }
 
-  refreshHierarchyCombos();
+  if (typeof refreshHierarchyCombos === "function") refreshHierarchyCombos();
 
   // limpa busca (contrato) e estado
   if (typeof state !== "undefined") state.tableSearchTerm = "";
@@ -1371,10 +1412,15 @@ async function clearFilters() {
   }
 
   await (typeof withSpinner === "function" ? withSpinner(async () => {
+    // Limpa todos os dados de período/filtros
+    if (typeof clearPeriodData === "function") clearPeriodData();
+    // Re-renderiza com dados zerados
     if (typeof applyFiltersAndRender === "function") applyFiltersAndRender();
     if (typeof renderAppliedFilters === "function") renderAppliedFilters();
     if (typeof renderCampanhasView === "function") renderCampanhasView();
     if (typeof state !== "undefined" && state.activeView === "ranking" && typeof renderRanking === "function") renderRanking();
+    // Limpa cards do dashboard
+    if (typeof updateDashboardCards === "function") updateDashboardCards();
   }, "Limpando filtros…") : Promise.resolve());
   if (typeof closeMobileFilters === "function") closeMobileFilters();
 }
@@ -1494,14 +1540,14 @@ function renderAppliedFilters() {
 
   bar.innerHTML = "";
 
-  if (vals.segmento && vals.segmento !== "Todos") push("Segmento", vals.segmento, () => $("#f-segmento").selectedIndex = 0);
-  if (vals.diretoria && vals.diretoria !== "Todas") {
+  if (vals.segmento && vals.segmento !== "Todos" && vals.segmento !== "") push("Segmento", vals.segmento, () => $("#f-segmento").selectedIndex = -1);
+  if (vals.diretoria && vals.diretoria !== "Todas" && vals.diretoria !== "") {
     const label = $("#f-diretoria")?.selectedOptions?.[0]?.text || vals.diretoria;
-    push("Diretoria", label, () => $("#f-diretoria").selectedIndex = 0);
+    push("Diretoria", label, () => $("#f-diretoria").selectedIndex = -1);
   }
-  if (vals.gerencia && vals.gerencia !== "Todas") {
+  if (vals.gerencia && vals.gerencia !== "Todas" && vals.gerencia !== "") {
     const label = $("#f-gerencia")?.selectedOptions?.[0]?.text || vals.gerencia;
-    push("Gerência", label, () => $("#f-gerencia").selectedIndex = 0);
+    push("Gerência", label, () => $("#f-gerencia").selectedIndex = -1);
   }
   if (vals.agencia && vals.agencia !== "Todas") {
     const label = $("#f-agencia")?.selectedOptions?.[0]?.text || vals.agencia;

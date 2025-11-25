@@ -47,8 +47,8 @@ class RealizadosRepository extends BaseRepository
                     COALESCE(u.regional, '') AS gerencia_regional_nome,
                     COALESCE(u.regional, '') AS regional_nome,
                     COALESCE(u.agencia, '') AS agencia_nome,
-                    COALESCE(u.funcional, '') AS gerente_gestao_id,
-                    COALESCE(u.nome, '') AS gerente_gestao_nome,
+                    COALESCE(gg.funcional, '') AS gerente_gestao_id,
+                    COALESCE(gg.nome, '') AS gerente_gestao_nome,
                     COALESCE(u.funcional, '') AS gerente_id,
                     COALESCE(u.nome, '') AS gerente_nome,
                     COALESCE(p.familia, '') AS familia_nome,
@@ -62,6 +62,13 @@ class RealizadosRepository extends BaseRepository
                     AND u.id_regional = r.gerencia_regional_id
                     AND u.id_agencia = r.agencia_id
                     AND u.funcional = r.funcional
+                    AND u.id_cargo = " . Cargo::GERENTE . "
+                LEFT JOIN d_estrutura gg
+                    ON gg.id_agencia = u.id_agencia
+                    AND gg.id_regional = u.id_regional
+                    AND gg.id_diretoria = u.id_diretoria
+                    AND gg.id_segmento = u.id_segmento
+                    AND gg.id_cargo = " . Cargo::GERENTE_GESTAO . "  
                 LEFT JOIN " . Tables::D_PRODUTOS . " p ON p.id_indicador = r.indicador_id
                     AND (p.id_subindicador = r.subindicador_id OR (p.id_subindicador IS NULL AND r.subindicador_id IS NULL))
                 WHERE 1=1";
@@ -104,12 +111,12 @@ class RealizadosRepository extends BaseRepository
         if ($filters->getGerenteGestao() !== null) {
             $sql .= " AND EXISTS (
                 SELECT 1 FROM " . Tables::D_ESTRUTURA . " ggestao 
-                WHERE ggestao.funcional = :gerente_gestao
-                AND ggestao.id_cargo = " . Cargo::GERENTE_GESTAO . "
-                AND ggestao.id_segmento = r.segmento_id
-                AND ggestao.id_diretoria = r.diretoria_id
-                AND ggestao.id_regional = r.gerencia_regional_id
-                AND ggestao.id_agencia = r.agencia_id
+                WHERE gg.funcional = :gerente_gestao
+                AND gg.id_cargo = " . Cargo::GERENTE_GESTAO . "
+                AND gg.id_segmento = r.segmento_id
+                AND gg.id_diretoria = r.diretoria_id
+                AND gg.id_regional = r.gerencia_regional_id
+                AND gg.id_agencia = r.agencia_id
             )";
             $params[':gerente_gestao'] = $filters->getGerenteGestao();
         }
@@ -134,6 +141,15 @@ class RealizadosRepository extends BaseRepository
             $params[':subindicador'] = $filters->getSubindicador();
         }
 
+        if ($filters->getDataInicio() !== null) {
+            $sql .= " AND r.data_realizado >= :dataInicio";
+            $params[':dataInicio'] = $filters->getDataInicio();
+        }
+        if ($filters->getDataFim() !== null) {
+            $sql .= " AND r.data_realizado <= :dataFim";
+            $params[':dataFim'] = $filters->getDataFim();
+        }
+        
         return ['sql' => $sql, 'params' => $params];
     }
 

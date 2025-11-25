@@ -106,6 +106,15 @@ class PontosRepository extends BaseRepository
             $params[':indicador'] = $filters->getIndicador();
         }
 
+        if ($filters->getDataInicio() !== null) {   
+            $sql .= " AND p.data_realizado >= :dataInicio";
+            $params[':dataInicio'] = $filters->getDataInicio();
+        }
+        if ($filters->getDataFim() !== null) {
+            $sql .= " AND p.data_realizado <= :dataFim";
+            $params[':dataFim'] = $filters->getDataFim();
+        }
+        
         return ['sql' => $sql, 'params' => $params];
     }
 

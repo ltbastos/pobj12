@@ -94,9 +94,9 @@ function normalizarLinhasHistoricoRankingPobj(rows){
 }
 
 /* ===== Função para carregar dados de histórico da API ===== */
-async function loadHistoricoData(){
+async function loadHistoricoData(filterParams = {}){
   try {
-    const response = await apiGet('/historico').catch(() => null);
+    const response = await apiGet('/historico', filterParams).catch(() => null);
     if (!response) return [];
     
     // Verifica se a resposta está no novo formato { success, data }

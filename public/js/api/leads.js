@@ -5,9 +5,9 @@
    ========================================================= */
 
 /* ===== Função para carregar dados de leads da API ===== */
-async function loadLeadsData(){
+async function loadLeadsData(filterParams = {}){
   try {
-    const response = await apiGet('/leads').catch(() => null);
+    const response = await apiGet('/leads', filterParams).catch(() => null);
     if (!response) return [];
     
     // Verifica se a resposta está no novo formato { success, data }

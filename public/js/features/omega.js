@@ -240,7 +240,7 @@ const OMEGA_USER_METADATA = {
 };
 
 let OMEGA_USERS = [];
-const OMEGA_AVATAR_PLACEHOLDER = "public/img/omega-avatar-placeholder.svg";
+const OMEGA_AVATAR_PLACEHOLDER = "img/omega-avatar-placeholder.svg";
 
 const OMEGA_EXTERNAL_CONTACTS = new Map();
 

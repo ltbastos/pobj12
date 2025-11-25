@@ -182,9 +182,9 @@ function normalizarLinhasFatoRealizados(rows){
 }
 
 /* ===== Função para carregar dados de realizados da API ===== */
-async function loadRealizadosData(){
+async function loadRealizadosData(filterParams = {}){
   try {
-    const response = await apiGet('/realizados').catch(() => null);
+    const response = await apiGet('/realizados', filterParams).catch(() => null);
     if (!response) return [];
     
     // Verifica se a resposta está no novo formato { success, data }

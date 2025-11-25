@@ -32,9 +32,9 @@ function normalizarLinhasFatoPontos(rows){
 }
 
 /* ===== Função para carregar dados de pontos da API ===== */
-async function loadPontosData(){
+async function loadPontosData(filterParams = {}){
   try {
-    const response = await apiGet('/pontos').catch(() => null);
+    const response = await apiGet('/pontos', filterParams).catch(() => null);
     if (!response) return [];
     
     // Verifica se a resposta está no novo formato { success, data }

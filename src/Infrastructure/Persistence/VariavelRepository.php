@@ -100,6 +100,14 @@ class VariavelRepository extends BaseRepository
             $sql .= " AND v.funcional = :gerente";
             $params[':gerente'] = $filters->getGerente();
         }
+        if ($filters->getDataInicio() !== null) {
+            $sql .= " AND v.dt_atualizacao >= :dataInicio";
+            $params[':dataInicio'] = $filters->getDataInicio();
+        }
+        if ($filters->getDataFim() !== null) {
+            $sql .= " AND v.dt_atualizacao <= :dataFim";
+            $params[':dataFim'] = $filters->getDataFim();
+        }
 
         return ['sql' => $sql, 'params' => $params];
     }

@@ -26,18 +26,33 @@ class MetaDTO extends BaseFactDTO
     private $subindicadorCodigo;
     private $familiaCodigo;
     private $indicadorCodigo;
-    private $carteira;
-    private $canalVenda;
-    private $tipoVenda;
-    private $modalidadePagamento;
-    private $data;
-    private $competencia;
     private $metaMensal;
-    private $metaAcumulada;
-    private $variavelMeta;
-    private $peso;
 
-    public function __construct($registroId = null, $segmento = null, $segmentoId = null, $diretoriaId = null, $diretoriaNome = null, $gerenciaId = null, $gerenciaNome = null, $regionalNome = null, $agenciaId = null, $agenciaNome = null, $gerenteGestaoId = null, $gerenteGestaoNome = null, $gerenteId = null, $gerenteNome = null, $familiaId = null, $familiaNome = null, $idIndicador = null, $dsIndicador = null, $subproduto = null, $subindicadorCodigo = null, $familiaCodigo = null, $indicadorCodigo = null, $carteira = null, $canalVenda = null, $tipoVenda = null, $modalidadePagamento = null, $data = null, $competencia = null, $metaMensal = null, $metaAcumulada = null, $variavelMeta = null, $peso = null)
+    public function __construct(
+        $registroId = null,
+        $segmento = null,
+        $segmentoId = null,
+        $diretoriaId = null,
+        $diretoriaNome = null,
+        $gerenciaId = null,
+        $gerenciaNome = null,
+        $regionalNome = null,
+        $agenciaId = null,
+        $agenciaNome = null,
+        $gerenteGestaoId = null,
+        $gerenteGestaoNome = null,
+        $gerenteId = null,
+        $gerenteNome = null,
+        $familiaId = null,
+        $familiaNome = null,
+        $idIndicador = null,
+        $dsIndicador = null,
+        $subproduto = null,
+        $subindicadorCodigo = null,
+        $familiaCodigo = null,
+        $indicadorCodigo = null,
+        $metaMensal = null
+    )
     {
         $this->registroId = $registroId;
         $this->segmento = $segmento;
@@ -61,16 +76,7 @@ class MetaDTO extends BaseFactDTO
         $this->subindicadorCodigo = $subindicadorCodigo;
         $this->familiaCodigo = $familiaCodigo;
         $this->indicadorCodigo = $indicadorCodigo;
-        $this->carteira = $carteira;
-        $this->canalVenda = $canalVenda;
-        $this->tipoVenda = $tipoVenda;
-        $this->modalidadePagamento = $modalidadePagamento;
-        $this->data = $data;
-        $this->competencia = $competencia;
         $this->metaMensal = $metaMensal;
-        $this->metaAcumulada = $metaAcumulada;
-        $this->variavelMeta = $variavelMeta;
-        $this->peso = $peso;
     }
 
     public function toArray()
@@ -98,16 +104,7 @@ class MetaDTO extends BaseFactDTO
             'subindicador_codigo' => $this->subindicadorCodigo,
             'familia_codigo' => $this->familiaCodigo,
             'indicador_codigo' => $this->indicadorCodigo,
-            'carteira' => $this->carteira,
-            'canal_venda' => $this->canalVenda,
-            'tipo_venda' => $this->tipoVenda,
-            'modalidade_pagamento' => $this->modalidadePagamento,
-            'data' => $this->data,
-            'competencia' => $this->competencia,
             'meta_mensal' => $this->metaMensal,
-            'meta_acumulada' => $this->metaAcumulada,
-            'variavel_meta' => $this->variavelMeta,
-            'peso' => $this->peso,
         ];
     }
 }

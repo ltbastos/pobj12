@@ -46,21 +46,30 @@ class MetasRepository extends BaseRepository
                     COALESCE(u.regional, '') AS gerencia_regional_nome,
                     COALESCE(u.regional, '') AS regional_nome,
                     COALESCE(u.agencia, '') AS agencia_nome,
-                    COALESCE(u.funcional, '') AS gerente_gestao_id,
-                    COALESCE(u.nome, '') AS gerente_gestao_nome,
+                    COALESCE(gg.funcional, '') AS gerente_gestao_id,
+                    COALESCE(gg.nome, '') AS gerente_gestao_nome,
                     COALESCE(u.funcional, '') AS gerente_id,
                     COALESCE(u.nome, '') AS gerente_nome,
                     COALESCE(p.familia, '') AS familia_nome,
                     COALESCE(CAST(p.id_indicador AS CHAR), '') AS id_indicador,
                     COALESCE(p.indicador, '') AS ds_indicador,
                     COALESCE(p.subindicador, '') AS subproduto,
-                    COALESCE(CAST(p.id_subindicador AS CHAR), '0') AS id_subindicador
+                    COALESCE(CAST(p.id_subindicador AS CHAR), '0') AS id_subindicador,
+                    m.meta_mensal
                 FROM " . Tables::F_META . " m
-                LEFT JOIN " . Tables::D_ESTRUTURA . " u ON u.id_segmento = m.segmento_id
-                    AND u.id_diretoria = m.diretoria_id
-                    AND u.id_regional = m.gerencia_regional_id
-                    AND u.id_agencia = m.agencia_id
-                    AND u.funcional = m.funcional
+                    LEFT JOIN d_estrutura u
+                        ON u.funcional = m.funcional
+                        AND u.id_agencia = m.agencia_id
+                        AND u.id_regional = m.gerencia_regional_id
+                        AND u.id_diretoria = m.diretoria_id
+                        AND u.id_segmento = m.segmento_id
+                        AND u.id_cargo = 1
+                    LEFT JOIN d_estrutura gg
+                        ON gg.id_agencia = u.id_agencia
+                        AND gg.id_regional = u.id_regional
+                        AND gg.id_diretoria = u.id_diretoria
+                        AND gg.id_segmento = u.id_segmento
+                        AND gg.id_cargo = 3
                 LEFT JOIN " . Tables::D_PRODUTOS . " p ON p.id_indicador = m.id_indicador
                     AND (p.id_subindicador = m.id_subindicador OR (p.id_subindicador IS NULL AND m.id_subindicador IS NULL))
                 WHERE 1=1";
@@ -101,7 +110,7 @@ class MetasRepository extends BaseRepository
         }
 
         if ($filters->getGerenteGestao() !== null) {
-            $sql .= " AND u.funcional = :gerente_gestao";
+            $sql .= " AND gg.funcional = :gerente_gestao";
             $params[':gerente_gestao'] = $filters->getGerenteGestao();
         }
 
@@ -123,6 +132,15 @@ class MetasRepository extends BaseRepository
         if ($filters->getSubindicador() !== null) {
             $sql .= " AND m.id_subindicador = :subindicador";
             $params[':subindicador'] = $filters->getSubindicador();
+        }
+        
+        if ($filters->getDataInicio() !== null) {
+            $sql .= " AND m.data_meta >= :dataInicio";
+            $params[':dataInicio'] = $filters->getDataInicio();
+        }
+        if ($filters->getDataFim() !== null) {
+            $sql .= " AND m.data_meta <= :dataFim";
+            $params[':dataFim'] = $filters->getDataFim();
         }
 
         return ['sql' => $sql, 'params' => $params];
@@ -167,15 +185,9 @@ class MetasRepository extends BaseRepository
             $row['ds_indicador'] ?? null,
             $row['subproduto'] ?? null,
             $row['id_subindicador'] ?? null,
-            (string)($row['familia_id'] ?? null),        // familiaCodigo
-            (string)($row['indicador_id'] ?? null),      // indicadorCodigo
-            null,                                        // carteira
-            null,                                        // canalVenda
-            null,                                        // tipoVenda
-            null,                                        // modalidadePagamento
-            $dataIso,                                    // data
-            $dataIso,                                    // competencia
-            ValueFormatter::toFloat($row['meta_mensal'] ?? null)                                       // peso
+            (string)($row['familia_id'] ?? null),  
+            (string)($row['indicador_id'] ?? null),                                                            
+            ValueFormatter::toFloat($row['meta_mensal'] ?? null)  
         );
     }
 }

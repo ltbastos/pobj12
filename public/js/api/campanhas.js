@@ -196,9 +196,9 @@ function initializeCampaignUnitData() {
 }
 
 /* ===== Função para carregar dados de campanhas da API ===== */
-async function loadCampanhasData(){
+async function loadCampanhasData(filterParams = {}){
   try {
-    const response = await apiGet('/campanhas').catch(() => null);
+    const response = await apiGet('/campanhas', filterParams).catch(() => null);
     if (!response) return [];
     
     // Verifica se a resposta está no novo formato { success, data }

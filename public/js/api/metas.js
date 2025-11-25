@@ -186,9 +186,9 @@ function normalizarLinhasFatoMetas(rows){
 }
 
 /* ===== Função para carregar dados de metas da API ===== */
-async function loadMetasData(){
+async function loadMetasData(filterParams = {}){
   try {
-    const response = await apiGet('/metas').catch(() => null);
+    const response = await apiGet('/metas', filterParams).catch(() => null);
     if (!response) return [];
     
     // Verifica se a resposta está no novo formato { success, data }

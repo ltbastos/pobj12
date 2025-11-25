@@ -15,13 +15,14 @@ if (typeof window !== "undefined") {
 /* ===== Função para normalizar linhas de variável ===== */
 function normalizarLinhasFatoVariavel(rows){
   return rows.map(raw => {
-    if (!raw || !raw.id) return null;
+    if (!raw || (!raw.id && !raw.registro_id)) return null;
     
     // Campos principais
-    const id = raw.id;
+    const id = raw.id || raw.registro_id;
     const funcional = raw.funcional || "";
-    const variavelMeta = toNumber(raw.meta) || 0;
-    const variavelReal = toNumber(raw.variavel) || 0;
+    // Usa variavel_meta e variavel_real da API (campos retornados pelo DTO)
+    const variavelMeta = toNumber(raw.variavel_meta ?? raw.meta) || 0;
+    const variavelReal = toNumber(raw.variavel_real ?? raw.variavel) || 0;
     const dtAtualizacao = converterDataISO(raw.dt_atualizacao);
     
     // Campos de estrutura (vêm diretamente da API)
@@ -67,9 +68,9 @@ function normalizarLinhasFatoVariavel(rows){
 }
 
 /* ===== Função para carregar dados de variável da API ===== */
-async function loadVariavelData(){
+async function loadVariavelData(filterParams = {}){
   try {
-    const response = await apiGet('/variavel').catch(() => null);
+    const response = await apiGet('/variavel', filterParams).catch(() => null);
     if (!response) return [];
     
     // Verifica se a resposta está no novo formato { success, data }

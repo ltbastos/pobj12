@@ -48,6 +48,7 @@ class __TwigTemplate_6fc4d1928fd0284241fe2646f263566e65820272218c7b6feb38570530d
           <select id=\"f-gerente\" class=\"input\" data-search=\"true\"></select>
         </div>
         <div class=\"filters__actions\">
+          <button id=\"btn-filtrar\" class=\"btn btn--primary\"><i class=\"ti ti-search\"></i> Filtrar</button>
           <button id=\"btn-limpar\" class=\"btn\"><i class=\"ti ti-x\"></i> Limpar filtros</button>
         </div>
       </div>
@@ -87,6 +88,7 @@ class __TwigTemplate_6fc4d1928fd0284241fe2646f263566e65820272218c7b6feb38570530d
           <select id=\"f-gerente\" class=\"input\" data-search=\"true\"></select>
         </div>
         <div class=\"filters__actions\">
+          <button id=\"btn-filtrar\" class=\"btn btn--primary\"><i class=\"ti ti-search\"></i> Filtrar</button>
           <button id=\"btn-limpar\" class=\"btn\"><i class=\"ti ti-x\"></i> Limpar filtros</button>
         </div>
       </div>

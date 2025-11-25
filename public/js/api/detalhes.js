@@ -238,9 +238,9 @@ function normalizarLinhasFatoDetalhes(rows){
 }
 
 /* ===== Função para carregar dados de detalhes da API ===== */
-async function loadDetalhesData(){
+async function loadDetalhesData(filterParams = {}){
   try {
-    const response = await apiGet('/detalhes').catch(() => null);
+    const response = await apiGet('/detalhes', filterParams).catch(() => null);
     if (!response) return [];
     
     // Verifica se a resposta está no novo formato { success, data }
