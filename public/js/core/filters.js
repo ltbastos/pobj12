@@ -718,19 +718,34 @@ function buildHierarchyOptions(fieldKey, selection, rows){
     }
     options.push(...filteredOptions.map(opt => {
         const normalized = typeof normOpt === "function" ? normOpt(opt) : opt;
+        // Preserva funcional do opt original (normOpt pode remover campos extras)
+        const funcional = opt.funcional || normalized.funcional;
         let label = normalized.label || normalized.id;
         
         // Para segmento, diretoria, agência, gerente gestão e gerente, garantir que o label inclua o ID
         if (fieldsWithIdRequired.has(fieldKey) && normalized.id) {
           const optId = limparTexto(normalized.id);
           const optLabel = limparTexto(normalized.label);
-          const optName = typeof extractNameFromLabel === "function" ? extractNameFromLabel(optLabel) : optLabel;
           
-          // Se o label não contém o ID, adiciona usando buildHierarchyLabel
-          if (optId && optName && optId !== optName && !optLabel.includes(optId)) {
-            label = buildHierarchyLabel(optId, optName) || `${optId} - ${optName}`;
-          } else if (optId && !optLabel.includes(optId)) {
-            label = buildHierarchyLabel(optId, optLabel) || `${optId} - ${optLabel}`;
+          // Para gerente e gerente de gestão, sempre usa funcional
+          if (fieldKey === "ggestao" || fieldKey === "gerente") {
+            const displayId = limparTexto(funcional);
+            // Extrai o nome do label (remove qualquer ID que possa estar no início)
+            const optName = typeof extractNameFromLabel === "function" ? extractNameFromLabel(optLabel) : optLabel;
+            // Remove qualquer ID do início do nome se ainda estiver lá
+            const nomeFinal = optName.replace(/^\d+\s*-\s*/, '').trim() || optLabel.replace(/^\d+\s*-\s*/, '').trim() || optLabel;
+            // Sempre reconstrói o label com funcional - nome
+            label = buildHierarchyLabel(displayId, nomeFinal) || `${displayId} - ${nomeFinal}`;
+          } else {
+            // Para outros campos, usa a lógica normal
+            const optName = typeof extractNameFromLabel === "function" ? extractNameFromLabel(optLabel) : optLabel;
+            // Para outros campos, usa a lógica normal
+            // Se o label não contém o ID, adiciona usando buildHierarchyLabel
+            if (optId && optName && optId !== optName && !optLabel.includes(optId)) {
+              label = buildHierarchyLabel(optId, optName) || `${optId} - ${optName}`;
+            } else if (optId && !optLabel.includes(optId)) {
+              label = buildHierarchyLabel(optId, optLabel) || `${optId} - ${optLabel}`;
+            }
           }
         }
         

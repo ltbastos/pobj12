@@ -25,7 +25,7 @@ class EstruturaUseCase
             'familias'        => $this->repository->findAllFamilias(),
             'indicadores'     => $this->repository->findAllIndicadores(),
             'subindicadores'  => $this->repository->findAllSubindicadores(),
-
+            'status_indicadores' => $this->repository->findAllStatusIndicadores(),
         ];
     }
 }

@@ -788,8 +788,9 @@ function buildResumoHierarchyDefault(rows = []) {
     if (!dim || typeof dim !== "object") return;
     const id = limparTexto(dim.id || dim.funcional);
     if (!id) return;
-    const nome = limparTexto(dim.nome) || extractNameFromLabel(dim.label) || id;
-    const label = buildHierarchyLabel(id, nome);
+    const nome = limparTexto(dim.nome) || extractNameFromLabel(dim.label);
+    const displayId = limparTexto(dim.funcional);
+    const label = buildHierarchyLabel(displayId, nome);
     const agencia = limparTexto(dim.id_agencia || dim.agencia);
     const regional = limparTexto(dim.id_regional || dim.regional || dim.gerencia);
     const diretoria = limparTexto(dim.id_diretoria || dim.diretoria);
@@ -825,7 +826,9 @@ function buildResumoHierarchyDefault(rows = []) {
     const id = limparTexto(dim.id || dim.funcional);
     if (!id) return;
     const nome = limparTexto(dim.nome) || extractNameFromLabel(dim.label) || id;
-    const label = buildHierarchyLabel(id, nome);
+    // Para gerente, usa funcional se disponível, senão usa id
+    const displayId = limparTexto(dim.funcional) || id;
+    const label = buildHierarchyLabel(displayId, nome);
     const agencia = limparTexto(dim.id_agencia || dim.agencia);
     const regional = limparTexto(dim.id_regional || dim.regional || dim.gerencia);
     const diretoria = limparTexto(dim.id_diretoria || dim.diretoria);
@@ -839,6 +842,7 @@ function buildResumoHierarchyDefault(rows = []) {
       diretoria: diretoria || '',
       segmento: segmento || '',
     };
+
     if (!entry.nome) entry.nome = nome;
     entry.label = label;
     entry.gerenteId = entry.gerenteId || id;
@@ -1123,7 +1127,6 @@ function applyHierarchyFallbackToRow(row){
   if (!row.gerenteGestaoLabel && row.gerenteGestaoId) {
     row.gerenteGestaoLabel = labelGerenteGestao(row.gerenteGestaoId, row.gerenteGestaoNome);
   }
-
   if (gerMetaId && (!gerRowId || idsCoincidem)) {
     row.gerente = meta.gerenteId;
     row.gerenteId = meta.gerenteId;
@@ -1694,7 +1697,8 @@ function montarHierarquiaMesu(rows){
     const lookup = DIM_GGESTAO_LOOKUP.get(id) || {};
     const baseEntry = ggMap.get(id) || {};
     const nome = extractNameFromLabel(normalized.label) || lookup.nome || baseEntry.nome || id;
-    const label = buildHierarchyLabel(id, nome);
+    const displayId = limparTexto(lookup.funcional || normalized.funcional || opt.funcional);
+    const label = buildHierarchyLabel(displayId, nome);
     const agencia = limparTexto(lookup.id_agencia || baseEntry.agencia);
     const gerencia = limparTexto(lookup.id_regional || baseEntry.gerencia);
     const diretoria = limparTexto(lookup.id_diretoria || baseEntry.diretoria);
@@ -1725,7 +1729,8 @@ function montarHierarquiaMesu(rows){
     const lookup = DIM_GERENTES_LOOKUP.get(id) || {};
     const baseEntry = gerMap.get(id) || {};
     const nome = extractNameFromLabel(normalized.label) || lookup.nome || baseEntry.nome || id;
-    const label = buildHierarchyLabel(id, nome);
+    const displayId = limparTexto(lookup.funcional || normalized.funcional || opt.funcional);
+    const label = buildHierarchyLabel(displayId, nome);
     const agencia = limparTexto(lookup.id_agencia || baseEntry.agencia);
     const gerencia = limparTexto(lookup.id_regional || baseEntry.gerencia);
     const diretoria = limparTexto(lookup.id_diretoria || baseEntry.diretoria);
@@ -2709,19 +2714,17 @@ async function loadInitialData(){
     if (DATA_SOURCE === "sql") {
       const [
         estruturaData,
-        status,
         produtos,
         calendario,
         mesu
       ] = await Promise.all([
         await Estrutura.init(),
-        loadStatusData(),
         loadCalendarioData(),
       ]);
 
       return processInitialData({
         mesuRaw: mesu || [],
-        statusRaw: status || [],
+        statusRaw: estruturaData.statusIndicadores || [],
         produtosDimRaw: produtos || [],
         calendarioRaw: calendario || [],
         dimSegmentosRaw: estruturaData.segmentos || [],
@@ -3126,7 +3129,6 @@ async function loadBaseData(){
       
       const [
         estruturaData,
-        status,
         produtos,
         calendario,
         realizados,
@@ -3140,7 +3142,6 @@ async function loadBaseData(){
         pontos
       ] = await Promise.all([
         await Estrutura.init(),
-        loadStatusData(),
         loadProdutosData(),
         loadCalendarioData(),
         loadRealizadosData(filterParams),
@@ -3156,7 +3157,7 @@ async function loadBaseData(){
 
       return processBaseDataSources({
         mesuRaw: mesu || [],
-        statusRaw: status || [],
+        statusRaw: estruturaData.statusIndicadores || [],
         produtosDimRaw: produtos || [],
         realizadosRaw: realizados || [],
         metasRaw: metas || [],
@@ -8352,19 +8353,34 @@ function buildHierarchyOptions(fieldKey, selection, rows){
     const options = [baseOption].concat(
       filteredOptions.map(opt => {
         const normalized = normOpt(opt);
+        // Preserva funcional do opt original (normOpt pode remover campos extras)
+        const funcional = opt.funcional || normalized.funcional;
         let label = normalized.label || normalized.id;
         
         // Para segmento, diretoria, agência, gerente gestão e gerente, garantir que o label inclua o ID
         if (fieldsWithIdRequired.has(fieldKey) && normalized.id) {
           const optId = limparTexto(normalized.id);
           const optLabel = limparTexto(normalized.label);
-          const optName = typeof extractNameFromLabel === "function" ? extractNameFromLabel(optLabel) : optLabel;
           
-          // Se o label não contém o ID, adiciona usando buildHierarchyLabel
-          if (optId && optName && optId !== optName && !optLabel.includes(optId)) {
-            label = buildHierarchyLabel(optId, optName) || `${optId} - ${optName}`;
-          } else if (optId && !optLabel.includes(optId)) {
-            label = buildHierarchyLabel(optId, optLabel) || `${optId} - ${optLabel}`;
+          // Para gerente e gerente de gestão, sempre usa funcional
+          if (fieldKey === "ggestao" || fieldKey === "gerente") {
+            const displayId = limparTexto(funcional);
+            // Extrai o nome do label (remove qualquer ID que possa estar no início)
+            const optName = typeof extractNameFromLabel === "function" ? extractNameFromLabel(optLabel) : optLabel;
+            // Remove qualquer ID do início do nome se ainda estiver lá
+            const nomeFinal = optName.replace(/^\d+\s*-\s*/, '').trim() || optLabel.replace(/^\d+\s*-\s*/, '').trim() || optLabel;
+            // Sempre reconstrói o label com funcional - nome
+            label = buildHierarchyLabel(displayId, nomeFinal) || `${displayId} - ${nomeFinal}`;
+          } else {
+            // Para outros campos, usa a lógica normal
+            const optName = typeof extractNameFromLabel === "function" ? extractNameFromLabel(optLabel) : optLabel;
+            // Para outros campos, usa a lógica normal
+            // Se o label não contém o ID, adiciona usando buildHierarchyLabel
+            if (optId && optName && optId !== optName && !optLabel.includes(optId)) {
+              label = buildHierarchyLabel(optId, optName) || `${optId} - ${optName}`;
+            } else if (optId && !optLabel.includes(optId)) {
+              label = buildHierarchyLabel(optId, optLabel) || `${optId} - ${optLabel}`;
+            }
           }
         }
         

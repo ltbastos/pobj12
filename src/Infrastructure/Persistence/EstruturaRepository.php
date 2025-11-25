@@ -10,7 +10,9 @@ use App\Domain\Model\Agencia;
 use App\Domain\Model\Familia;
 use App\Domain\Model\Indicador;
 use App\Domain\Model\Subindicador;
+use App\Domain\Model\DStatusIndicador;
 use App\Domain\Enum\Cargo;
+use App\Domain\Enum\StatusIndicador;
 
 class EstruturaRepository
 {
@@ -163,6 +165,29 @@ class EstruturaRepository
                 'id' => $subindicador->id,
                 'label' => $subindicador->nm_subindicador,
                 'indicador_id' => $indicador->id,
+            ];
+        })->toArray();
+    }
+
+    /**
+     * Retorna todos os status de indicadores
+     * @return array
+     */
+    public function findAllStatusIndicadores(): array
+    {
+        $status = DStatusIndicador::select('id', 'status as label')
+            ->orderBy('id', 'ASC')
+            ->get();
+
+        // Se não houver resultados, retorna os defaults
+        if ($status->isEmpty()) {
+            return StatusIndicador::getDefaults();
+        }
+
+        return $status->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'label' => $item->label,
             ];
         })->toArray();
     }

@@ -27,6 +27,7 @@
       familia: [],
       indicador: [],
       subindicador: [],
+      statusIndicadores: [],
     };
   
     /* -------------------------------
@@ -101,6 +102,11 @@
             ? String(r.id_gestor).trim() 
             : (r.idGestor !== undefined && r.idGestor != null ? String(r.idGestor).trim() : undefined);
           
+          // Preserva funcional para gerente e gerente de gestão
+          const funcional = r.funcional !== undefined && r.funcional != null 
+            ? String(r.funcional).trim() 
+            : undefined;
+          
           const normalized = normOpt({
             id: idStr,
             label: normalizeLabel(r) || "",
@@ -110,6 +116,9 @@
           // (normOpt retorna apenas {id, label}, então precisamos adicionar de volta)
           if (familiaId !== undefined) {
             normalized.familia_id = familiaId;
+          }
+          if (funcional !== undefined) {
+            normalized.funcional = funcional;
           }
           if (indicadorId !== undefined) {
             normalized.indicador_id = indicadorId;
@@ -158,6 +167,7 @@
       filterOptions.familia = buildOptions(dim.familias);
       filterOptions.indicador = buildOptions(dim.indicadores);
       filterOptions.subindicador = buildOptions(dim.subindicadores);
+      filterOptions.statusIndicadores = buildOptions(dim.statusIndicadores);
     }
   
     /* -------------------------------
@@ -217,6 +227,7 @@
         familias: data.familias || [],
         indicadores: data.indicadores || [],
         subindicadores: data.subindicadores || [],
+        statusIndicadores: data.status_indicadores || [],
       };
   
       register(rawData);
@@ -238,6 +249,47 @@
   /* Export global se necessário */
   if (typeof window !== "undefined") {
     window.Estrutura = Estrutura;
+  }
+
+  /* ===== Funções auxiliares para labels de gerente e gerente de gestão ===== */
+  function labelGerenteGestao(id, nome) {
+    if (!id) return nome || "";
+    const lookup = typeof DIM_GGESTAO_LOOKUP !== "undefined" ? DIM_GGESTAO_LOOKUP.get(limparTexto(id)) : null;
+    const funcional = lookup?.funcional ? limparTexto(lookup.funcional) : null;
+    const displayId = funcional || limparTexto(id);
+    const displayNome = limparTexto(nome) || lookup?.nome || displayId;
+    // Usa buildHierarchyLabel se disponível, senão constrói manualmente
+    if (typeof buildHierarchyLabel === "function") {
+      return buildHierarchyLabel(displayId, displayNome);
+    }
+    // Fallback manual
+    if (displayId && displayNome && displayId !== displayNome) {
+      return `${displayId} - ${displayNome}`;
+    }
+    return displayNome || displayId || "";
+  }
+
+  function labelGerente(id, nome) {
+    if (!id) return nome || "";
+    const lookup = typeof DIM_GERENTES_LOOKUP !== "undefined" ? DIM_GERENTES_LOOKUP.get(limparTexto(id)) : null;
+    const funcional = lookup?.funcional ? limparTexto(lookup.funcional) : null;
+    const displayId = funcional || limparTexto(id);
+    const displayNome = limparTexto(nome) || lookup?.nome || displayId;
+    // Usa buildHierarchyLabel se disponível, senão constrói manualmente
+    if (typeof buildHierarchyLabel === "function") {
+      return buildHierarchyLabel(displayId, displayNome);
+    }
+    // Fallback manual
+    if (displayId && displayNome && displayId !== displayNome) {
+      return `${displayId} - ${displayNome}`;
+    }
+    return displayNome || displayId || "";
+  }
+
+  // Exporta globalmente
+  if (typeof window !== "undefined") {
+    window.labelGerenteGestao = labelGerenteGestao;
+    window.labelGerente = labelGerente;
   }
 
 /* =========================================================
