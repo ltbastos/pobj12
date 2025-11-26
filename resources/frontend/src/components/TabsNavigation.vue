@@ -199,3 +199,86 @@ const handleTabClick = (viewId: ViewType): void => {
 }
 </style>
 
+<style>
+.date-popover {
+  position: fixed;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 18px 38px rgba(15, 20, 36, 0.18);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  padding: 20px;
+  z-index: 1500;
+  min-width: 320px;
+  max-width: 400px;
+}
+
+.date-popover h4 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text, #0f1424);
+}
+
+.date-popover .row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.date-popover input[type='date'] {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--stroke, #e7eaf2);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.date-popover input[type='date']:focus {
+  outline: none;
+  border-color: var(--brand, #b30000);
+  box-shadow: 0 0 0 3px rgba(204, 9, 47, 0.12);
+}
+
+.date-popover .actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.date-popover .btn-sec,
+.date-popover .btn-pri {
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  border: 1px solid var(--stroke, #e7eaf2);
+}
+
+.date-popover .btn-sec {
+  background: #fff;
+  color: var(--text, #0f1424);
+}
+
+.date-popover .btn-sec:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.date-popover .btn-pri {
+  background: linear-gradient(90deg, #cc092f 40%, #b81570 90%);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(204, 9, 47, 0.25);
+}
+
+.date-popover .btn-pri:hover {
+  background: linear-gradient(90deg, #b81570 40%, #cc092f 90%);
+  box-shadow: 0 6px 16px rgba(204, 9, 47, 0.35);
+  transform: translateY(-1px);
+}
+</style>
+
