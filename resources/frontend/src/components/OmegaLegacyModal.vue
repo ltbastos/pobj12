@@ -11,7 +11,10 @@ const omegaTemplateHtml = omegaTemplate
 const isReady = ref(false)
 const errorMessage = ref<string | null>(null)
 const isModalOpen = ref(false)
-const LEGACY_SCRIPT_SRC = '/legacy/omega.js'
+
+const rawBaseUrl = import.meta.env.BASE_URL || '/'
+const legacyBaseUrl = rawBaseUrl.endsWith('/') ? rawBaseUrl : `${rawBaseUrl}/`
+const LEGACY_SCRIPT_SRC = `${legacyBaseUrl}legacy/omega.js`
 const addedBodyClasses = ['omega-standalone', 'has-omega-open']
 
 let scriptPromise: Promise<void> | null = null
