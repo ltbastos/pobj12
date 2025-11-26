@@ -47,7 +47,13 @@ class Cargo
         }
     }
 
-    public static function tryFromId(int $id): self|null
+    /**
+     * Tenta criar uma instância de Cargo a partir do ID
+     * 
+     * @param int $id
+     * @return self|null
+     */
+    public static function tryFromId(int $id)
     {
         if (in_array($id, self::$validValues, true)) {
             return new self($id);

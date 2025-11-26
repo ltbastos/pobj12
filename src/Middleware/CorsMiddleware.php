@@ -28,13 +28,18 @@ class CorsMiddleware
         
         // Se não há origem na requisição ou origem não está na lista, usar a primeira permitida
         // Em produção, você pode querer retornar erro se origem não estiver permitida
-        $allowedOrigin = empty($origin) || in_array($origin, $allowedOrigins) 
-            ? ($origin ?: ($allowedOrigins[0] ?? '*'))
-            : $allowedOrigins[0] ?? '*';
+        $allowedOrigin = '*';
         
-        // Se '*' está na lista de origens permitidas, usar '*'
-        if (in_array('*', $allowedOrigins)) {
-            $allowedOrigin = '*';
+        if (!empty($origin) && in_array($origin, $allowedOrigins)) {
+            $allowedOrigin = $origin;
+        } elseif (!empty($allowedOrigins)) {
+            // Se '*' está na lista de origens permitidas, usar '*'
+            if (in_array('*', $allowedOrigins)) {
+                $allowedOrigin = '*';
+            } else {
+                // Usar a primeira origem permitida
+                $allowedOrigin = $allowedOrigins[0];
+            }
         }
         
         // Adicionar headers CORS
@@ -59,7 +64,7 @@ class CorsMiddleware
      * 
      * @return array
      */
-    private function getAllowedOrigins(): array
+    private function getAllowedOrigins()
     {
         // Tentar obter da variável de ambiente
         $envOrigins = getenv('CORS_ALLOWED_ORIGINS');
