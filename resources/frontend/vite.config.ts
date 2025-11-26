@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
   return {
     // Em dev: raiz (/)
     // Em produção: /dist/
-    base: mode === 'production' ? '/dist/' : '/',
+    base: mode === 'production' ? '/pobj-vue/' : '/',
 
     plugins: [
       vue(),
@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: env.VITE_API_URL || 'http://localhost:8080',
+          target: env.VITE_API_URL || 'http://localhost/pobj-vue',
           changeOrigin: true,
           secure: false,
         }
