@@ -109,7 +109,7 @@ export function initSelectSearch(select: HTMLSelectElement): void {
       hidePanel()
     }
     if (ev.key === 'Enter') {
-      const first = list.querySelector('.select-search__item')
+      const first = list.querySelector('.select-search__item') as HTMLElement | null
       if (first) {
         ev.preventDefault()
         first.click()

@@ -51,6 +51,7 @@ export interface ProdutoMensal {
   realizado?: number
   ating?: number
   atingido?: boolean
+  ultima_atualizacao?: string
   meses: Array<{
     mes: string
     meta: number

@@ -82,6 +82,7 @@ const handleApply = () => {
   }
   emit('apply', [...selectedCols.value])
   isOpen.value = false
+  feedback.value = ''
 }
 
 const handleSave = () => {
@@ -97,6 +98,20 @@ const handleSave = () => {
   emit('save', name, [...selectedCols.value])
   viewName.value = ''
   feedback.value = 'Visão salva com sucesso.'
+}
+
+const handleLoadView = (viewId: string) => {
+  const view = props.views?.find(v => v.id === viewId)
+  if (view) {
+    selectedCols.value = [...view.columns]
+    feedback.value = ''
+  }
+  emit('load-view', viewId)
+}
+
+const handleDeleteView = (viewId: string) => {
+  if (viewId === 'default') return
+  emit('delete-view', viewId)
 }
 
 const handleClose = () => {
@@ -133,7 +148,7 @@ watch(() => props.modelValue, (open) => {
           <div>
             <h4 id="detail-designer-title">Personalizar colunas</h4>
             <p class="detail-designer__subtitle">
-              Arraste as colunas para montar a visão da tabela e salve até 5 configurações preferidas.
+              Arraste as colunas para montar a visão da tabela e salve até 5 configurações preferidas. A coluna de ações continua fixa no final da grade.
             </p>
           </div>
           <button
@@ -150,11 +165,30 @@ watch(() => props.modelValue, (open) => {
           {{ feedback }}
         </div>
 
+        <section v-if="props.views && props.views.length > 0" class="detail-designer__views">
+          <div class="detail-designer__views-head">
+            <span>VISÕES SALVAS</span>
+            <span class="detail-designer__views-hint">Carregue para ajustar ou excluir.</span>
+          </div>
+          <div class="detail-designer__views-list">
+            <button
+              v-for="view in props.views"
+              :key="view.id"
+              type="button"
+              class="detail-view-chip"
+              :class="{ 'is-active': props.activeViewId === view.id }"
+              @click="handleLoadView(view.id)"
+            >
+              {{ view.name }}
+            </button>
+          </div>
+        </section>
+
         <section class="detail-designer__lists">
           <div class="detail-designer__list detail-designer__list--available">
             <div class="detail-designer__list-head">
               <h5>Colunas disponíveis</h5>
-              <p>Clique para adicionar.</p>
+              <p>Arraste para incluir ou clique para adicionar.</p>
             </div>
             <div class="detail-designer__items">
               <div
@@ -184,7 +218,7 @@ watch(() => props.modelValue, (open) => {
           <div class="detail-designer__list detail-designer__list--selected">
             <div class="detail-designer__list-head">
               <h5>Colunas na tabela</h5>
-              <p>Clique para remover.</p>
+              <p>Arraste para reorganizar ou clique para remover.</p>
             </div>
             <div class="detail-designer__items">
               <div
@@ -219,33 +253,43 @@ watch(() => props.modelValue, (open) => {
 
         <footer class="detail-designer__foot">
           <div class="detail-designer__save">
-            <label for="detail-view-name">Salvar nova visão</label>
-            <div class="detail-designer__save-controls">
+            <label for="detail-view-name" class="detail-designer__save-label">
+              SALVAR NOVA VISÃO
+            </label>
+            <div class="detail-designer__input-wrapper">
               <input
                 id="detail-view-name"
                 v-model="viewName"
                 type="text"
-                class="input input--sm"
+                class="input input--sm detail-designer__input"
                 maxlength="48"
                 placeholder="Ex.: Indicadores priorizados"
+                @keyup.enter="handleSave"
               />
               <button
                 type="button"
-                class="btn btn--primary btn--sm"
+                class="btn btn--primary detail-designer__save-btn"
+                :disabled="!viewName.trim() || viewName.trim().length < 3"
                 @click="handleSave"
               >
                 Salvar visão
               </button>
             </div>
-            <small class="muted">Você pode guardar até 5 visões personalizadas.</small>
+            <small class="detail-designer__save-hint">
+              Você pode guardar até 5 visões personalizadas.
+            </small>
           </div>
           <div class="detail-designer__actions">
-            <button type="button" class="btn btn--ghost btn--sm" @click="handleClose">
+            <button 
+              type="button" 
+              class="btn btn--secondary detail-designer__action-btn" 
+              @click="handleClose"
+            >
               Cancelar
             </button>
             <button
               type="button"
-              class="btn btn--sm btn--primary"
+              class="btn btn--primary detail-designer__action-btn"
               :disabled="selectedCols.length === 0"
               @click="handleApply"
             >
@@ -337,6 +381,69 @@ watch(() => props.modelValue, (open) => {
   border: 1px solid #bfdbfe;
   font-size: 12.5px;
   color: #1d4ed8;
+}
+
+.detail-designer__views {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.detail-designer__views-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 12px;
+  color: #475569;
+}
+
+.detail-designer__views-head span:first-child {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #1f2937;
+}
+
+.detail-designer__views-hint {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.detail-designer__views-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail-view-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid #c7d2fe;
+  background: #fff;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.detail-view-chip:hover {
+  background: #eef2ff;
+  border-color: #93c5fd;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(15, 23, 41, 0.08);
+}
+
+.detail-view-chip.is-active {
+  background: #eef2ff;
+  border-color: #1d4ed8;
+  color: #1d4ed8;
+  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.15);
 }
 
 .detail-designer__lists {
@@ -470,34 +577,71 @@ watch(() => props.modelValue, (open) => {
 .detail-designer__foot {
   display: flex;
   flex-wrap: wrap;
-  gap: 18px;
+  gap: 24px;
   align-items: flex-end;
   justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
 }
 
 .detail-designer__save {
-  flex: 1 1 320px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-.detail-designer__save label {
+.detail-designer__save {
+  flex: 1 1 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.detail-designer__save-label {
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   color: #1f2937;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  margin-bottom: 2px;
 }
 
-.detail-designer__save-controls {
+.detail-designer__input-wrapper {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
 }
 
-.detail-designer__save-controls .input {
+.detail-designer__input {
   flex: 1 1 auto;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid #e7eaf2;
+  border-radius: 10px;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  background: #fff;
+  color: #0f1424;
+  font-family: inherit;
+}
+
+.detail-designer__input:focus {
+  outline: none;
+  border-color: #b30000;
+  box-shadow: 0 0 0 3px rgba(179, 0, 0, 0.12);
+}
+
+.detail-designer__save-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.detail-designer__save-hint {
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 600;
+  margin-top: 2px;
 }
 
 .detail-designer__actions {
@@ -505,6 +649,7 @@ watch(() => props.modelValue, (open) => {
   gap: 8px;
   align-items: center;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 @media (max-width: 780px) {
@@ -525,14 +670,31 @@ watch(() => props.modelValue, (open) => {
   .detail-designer__foot {
     flex-direction: column;
     align-items: stretch;
+    gap: 20px;
+  }
+
+  .detail-designer__save {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .detail-designer__input-wrapper {
+    flex-direction: column;
+  }
+
+  .detail-designer__save-btn {
+    width: 100%;
+    min-width: 0;
   }
 
   .detail-designer__actions {
     justify-content: stretch;
+    width: 100%;
   }
 
-  .detail-designer__actions .btn {
+  .detail-designer__action-btn {
     flex: 1 1 auto;
+    min-width: 0;
   }
 }
 </style>

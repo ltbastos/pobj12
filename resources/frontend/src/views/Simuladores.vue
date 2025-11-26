@@ -207,7 +207,7 @@ const applyShortcut = (value: number) => {
 
 // Inicializa com o primeiro indicador
 onMounted(() => {
-  if (mockCatalog.length > 0 && !selectedIndicatorId.value) {
+  if (mockCatalog.length > 0 && !selectedIndicatorId.value && mockCatalog[0]) {
     selectedIndicatorId.value = mockCatalog[0].id
   }
 })

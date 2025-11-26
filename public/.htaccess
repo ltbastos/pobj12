@@ -1,12 +1,36 @@
 RewriteEngine On
+RewriteBase /
 
-# Se o arquivo ou diretório existe fisicamente, serve diretamente
-RewriteCond %{REQUEST_FILENAME} -f [OR]
+# API Slim - deve vir primeiro
+RewriteCond %{REQUEST_URI} ^/api/
+RewriteRule ^ index.php [QSA,L]
+
+# Mapear assets do Vue: /assets/* -> /dist/assets/*
+RewriteCond %{REQUEST_URI} ^/assets/
+RewriteRule ^assets/(.*)$ dist/assets/$1 [L]
+
+# Mapear favicon: /favicon.ico -> /dist/favicon.ico
+RewriteCond %{REQUEST_URI} ^/favicon\.ico$
+RewriteRule ^favicon\.ico$ dist/favicon.ico [L]
+
+# Mapear fonts: /fonts/* -> /dist/fonts/*
+RewriteCond %{REQUEST_URI} ^/fonts/
+RewriteRule ^fonts/(.*)$ dist/fonts/$1 [L]
+
+# Mapear imagens do Vue: /img/* -> /dist/img/* (apenas se não existir em /img/)
+RewriteCond %{REQUEST_URI} ^/img/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^img/(.*)$ dist/img/$1 [L]
+
+# Servir arquivos que existem fisicamente (incluindo /dist/* e outros estáticos)
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule . - [L]
+
+# Servir diretórios que existem
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule . - [L]
 
-# Redireciona tudo que não for arquivo estático para index.php
+# Vue SPA fallback - todas as outras rotas vão para o index.html do Vue
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ index.php [QSA,L]
-
+RewriteRule ^ dist/index.html [L]

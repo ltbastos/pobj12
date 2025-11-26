@@ -388,16 +388,16 @@ function buildTreeHierarchy(items: DetalhesItem[], hierarchy: string[], level: n
       summary: calculateSummary(groupItems)
     }
 
-    // Se for contrato, adiciona detalhes
+    // Se for contrato, adiciona detalhes (sempre, mesmo que vazio)
     if (currentLevel === 'contrato') {
       node.detail = {
-        canal_venda: firstItem.canal_venda,
-        tipo_venda: firstItem.tipo_venda,
-        gerente: firstItem.gerente_nome,
-        modalidade_pagamento: firstItem.modalidade_pagamento,
-        dt_vencimento: firstItem.dt_vencimento,
-        dt_cancelamento: firstItem.dt_cancelamento,
-        motivo_cancelamento: firstItem.motivo_cancelamento
+        canal_venda: firstItem.canal_venda || undefined,
+        tipo_venda: firstItem.tipo_venda || undefined,
+        gerente: firstItem.gerente_nome || undefined,
+        modalidade_pagamento: firstItem.modalidade_pagamento || undefined,
+        dt_vencimento: firstItem.dt_vencimento || undefined,
+        dt_cancelamento: firstItem.dt_cancelamento || undefined,
+        motivo_cancelamento: firstItem.motivo_cancelamento || undefined
       }
     }
 
@@ -450,14 +450,18 @@ function calculateSummary(items: DetalhesItem[]) {
 const detailOpenRows = ref<Set<string>>(new Set())
 
 function toggleRow(nodeId: string) {
+  const node = findNodeById(treeData.value, nodeId)
+  const isContract = node?.level === 'contrato'
+
   if (expandedRows.value.has(nodeId)) {
     expandedRows.value.delete(nodeId)
-    detailOpenRows.value.delete(nodeId)
+    if (isContract) {
+      detailOpenRows.value.delete(nodeId)
+    }
   } else {
     expandedRows.value.add(nodeId)
     // Se for um contrato, também abre os detalhes
-    const node = findNodeById(treeData.value, nodeId)
-    if (node?.level === 'contrato') {
+    if (isContract) {
       detailOpenRows.value.add(nodeId)
     }
   }
@@ -577,17 +581,51 @@ function handleOpenColumnDesigner() {
 
 
 function handleSaveView(name: string, columns: string[]) {
-  const newView: DetailView = {
-    id: `custom-${Date.now()}`,
-    name,
-    columns: [...columns]
+  // Verificar se já existe uma visão com o mesmo nome
+  const existingView = detailViews.value.find(v => v.name.toLowerCase() === name.toLowerCase() && v.id !== 'default')
+  if (existingView) {
+    // Atualizar visão existente
+    existingView.columns = [...columns]
+    activeDetailViewId.value = existingView.id
+  } else {
+    // Verificar limite de 5 visões personalizadas (sem contar a padrão)
+    const customViews = detailViews.value.filter(v => v.id !== 'default')
+    if (customViews.length >= 5) {
+      alert('Você já possui 5 visões personalizadas. Exclua uma antes de criar outra.')
+      return
+    }
+    // Criar nova visão
+    const newView: DetailView = {
+      id: `custom-${Date.now()}`,
+      name,
+      columns: [...columns]
+    }
+    detailViews.value.push(newView)
+    activeDetailViewId.value = newView.id
   }
-  detailViews.value.push(newView)
-  activeDetailViewId.value = newView.id
   activeColumns.value = [...columns]
   // Salvar no localStorage
   localStorage.setItem('pobj3:detailViews', JSON.stringify(detailViews.value.filter(v => v.id !== 'default')))
-  localStorage.setItem('pobj3:detailActiveView', newView.id)
+  localStorage.setItem('pobj3:detailActiveView', activeDetailViewId.value)
+}
+
+function handleDeleteView(viewId: string) {
+  if (viewId === 'default') return
+  const index = detailViews.value.findIndex(v => v.id === viewId)
+  if (index > -1) {
+    detailViews.value.splice(index, 1)
+    // Se a visão deletada era a ativa, voltar para a padrão
+    if (activeDetailViewId.value === viewId) {
+      activeDetailViewId.value = 'default'
+      const defaultView = detailViews.value.find(v => v.id === 'default')
+      if (defaultView) {
+        activeColumns.value = [...defaultView.columns]
+      }
+    }
+    // Salvar no localStorage
+    localStorage.setItem('pobj3:detailViews', JSON.stringify(detailViews.value.filter(v => v.id !== 'default')))
+    localStorage.setItem('pobj3:detailActiveView', activeDetailViewId.value)
+  }
 }
 
 function handleApplyColumns(columns: string[]) {
@@ -803,8 +841,12 @@ watch([filterState, period], () => {
     <DetailColumnDesigner
       v-model="showColumnDesigner"
       :selected-columns="activeColumns"
+      :views="detailViews"
+      :active-view-id="activeDetailViewId"
       @apply="handleApplyColumns"
       @save="handleSaveView"
+      @load-view="handleDetailViewChange"
+      @delete-view="handleDeleteView"
     />
   </div>
 </template>
@@ -1033,7 +1075,7 @@ watch([filterState, period], () => {
   box-sizing: border-box;
 }
 
-.tree-table thead th {
+:deep(.tree-table thead th) {
   background: #fbfcff;
   color: #475569;
   font-weight: 800;
@@ -1045,19 +1087,19 @@ watch([filterState, period], () => {
   vertical-align: middle;
 }
 
-.tree-table thead th:first-child {
+:deep(.tree-table thead th:first-child) {
   text-align: left;
 }
 
-.tree-table thead th.col-number {
-  text-align: right;
-}
-
-.tree-table thead th:not(:first-child):not(.col-number) {
+:deep(.tree-table thead th.col-number) {
   text-align: center;
 }
 
-.tree-table tbody td:first-child {
+:deep(.tree-table thead th:not(:first-child):not(.col-number)) {
+  text-align: center;
+}
+
+:deep(.tree-table tbody td:first-child) {
   text-align: left;
   padding-left: 0;
 }
@@ -1078,15 +1120,15 @@ watch([filterState, period], () => {
   transition: color 0.15s ease, background-color 0.15s ease;
 }
 
-.tree-table thead th:first-child .tree-sort {
+:deep(.tree-table thead th:first-child .tree-sort) {
   justify-content: flex-start;
 }
 
-.tree-table thead th.col-number .tree-sort {
-  justify-content: flex-end;
+:deep(.tree-table thead th.col-number .tree-sort) {
+  justify-content: center;
 }
 
-.tree-table thead th:not(:first-child):not(.col-number) .tree-sort {
+:deep(.tree-table thead th:not(:first-child):not(.col-number) .tree-sort) {
   justify-content: center;
 }
 
@@ -1111,26 +1153,26 @@ watch([filterState, period], () => {
   line-height: 1;
 }
 
-.tree-table tbody td {
+:deep(.tree-table tbody td) {
   padding: 10px 8px;
   font-size: 13px;
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
 }
 
-.tree-table tbody td.col-number {
-  text-align: right;
-}
-
-.tree-table tbody td:not(.col-number):not(:first-child) {
+:deep(.tree-table tbody td.col-number) {
   text-align: center;
 }
 
-.tree-table tbody tr:hover {
+:deep(.tree-table tbody td:not(.col-number):not(:first-child)) {
+  text-align: center;
+}
+
+:deep(.tree-table tbody tr:hover) {
   background: #fcfdff;
 }
 
-.tree-table tbody tr:last-child td {
+:deep(.tree-table tbody tr:last-child td) {
   border-bottom: none;
 }
 
@@ -1170,8 +1212,8 @@ watch([filterState, period], () => {
   /* O padding-left será aplicado via classes lvl-* para indentação */
 }
 
-.col-number {
-  text-align: right;
+:deep(.tree-table .col-number) {
+  text-align: center;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }

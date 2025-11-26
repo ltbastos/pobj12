@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useGlobalFilters } from '../composables/useGlobalFilters'
+import { useGlobalFilters, type FilterState } from '../composables/useGlobalFilters'
 
 const { filterState, clearFilter } = useGlobalFilters()
 
@@ -89,7 +89,7 @@ const appliedFilters = computed<AppliedFilter[]>(() => {
 })
 
 const handleRemove = (key: string) => {
-  clearFilter(key)
+  clearFilter(key as keyof FilterState)
 }
 </script>
 

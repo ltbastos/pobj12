@@ -1,19 +1,7 @@
 <?php
 
-// Rota principal
-$app->get('/', function ($request, $response) use ($app) {
-    return $app->getContainer()->get('view')->render($response, 'index.twig', [
-        'API_URL' => getenv('API_URL') ?: '/api',
-        'API_HTTP_BASE' => getenv('API_HTTP_BASE') ?: '',
-    ]);
-});
-
-// Rota Omega standalone
-$app->get('/omega', function ($request, $response) use ($app) {
-    return $app->getContainer()->get('view')->render($response, 'omega.twig');
-});
-
-// Rota 404
-$app->get('/404', function ($request, $response) use ($app) {
-    return $app->getContainer()->get('view')->render($response, '404.twig');
-});
+// Rotas web removidas - o Vue SPA agora cuida de todas as rotas não-API
+// O public/index.php serve o dist/index.html do Vue para todas as rotas que não são /api/*
+// 
+// Se você ainda precisar de rotas Twig específicas no futuro, adicione-as aqui
+// mas certifique-se de que elas não conflitem com as rotas do Vue

@@ -378,9 +378,9 @@ const computeCampaignScore = (config: any, values: Record<string, number>) => {
     return { ...ind, pct: raw, capped, points, statusText, statusClass }
   })
 
-  const totalPoints = rows.reduce((acc, row) => acc + row.points, 0)
-  const hasAllMin = rows.every(row => row.pct >= min)
-  const hasAllStretch = rows.every(row => row.pct >= stretch)
+  const totalPoints = rows.reduce((acc: number, row: any) => acc + row.points, 0)
+  const hasAllMin = rows.every((row: any) => row.pct >= min)
+  const hasAllStretch = rows.every((row: any) => row.pct >= stretch)
   const eligible = hasAllMin && totalPoints >= minTotal
 
   let finalStatus = 'Não elegível'
@@ -416,25 +416,35 @@ const ensureTeamValues = (sprint: any): Record<string, number> => {
     teamValues.value[sprint.id] = base
     teamPresets.value[sprint.id] = sprint.team.defaultPreset || (sprint.team.presets?.[0]?.id || 'custom')
   }
-  return teamValues.value[sprint.id]
+  return teamValues.value[sprint.id] || {}
 }
 
 // Garante valores iniciais para o simulador individual
 const ensureIndividualValues = (sprint: any, profile: any): Record<string, number> => {
   if (!sprint || !profile) return {}
   const key = `${sprint.id}:${profile.id}`
+  
+  // Garante que existe o objeto para o sprint
   if (!individualValues.value[sprint.id]) {
     individualValues.value[sprint.id] = {}
   }
-  if (!individualValues.value[sprint.id][profile.id]) {
+  
+  // Garante que existe o objeto para o perfil
+  const sprintValues = individualValues.value[sprint.id]
+  if (!sprintValues) {
+    return {}
+  }
+  
+  if (!sprintValues[profile.id]) {
     const base: Record<string, number> = {}
     ;(profile.indicators || []).forEach((ind: any) => {
       base[ind.id] = toNumber(ind.default ?? 100)
     })
-    individualValues.value[sprint.id][profile.id] = base
+    sprintValues[profile.id] = base
     individualPresets.value[key] = profile.defaultPreset || (profile.presets?.[0]?.id || 'custom')
   }
-  return individualValues.value[sprint.id][profile.id]
+  
+  return sprintValues[profile.id] || {}
 }
 
 // Detecta qual preset corresponde aos valores atuais

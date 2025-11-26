@@ -33,9 +33,10 @@ export function computeAccumulatedPeriod(
   
   if (isNaN(endDate.getTime())) {
     const fallback = new Date()
+    const fallbackEnd = fallback.toISOString().split('T')[0]
     return {
       start: `${fallback.getFullYear()}-${String(fallback.getMonth() + 1).padStart(2, '0')}-01`,
-      end: fallback.toISOString().split('T')[0]
+      end: fallbackEnd || `${fallback.getFullYear()}-${String(fallback.getMonth() + 1).padStart(2, '0')}-${String(fallback.getDate()).padStart(2, '0')}`
     }
   }
   
@@ -53,8 +54,8 @@ export function computeAccumulatedPeriod(
     startDate = new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth() - monthsBack, 1))
   }
   
-  const startISO = startDate.toISOString().split('T')[0]
-  const endIsoFinal = endDate.toISOString().split('T')[0]
+  const startISO = startDate.toISOString().split('T')[0] || ''
+  const endIsoFinal = endDate.toISOString().split('T')[0] || ''
   
   return {
     start: startISO,
@@ -71,13 +72,15 @@ export function syncPeriodFromAccumulatedView(
   referenceEndISO?: string
 ): Period {
   if (view === 'mensal') {
-    const ref = referenceEndISO || currentPeriod.end || new Date().toISOString().split('T')[0]
-    const safeRef = ref || new Date().toISOString().split('T')[0]
+    const todayISO = new Date().toISOString().split('T')[0] || ''
+    const ref = referenceEndISO || currentPeriod.end || todayISO
+    const safeRef = ref || todayISO
     const refDate = new Date(safeRef + 'T00:00:00Z')
     const startDate = new Date(Date.UTC(refDate.getUTCFullYear(), refDate.getUTCMonth(), 1))
+    const startISO = startDate.toISOString().split('T')[0] || ''
     
     return {
-      start: startDate.toISOString().split('T')[0],
+      start: startISO,
       end: safeRef
     }
   }

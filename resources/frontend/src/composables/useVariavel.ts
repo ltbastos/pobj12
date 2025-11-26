@@ -1,6 +1,9 @@
 import { ref, computed, watch, type Ref } from 'vue'
 import { getVariavel, type Variavel, type VariavelFilters } from '../services/variavelService'
 
+// Re-exporta VariavelFilters para uso em outros composables
+export type { VariavelFilters } from '../services/variavelService'
+
 export interface VariavelSummary {
   varPossivel: number | null
   varAtingido: number | null

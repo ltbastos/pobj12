@@ -104,7 +104,10 @@ const handleKeydown = (event: KeyboardEvent): void => {
     searchTerm.value = ''
   } else if (event.key === 'Enter' && filteredOptions.value.length > 0) {
     event.preventDefault()
-    selectOption(filteredOptions.value[0])
+    const firstOption = filteredOptions.value[0]
+    if (firstOption) {
+      selectOption(firstOption)
+    }
   } else if (['ArrowDown', 'ArrowUp', ' '].includes(event.key) && !isOpen.value) {
     event.preventDefault()
     isOpen.value = true
