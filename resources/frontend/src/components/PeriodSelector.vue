@@ -82,7 +82,7 @@ const openDatePopover = (anchor: HTMLElement): void => {
     // Força o cálculo das dimensões reais
     const w = pop.offsetWidth || 340
     const h = pop.offsetHeight || 170
-    
+
     // Agora calcula a posição correta
     const r = anchor.getBoundingClientRect()
     const pad = 12
@@ -107,12 +107,12 @@ const openDatePopover = (anchor: HTMLElement): void => {
     const endInput = document.getElementById('inp-end') as HTMLInputElement
     const s = startInput?.value
     const e = endInput?.value
-    
+
     if (!s || !e || new Date(s) > new Date(e)) {
       alert('Período inválido.')
       return
     }
-    
+
     period.value = { start: s, end: e }
     emit('update:modelValue', { start: s, end: e })
     closeDatePopover()
@@ -123,11 +123,11 @@ const openDatePopover = (anchor: HTMLElement): void => {
     if (target === pop || pop.contains(target) || target === anchor) return
     closeDatePopover()
   }
-  
+
   const esc = (ev: KeyboardEvent): void => {
     if (ev.key === 'Escape') closeDatePopover()
   }
-  
+
   document.addEventListener('mousedown', outside, { once: true })
   document.addEventListener('keydown', esc, { once: true })
 

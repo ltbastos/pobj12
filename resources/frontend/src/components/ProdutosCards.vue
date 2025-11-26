@@ -85,7 +85,7 @@ const getTooltipData = (item: ProdutoCard) => {
 const positionTip = (badge: HTMLElement, tip: HTMLElement): void => {
   const card = badge.closest('.prod-card') as HTMLElement
   if (!card) return
-  
+
   const b = badge.getBoundingClientRect()
   const c = card.getBoundingClientRect()
   const tw = tip.offsetWidth || 320
@@ -113,15 +113,15 @@ const positionTip = (badge: HTMLElement, tip: HTMLElement): void => {
 const openTooltip = (itemId: string, event: Event): void => {
   event.stopPropagation()
   openTooltipId.value = itemId
-  
+
   // Posiciona o tooltip após ele ser renderizado
   requestAnimationFrame(() => {
     const card = document.querySelector(`[data-prod-id="${itemId}"]`) as HTMLElement
     if (!card) return
-    
+
     const badge = card.querySelector('.badge') as HTMLElement
     const tip = card.querySelector('.kpi-tip') as HTMLElement
-    
+
     if (badge && tip) {
       positionTip(badge, tip)
     }
@@ -136,7 +136,7 @@ const closeTooltip = (): void => {
 // Função para toggle (usado em click/touch)
 const toggleTooltip = (itemId: string, event: Event): void => {
   event.stopPropagation()
-  
+
   if (openTooltipId.value === itemId) {
     closeTooltip()
   } else {
@@ -161,13 +161,13 @@ const calculateAtingimento = (item: ProdutoCard): number => {
   if (item.ating !== undefined && item.ating !== null) {
     return item.ating * 100
   }
-  
+
   // Caso contrário, calcula baseado em meta/realizado ou pontos
   const meta = item.meta || 0
   const realizado = item.realizado || 0
   const pontosMeta = item.pontosMeta || 0
   const pontos = item.pontos || 0
-  
+
   if (meta > 0) {
     return (realizado / meta) * 100
   }
@@ -197,11 +197,11 @@ const getMetricLabel = (metric: string): string => {
     <div v-if="loading" class="loading-state">
       <p>Carregando produtos...</p>
     </div>
-    
+
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
     </div>
-    
+
     <template v-else-if="produtosPorFamilia.length > 0">
       <div
         v-for="section in produtosPorFamilia"
@@ -241,8 +241,8 @@ const getMetricLabel = (metric: string): string => {
                 @click="(e) => { e.stopPropagation(); toggleTooltip(item.id, e) }"
                 @touchstart="(e) => { e.stopPropagation(); toggleTooltip(item.id, e) }"
               >
-                {{ calculateAtingimento(item) >= 100 
-                  ? `${Math.round(calculateAtingimento(item))}%` 
+                {{ calculateAtingimento(item) >= 100
+                  ? `${Math.round(calculateAtingimento(item))}%`
                   : `${calculateAtingimento(item).toFixed(1)}%` }}
               </span>
             </div>
@@ -306,7 +306,7 @@ const getMetricLabel = (metric: string): string => {
             <div class="prod-card__foot">
               Atualizado em {{ item.ultimaAtualizacao || 'N/A' }}
             </div>
-            
+
             <!-- Tooltip com informações de projeção e metas -->
             <div
               v-if="openTooltipId === item.id"
@@ -350,7 +350,7 @@ const getMetricLabel = (metric: string): string => {
         </div>
       </div>
     </template>
-    
+
     <div v-else class="empty-state">
       <p>Nenhum produto encontrado</p>
     </div>
