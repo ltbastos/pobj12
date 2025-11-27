@@ -8,9 +8,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd())
 
   return {
-    // Em dev: raiz (/)
-    // Em produção: /dist/
-    base: mode === 'production' ? '/pobj-vue/' : '/',
+    // Base path para rodar no XAMPP dentro da pasta pobj-slim
+    base: mode === 'production' ? '/pobj-slim/' : '/',
 
     plugins: [
       vue(),
@@ -18,8 +17,19 @@ export default defineConfig(({ mode }) => {
     ],
 
     build: {
-      outDir: path.resolve(__dirname, '../../public/dist'),
-      emptyOutDir: true
+      // Gerar diretamente em public/ (sem pasta dist/)
+      outDir: path.resolve(__dirname, '../../public'),
+      // Limpar apenas arquivos do build (assets/, index.html, favicon.ico)
+      // Não apaga index.php e outros arquivos importantes
+      emptyOutDir: false,
+      rollupOptions: {
+        output: {
+          // Manter assets na pasta assets/
+          assetFileNames: 'assets/[name].[hash].[ext]',
+          chunkFileNames: 'assets/[name].[hash].js',
+          entryFileNames: 'assets/[name].[hash].js'
+        }
+      }
     },
 
     define: {
@@ -29,7 +39,7 @@ export default defineConfig(({ mode }) => {
     server: {
       proxy: {
         '/api': {
-          target: env.VITE_API_URL || 'http://localhost/pobj-vue',
+          target: env.VITE_API_URL || 'http://localhost/pobj-slim',
           changeOrigin: true,
           secure: false,
         }

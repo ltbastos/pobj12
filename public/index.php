@@ -1,95 +1,85 @@
 <?php
+// Habilitar exibição de erros para debug
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // Não exibir na tela, mas logar
+ini_set('log_errors', 1);
 
-// Obter URI da requisição
-$requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+$basePath = '/pobj-slim/public';
+
+if (strpos($_SERVER['REQUEST_URI'], $basePath) === 0) {
+    $requestUri = substr($_SERVER['REQUEST_URI'], strlen($basePath));
+} else {
+    $requestUri = $_SERVER['REQUEST_URI'];
+}
+
+// Remover o prefixo /pobj-slim se existir (normalizar a URI)
+$requestUri = preg_replace('#^/pobj-slim#', '', $requestUri);
+if (empty($requestUri)) {
+    $requestUri = '/';
+}
 
 // Verificar se é uma rota de API
 $isApiRoute = strpos($requestUri, '/api/') === 0;
 
 // Se for rota de API, pular para o Slim abaixo
 if (!$isApiRoute) {
-    // Mapear assets do Vue: /assets/* -> /dist/assets/*
-    if (preg_match('#^/assets/(.+)$#', $requestUri, $matches)) {
-        $assetPath = __DIR__ . '/dist/assets/' . $matches[1];
-        if (file_exists($assetPath) && is_file($assetPath)) {
-            $mimeType = mime_content_type($assetPath);
-            header('Content-Type: ' . $mimeType);
-            readfile($assetPath);
-            exit;
-        }
-    }
-    
-    // Mapear favicon: /favicon.ico -> /dist/favicon.ico
-    if ($requestUri === '/favicon.ico') {
-        $faviconPath = __DIR__ . '/dist/favicon.ico';
-        if (file_exists($faviconPath)) {
-            header('Content-Type: image/x-icon');
-            readfile($faviconPath);
-            exit;
-        }
-    }
-    
-    // Mapear fonts: /fonts/* -> /dist/fonts/*
-    if (preg_match('#^/fonts/(.+)$#', $requestUri, $matches)) {
-        $fontPath = __DIR__ . '/dist/fonts/' . $matches[1];
-        if (file_exists($fontPath) && is_file($fontPath)) {
-            $mimeType = mime_content_type($fontPath);
-            header('Content-Type: ' . $mimeType);
-            readfile($fontPath);
-            exit;
-        }
-    }
-    
-    // Mapear imagens do Vue: /img/* -> /dist/img/* (se não existir em /img/)
+    // Mapear imagens do Vue: /img/* (se não existir em /img/, tenta em /assets/img/)
     if (preg_match('#^/img/(.+)$#', $requestUri, $matches)) {
         $imgPathPublic = __DIR__ . '/img/' . $matches[1];
-        $imgPathDist = __DIR__ . '/dist/img/' . $matches[1];
+        $imgPathAssets = __DIR__ . '/assets/img/' . $matches[1];
         
-        // Primeiro tenta em /img/, depois em /dist/img/
+        // Primeiro tenta em /img/, depois em /assets/img/
         if (file_exists($imgPathPublic) && is_file($imgPathPublic)) {
-            $mimeType = mime_content_type($imgPathPublic);
+            $mimeType = @mime_content_type($imgPathPublic) ?: 'application/octet-stream';
             header('Content-Type: ' . $mimeType);
-            readfile($imgPathPublic);
+            @readfile($imgPathPublic);
             exit;
-        } elseif (file_exists($imgPathDist) && is_file($imgPathDist)) {
-            $mimeType = mime_content_type($imgPathDist);
+        } elseif (file_exists($imgPathAssets) && is_file($imgPathAssets)) {
+            $mimeType = @mime_content_type($imgPathAssets) ?: 'application/octet-stream';
             header('Content-Type: ' . $mimeType);
-            readfile($imgPathDist);
+            @readfile($imgPathAssets);
             exit;
         }
-    }
-    
-    // Verificar se é um arquivo estático existente (CSS, JS, etc. fora do dist)
-    $staticPath = __DIR__ . $requestUri;
-    if (file_exists($staticPath) && is_file($staticPath) && strpos($requestUri, '/dist/') !== 0) {
-        $mimeType = mime_content_type($staticPath);
-        header('Content-Type: ' . $mimeType);
-        readfile($staticPath);
-        exit;
     }
     
     // Se chegou aqui, é uma rota do Vue SPA - servir o index.html
-    $vueIndexPath = __DIR__ . '/dist/index.html';
+    $vueIndexPath = __DIR__ . '/index.html';
     if (file_exists($vueIndexPath)) {
         header('Content-Type: text/html; charset=utf-8');
         readfile($vueIndexPath);
         exit;
     }
     
-    // Se o dist/index.html não existir, retornar 404
+    // Se o index.html não existir, retornar 404
     http_response_code(404);
     echo 'Vue build não encontrado. Execute: npm run build na pasta resources/frontend';
     exit;
 }
 
 // Para rotas de API, inicializar o Slim
-require __DIR__ . '/../vendor/autoload.php';
+// Ajustar REQUEST_URI antes de inicializar o Slim para que ele use a URI normalizada
+$_SERVER['REQUEST_URI'] = $requestUri;
 
-$dotenv = new Dotenv\Dotenv(__DIR__ . '/../');
-$dotenv->load();
+try {
+    require __DIR__ . '/../vendor/autoload.php';
 
-$settings = require __DIR__ . '/../config/settings.php';
-$app = new \Slim\App($settings);
+    $dotenv = new Dotenv\Dotenv(__DIR__ . '/../');
+    $dotenv->load();
+
+    $settings = require __DIR__ . '/../config/settings.php';
+
+    $app = new \Slim\App($settings);
+} catch (\Throwable $e) {
+    http_response_code(500);
+    header('Content-Type: application/json');
+    echo json_encode([
+        'error' => true,
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine()
+    ], JSON_PRETTY_PRINT);
+    exit;
+}
 
 // Configurar Twig View (opcional, caso ainda use para rotas específicas)
 $container = $app->getContainer();
@@ -118,14 +108,28 @@ $container['view'] = function ($container) {
 };
 
 // Carregar dependências
-$dependencies = require __DIR__ . '/../config/dependencies.php';
-$dependencies($app->getContainer());
+try {
+    $dependencies = require __DIR__ . '/../config/dependencies.php';
+    $dependencies($app->getContainer());
 
-// Inicializar o Capsule para uso global
-$container->get('db');
+    // Inicializar o Capsule para uso global (com tratamento de erro)
+    // Não inicializar aqui - deixar lazy loading
+    // $app->getContainer()->get('db');
 
-// Configurar aplicação (middlewares e rotas)
-$configureApp = require __DIR__ . '/../config/app.php';
-$configureApp($app);
+    // Configurar aplicação (middlewares e rotas)
+    $configureApp = require __DIR__ . '/../config/app.php';
+    $configureApp($app);
 
-$app->run();
+    $app->run();
+} catch (\Throwable $e) {
+    http_response_code(500);
+    header('Content-Type: application/json');
+    echo json_encode([
+        'error' => true,
+        'message' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'trace' => $e->getTraceAsString()
+    ], JSON_PRETTY_PRINT);
+    exit;
+}

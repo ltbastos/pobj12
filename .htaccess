@@ -1,10 +1,9 @@
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteBase /
-    
-    # Redirecionar todas as requisições para /public
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^(.*)$ public/$1 [L]
-</IfModule>
+RewriteEngine On
+RewriteBase /pobj-slim/
 
+# Se já está na public, não reescreve mais
+RewriteCond %{REQUEST_URI} ^/pobj-slim/public/
+RewriteRule ^ - [L]
+
+# Enviar tudo para /public
+RewriteRule ^(.*)$ /pobj-slim/public/$1 [L]

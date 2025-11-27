@@ -22,7 +22,11 @@ export async function apiGet<T = any>(
 
     // Usa a URL base da API (já configurada com porta própria)
     const baseUrl = API_BASE_URL
-    const url = new URL(cleanPath, baseUrl)
+    // Constrói a URL corretamente: base + path
+    const fullUrl = baseUrl.endsWith('/') 
+      ? `${baseUrl}${cleanPath.startsWith('/') ? cleanPath.slice(1) : cleanPath}`
+      : `${baseUrl}${cleanPath}`
+    const url = new URL(fullUrl)
 
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
@@ -81,7 +85,11 @@ export async function apiPost<T = any>(
 
     // Usa a URL base da API (já configurada com porta própria)
     const baseUrl = API_BASE_URL
-    const url = new URL(cleanPath, baseUrl)
+    // Constrói a URL corretamente: base + path
+    const fullUrl = baseUrl.endsWith('/') 
+      ? `${baseUrl}${cleanPath.startsWith('/') ? cleanPath.slice(1) : cleanPath}`
+      : `${baseUrl}${cleanPath}`
+    const url = new URL(fullUrl)
 
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
