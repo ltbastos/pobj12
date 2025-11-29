@@ -2,7 +2,7 @@
 
 namespace App\Controller\Pobj;
 
-use App\Application\UseCase\Pobj\EstruturaUseCase;
+use App\Application\UseCase\Pobj\InitUseCase;
 use App\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -11,21 +11,21 @@ use Symfony\Component\Routing\Annotation\Route;
 /**
  * Controller para operações relacionadas à estrutura organizacional
  */
-class EstruturaController extends ControllerBase
+class InitController extends ControllerBase
 {
-    private $estruturaUseCase;
+    private $initUseCase;
 
-    public function __construct(EstruturaUseCase $estruturaUseCase)
+    public function __construct(InitUseCase $initUseCase)
     {
-        $this->estruturaUseCase = $estruturaUseCase;
+        $this->initUseCase = $initUseCase;
     }
 
     /**
-     * @Route("/api/estrutura", name="api_estrutura", methods={"GET"})
+     * @Route("/api/pobj/init", name="api_pobj_init", methods={"GET"})
      */
     public function handle(Request $request): JsonResponse
     {
-        $result = $this->estruturaUseCase->handle();
+        $result = $this->initUseCase->handle();
         
         return $this->success($result);
     }
