@@ -37,9 +37,13 @@ class InitUseCase
      */
     private function convertDtosToArray(array $dtos): array
     {
-        return array_map(function ($dto) {
+        $result = array_map(function ($dto) {
             return method_exists($dto, 'toArray') ? $dto->toArray() : $dto;
         }, $dtos);
+        
+        // Garante que retorna um array indexado numericamente (não associativo)
+        return array_values($result);
     }
 }
+
 
