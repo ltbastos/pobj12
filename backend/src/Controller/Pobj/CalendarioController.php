@@ -21,7 +21,7 @@ class CalendarioController extends ControllerBase
     }
 
     /**
-     * @Route("/api/calendario", name="api_calendario", methods={"GET"})
+     * @Route("/api/pobj/calendario", name="api_pobj_calendario", methods={"GET"})
      */
     public function handle(Request $request): JsonResponse
     {

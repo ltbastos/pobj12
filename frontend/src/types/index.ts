@@ -19,7 +19,6 @@ export interface FilterOption {
   id_agencia?: string
   id_gestor?: string
   funcional?: string
-  id_original?: string 
   id_familia?: string
   id_indicador?: string
 }

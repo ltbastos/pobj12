@@ -276,7 +276,7 @@ watch(() => period.value, (newPeriod) => {
         <SelectSearch
           id="f-segmento"
           :model-value="segmento"
-          :options="[{ id: '', label: 'Todos' }, ...segmentos]"
+          :options="[{ id: '', nome: 'Todos' }, ...(Array.isArray(segmentos) ? segmentos : [])]"
           placeholder="Todos"
           label="Segmento"
           :disabled="loading"
@@ -288,7 +288,7 @@ watch(() => period.value, (newPeriod) => {
         <SelectSearch
           id="f-diretoria"
           :model-value="diretoria"
-          :options="[{ id: '', label: 'Todas' }, ...diretorias]"
+          :options="[{ id: '', nome: 'Todas' }, ...(Array.isArray(diretorias) ? diretorias : [])]"
           placeholder="Todas"
           label="Diretoria"
           :disabled="loading"
@@ -300,7 +300,7 @@ watch(() => period.value, (newPeriod) => {
         <SelectSearch
           id="f-gerencia"
           :model-value="gerencia"
-          :options="[{ id: '', label: 'Todas' }, ...regionais]"
+          :options="[{ id: '', nome: 'Todas' }, ...(Array.isArray(regionais) ? regionais : [])]"
           placeholder="Todas"
           label="Regional"
           :disabled="loading"
@@ -342,7 +342,7 @@ watch(() => period.value, (newPeriod) => {
           <SelectSearch
             id="f-agencia"
             :model-value="agencia"
-            :options="[{ id: '', label: 'Todas' }, ...agencias]"
+            :options="[{ id: '', nome: 'Todas' }, ...(Array.isArray(agencias) ? agencias : [])]"
             placeholder="Todas"
             label="Agência"
             :disabled="loading"
@@ -354,7 +354,7 @@ watch(() => period.value, (newPeriod) => {
           <SelectSearch
             id="f-gerente-gestao"
             :model-value="ggestao"
-            :options="[{ id: '', label: 'Todos' }, ...gerentesGestao]"
+            :options="[{ id: '', nome: 'Todos' }, ...(Array.isArray(gerentesGestao) ? gerentesGestao : [])]"
             placeholder="Todos"
             label="Gerente de gestão"
             :disabled="loading"
@@ -366,7 +366,7 @@ watch(() => period.value, (newPeriod) => {
           <SelectSearch
             id="f-gerente"
             :model-value="gerente"
-            :options="[{ id: '', label: 'Todos' }, ...gerentes]"
+            :options="[{ id: '', nome: 'Todos' }, ...(Array.isArray(gerentes) ? gerentes : [])]"
             placeholder="Todos"
             label="Gerente"
             :disabled="loading"

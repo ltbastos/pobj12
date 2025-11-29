@@ -20,7 +20,7 @@ class ResumoController extends ControllerBase
     }
 
     /**
-     * @Route("/api/resumo", name="api_resumo", methods={"GET"})
+     * @Route("/api/pobj/resumo", name="api_pobj_resumo", methods={"GET"})
      */
     public function handle(Request $request): JsonResponse
     {

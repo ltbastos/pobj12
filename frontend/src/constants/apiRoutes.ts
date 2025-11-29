@@ -7,16 +7,10 @@ export enum ApiRoutes {
   INIT = '/api/pobj/init',
 
   // Resumo
-  RESUMO = '/api/resumo',
-
-  // Filtros
-  FILTROS = '/api/filtros',
-
-  // Status
-  STATUS_INDICADORES = '/api/status_indicadores',
+  RESUMO = '/api/pobj/resumo',
 
   // Produtos
-  PRODUTOS = '/api/produtos',
+  PRODUTOS = '/api/pobj/produtos',
 
   // Calendário
   CALENDARIO = '/api/pobj/calendario',
@@ -25,31 +19,31 @@ export enum ApiRoutes {
   REALIZADOS = '/api/pobj/realizados',
 
   // Metas
-  METAS = '/api/metas',
+  METAS = '/api/pobj/metas',
 
   // Variável
-  VARIAVEL = '/api/variavel',
+  VARIAVEL = '/api/pobj/variavel',
 
   // Mesu
-  MESU = '/api/mesu',
+  MESU = '/api/pobj/mesu',
 
   // Campanhas
-  CAMPANHAS = '/api/campanhas',
+  CAMPANHAS = '/api/pobj/campanhas',
 
   // Detalhes
-  DETALHES = '/api/detalhes',
+  DETALHES = '/api/pobj/detalhes',
 
   // Histórico
-  HISTORICO = '/api/historico',
+  HISTORICO = '/api/pobj/historico',
 
   // Leads
-  LEADS = '/api/leads',
+  LEADS = '/api/pobj/leads',
 
   // Pontos
-  PONTOS = '/api/pontos',
+  PONTOS = '/api/pobj/pontos',
 
   // Ranking
-  RANKING = '/api/ranking',
+  RANKING = '/api/pobj/ranking',
 
   // Agent
   AGENT = '/api/agent',
