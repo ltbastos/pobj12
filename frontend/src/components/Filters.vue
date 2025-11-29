@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { getInit, type InitData } from '../services/initService'
+import { useInitCache } from '../composables/useInitCache'
 import { useHierarchyFilters } from '../composables/useHierarchyFilters'
 import { usePeriodManager } from '../composables/usePeriodManager'
 import { useAccumulatedView, syncPeriodFromAccumulatedView } from '../composables/useAccumulatedView'
@@ -9,14 +9,15 @@ import { useGlobalFilters } from '../composables/useGlobalFilters'
 import Button from './Button.vue'
 import SelectSearch from './SelectSearch.vue'
 import type { FilterOption } from '../types'
+import type { InitData } from '../services/initService'
 
 const route = useRoute()
 const isSimuladoresPage = computed(() => route.name === 'Simuladores')
 
 const advancedFiltersOpen = ref(false)
 const showAdvancedButton = ref(true)
-const loading = ref(true)
-const initData = ref<InitData | null>(null)
+const { initData, isLoading: initLoading, loadInit } = useInitCache()
+const loading = initLoading
 
 // Usa filtros globais
 const { filterState, period: globalPeriod, updateFilter, updatePeriod, clearFilters } = useGlobalFilters()
@@ -176,11 +177,9 @@ const buildOptions = (data: any[]): FilterOption[] => {
 
 const loadEstrutura = async (): Promise<void> => {
   try {
-    loading.value = true
-    const data = await getInit()
+    const data = await loadInit()
 
     if (data) {
-      initData.value = data
       familias.value = buildOptions(data.familias || [])
       indicadores.value = buildOptions(data.indicadores || [])
       allSubindicadores.value = buildOptions(data.subindicadores || [])
@@ -188,8 +187,6 @@ const loadEstrutura = async (): Promise<void> => {
     }
   } catch (error) {
     console.error('Erro ao carregar estrutura:', error)
-  } finally {
-    loading.value = false
   }
 }
 

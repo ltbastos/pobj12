@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted } from 'vue'
-import { getCalendario, getDefaultPeriod, formatBRDate, type CalendarioItem } from '../services/calendarioService'
+import { getDefaultPeriod, formatBRDate } from '../services/calendarioService'
+import { useCalendarioCache } from '../composables/useCalendarioCache'
 
 interface Props {
   modelValue?: { start: string; end: string }
@@ -15,7 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const period = ref<{ start: string; end: string }>(props.modelValue || getDefaultPeriod())
-const calendarioData = ref<CalendarioItem[]>([])
+const { calendarioData, loadCalendario } = useCalendarioCache()
 const buttonRef = ref<HTMLElement | null>(null)
 const datePopover = ref<HTMLElement | null>(null)
 
@@ -26,19 +27,8 @@ watch(() => props.modelValue, (newValue) => {
   }
 }, { deep: true })
 
-const loadCalendario = async (): Promise<void> => {
-  try {
-    const data = await getCalendario()
-    if (data) {
-      calendarioData.value = data
-    }
-  } catch (error) {
-    console.error('Erro ao carregar calendário:', error)
-  }
-}
-
-onMounted(() => {
-  loadCalendario()
+onMounted(async () => {
+  await loadCalendario()
   if (!props.modelValue) {
     const defaultPeriod = getDefaultPeriod()
     period.value = defaultPeriod

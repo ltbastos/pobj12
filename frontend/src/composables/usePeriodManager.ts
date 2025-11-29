@@ -1,24 +1,14 @@
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { getCalendario, getDefaultPeriod, formatBRDate, type CalendarioItem } from '../services/calendarioService'
+import { getDefaultPeriod, formatBRDate } from '../services/calendarioService'
+import { useCalendarioCache } from './useCalendarioCache'
 import type { Period } from '../types'
 
 export function usePeriodManager() {
   const route = useRoute()
   const isSimuladoresPage = computed(() => route.name === 'Simuladores')
   const period = ref<Period>(getDefaultPeriod())
-  const calendarioData = ref<CalendarioItem[]>([])
-
-  const loadCalendario = async (): Promise<void> => {
-    try {
-      const data = await getCalendario()
-      if (data) {
-        calendarioData.value = data
-      }
-    } catch (error) {
-      console.error('Erro ao carregar calendário:', error)
-    }
-  }
+  const { calendarioData, loadCalendario } = useCalendarioCache()
 
   const updatePeriodLabels = (): void => {
     const labelElement = document.getElementById('lbl-atualizacao')

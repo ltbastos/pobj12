@@ -3,6 +3,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useFilteredProdutos } from '../composables/useFilteredProdutos'
 import { useGlobalFilters } from '../composables/useGlobalFilters'
 import { useBusinessDays } from '../composables/useBusinessDays'
+import { useCalendarioCache } from '../composables/useCalendarioCache'
 import { formatPoints, formatPeso, formatByMetric, formatMetricFull, formatBRL } from '../utils/formatUtils'
 import type { ProdutoCard } from '../composables/useProdutos'
 
@@ -12,12 +13,13 @@ const { filterState, period } = useGlobalFilters()
 // Usa produtos filtrados
 const { produtosPorFamilia, loading, error } = useFilteredProdutos(filterState, period)
 
-const { getCurrentMonthBusinessSnapshot, loadCalendario } = useBusinessDays()
+const { getCurrentMonthBusinessSnapshot } = useBusinessDays()
+const { loadCalendario } = useCalendarioCache()
 
 // Estado para controlar qual tooltip está aberto
 const openTooltipId = ref<string | null>(null)
 
-// Carrega calendário ao montar
+// Carrega calendário ao montar (usa cache, então é rápido)
 onMounted(async () => {
   await loadCalendario()
 })
