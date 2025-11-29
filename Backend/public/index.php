@@ -1,45 +1,31 @@
 <?php
 
-error_reporting(E_ALL);
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
+use App\Kernel;
+use Symfony\Component\ErrorHandler\Debug;
+use Symfony\Component\HttpFoundation\Request;
 
-$requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/';
-$_SERVER['REQUEST_URI'] = $requestUri;
+require dirname(__DIR__).'/config/bootstrap.php';
 
-function sendErrorResponse(\Throwable $e, bool $includeTrace = false): void
-{
-    http_response_code(500);
-    header('Content-Type: application/json');
-    $response = [
-        'error' => true,
-        'message' => $e->getMessage(),
-        'file' => $e->getFile(),
-        'line' => $e->getLine()
-    ];
-    if ($includeTrace) {
-        $response['trace'] = $e->getTraceAsString();
-    }
-    echo json_encode($response, JSON_PRETTY_PRINT);
-    exit;
+$appEnv = isset($_SERVER['APP_ENV']) ? $_SERVER['APP_ENV'] : 'dev';
+$appDebug = isset($_SERVER['APP_DEBUG']) ? (bool) $_SERVER['APP_DEBUG'] : ('prod' !== $appEnv);
+
+if ($appDebug) {
+    umask(0000);
+    Debug::enable();
 }
 
-try {
-    require __DIR__ . '/../vendor/autoload.php';
-    
-    (new Dotenv\Dotenv(__DIR__ . '/../'))->load();
-    
-    $app = new \Slim\App(require __DIR__ . '/../config/settings.php');
-} catch (\Throwable $e) {
-    sendErrorResponse($e);
+$trustedProxies = isset($_SERVER['TRUSTED_PROXIES']) ? $_SERVER['TRUSTED_PROXIES'] : false;
+if ($trustedProxies) {
+    Request::setTrustedProxies(explode(',', $trustedProxies), Request::HEADER_X_FORWARDED_FOR | Request::HEADER_X_FORWARDED_PORT | Request::HEADER_X_FORWARDED_PROTO);
 }
 
-try {
-    $container = $app->getContainer();
-    (require __DIR__ . '/../config/dependencies.php')($container);
-    $container->get('db');
-    (require __DIR__ . '/../config/app.php')($app);
-    $app->run();
-} catch (\Throwable $e) {
-    sendErrorResponse($e, true);
+$trustedHosts = isset($_SERVER['TRUSTED_HOSTS']) ? $_SERVER['TRUSTED_HOSTS'] : false;
+if ($trustedHosts) {
+    Request::setTrustedHosts([$trustedHosts]);
 }
+
+$kernel = new Kernel($appEnv, $appDebug);
+$request = Request::createFromGlobals();
+$response = $kernel->handle($request);
+$response->send();
+$kernel->terminate($request, $response);
