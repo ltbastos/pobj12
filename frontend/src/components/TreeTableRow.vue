@@ -49,6 +49,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 const emit = defineEmits<{
   toggle: [id: string]
+  action: [{ type: 'ticket' | 'opportunities', node: TreeNode }]
 }>()
 
 const hasChildren = computed(() => props.node.children.length > 0)
@@ -180,11 +181,34 @@ const contractId = computed(() => {
         <span v-else class="cell-content">{{ getColumnValue(columnId) }}</span>
       </td>
     </template>
+    <td class="actions-cell">
+      <span class="actions-group">
+        <button
+          type="button"
+          class="icon-btn"
+          title="Abrir chamado"
+          aria-label="Abrir chamado"
+          @click.stop="emit('action', { type: 'ticket', node })"
+        >
+          <i class="ti ti-ticket"></i>
+        </button>
+        <button
+          v-if="node.level !== 'contrato'"
+          type="button"
+          class="icon-btn"
+          title="Ver oportunidades"
+          aria-label="Ver oportunidades"
+          @click.stop="emit('action', { type: 'opportunities', node })"
+        >
+          <i class="ti ti-bulb"></i>
+        </button>
+      </span>
+    </td>
   </tr>
   
   <!-- Card de detalhes do contrato -->
   <tr v-if="node.level === 'contrato' && expanded" class="tree-row tree-detail-row">
-    <td :colspan="activeColumns.length + 1" class="tree-detail-cell">
+    <td :colspan="activeColumns.length + 2" class="tree-detail-cell">
       <div class="contract-detail-card">
         <!-- Barra superior com resumo -->
         <div class="contract-detail-card__header">
@@ -538,6 +562,49 @@ const contractId = computed(() => {
 /* Cores condicionais para Atingimento */
 .cell-content {
   display: inline-block;
+}
+
+.actions-cell {
+  padding: 8px 12px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.actions-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background: #fff;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+  font-family: inherit;
+  outline: none;
+  padding: 0;
+}
+
+.icon-btn:hover,
+.icon-btn:focus-visible {
+  background: rgba(36, 107, 253, 0.12);
+  color: #2563eb;
+  border-color: rgba(36, 107, 253, 0.35);
+  outline: none;
+}
+
+.icon-btn i {
+  font-size: 18px;
+  line-height: 1;
 }
 </style>
 

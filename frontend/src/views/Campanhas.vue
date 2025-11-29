@@ -534,20 +534,39 @@ watch([filterState], () => {
       <TabsNavigation />
 
       <div class="campanhas-view">
-        <div v-if="loading && !sprintAtual" class="loading-state">
-          <p>Carregando campanhas...</p>
-        </div>
+        <!-- Skeleton Loading -->
+        <template v-if="loading && !sprintAtual">
+          <div class="campanhas-content">
+            <section class="card card--campanhas">
+              <header class="card__header camp-header">
+                <div class="skeleton skeleton--title" style="height: 24px; width: 150px; margin-bottom: 8px; border-radius: 6px;"></div>
+                <div class="skeleton skeleton--subtitle" style="height: 16px; width: 300px; border-radius: 6px;"></div>
+                <div class="skeleton skeleton--select" style="height: 40px; width: 200px; border-radius: 8px;"></div>
+              </header>
+              <div class="camp-hero">
+                <div class="skeleton skeleton--hero" style="height: 120px; width: 100%; border-radius: 12px; margin-bottom: 24px;"></div>
+              </div>
+              <div class="camp-kpi-grid">
+                <div class="skeleton skeleton--kpi" style="height: 100px; border-radius: 12px;"></div>
+                <div class="skeleton skeleton--kpi" style="height: 100px; border-radius: 12px;"></div>
+                <div class="skeleton skeleton--kpi" style="height: 100px; border-radius: 12px;"></div>
+              </div>
+            </section>
+          </div>
+        </template>
 
-        <div v-else-if="error" class="error-state">
-          <p>{{ error }}</p>
-        </div>
+        <!-- Conteúdo real -->
+        <template v-else>
+          <div v-if="error" class="error-state">
+            <p>{{ error }}</p>
+          </div>
 
-        <div v-else-if="campanhas.length === 0" class="empty-state">
-          <p>Nenhuma campanha disponível.</p>
-        </div>
+          <div v-else-if="campanhas.length === 0" class="empty-state">
+            <p>Nenhuma campanha disponível.</p>
+          </div>
 
-        <div v-else class="campanhas-content">
-          <section class="card card--campanhas">
+          <div v-else class="campanhas-content">
+            <section class="card card--campanhas">
             <!-- Header com seletor de sprint -->
             <header class="card__header camp-header">
               <div class="title-subtitle">
@@ -902,8 +921,9 @@ watch([filterState], () => {
                 </table>
               </div>
             </div>
-          </section>
-        </div>
+            </section>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -953,7 +973,30 @@ watch([filterState], () => {
   margin-top: 24px;
 }
 
-.loading-state,
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.campanhas-content .camp-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
 .error-state,
 .empty-state {
   padding: 48px 24px;

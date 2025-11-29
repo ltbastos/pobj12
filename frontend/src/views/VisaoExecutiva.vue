@@ -1,123 +1,143 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useGlobalFilters } from '../composables/useGlobalFilters'
 import { formatBRLReadable, formatBRL, formatDate } from '../utils/formatUtils'
+import { getExecData, type ExecFilters, type ExecData } from '../services/execService'
 import Filters from '../components/Filters.vue'
 import TabsNavigation from '../components/TabsNavigation.vue'
 
 const { filterState, period } = useGlobalFilters()
 
-// Dados mock
-const mockKPIs = ref({
-  real_mens: 125000000,
-  meta_mens: 150000000,
-  real_acum: 125000000,
-  meta_acum: 150000000
+// Dados reais
+const execData = ref<ExecData | null>(null)
+const loading = ref(false)
+const error = ref<string | null>(null)
+
+// Computed para acessar os dados
+const kpis = computed(() => execData.value?.kpis || {
+  real_mens: 0,
+  meta_mens: 0,
+  real_acum: 0,
+  meta_acum: 0
 })
 
-const mockRanking = ref([
-  { key: 'gr-001', label: 'Regional Sudeste', real_mens: 45000000, meta_mens: 40000000, p_mens: 112.5 },
-  { key: 'gr-002', label: 'Regional Sul', real_mens: 38000000, meta_mens: 35000000, p_mens: 108.6 },
-  { key: 'gr-003', label: 'Regional Norte', real_mens: 32000000, meta_mens: 30000000, p_mens: 106.7 },
-  { key: 'gr-004', label: 'Regional Centro-Oeste', real_mens: 28000000, meta_mens: 28000000, p_mens: 100.0 },
-  { key: 'gr-005', label: 'Regional Nordeste', real_mens: 25000000, meta_mens: 27000000, p_mens: 92.6 },
-  { key: 'gr-006', label: 'Regional Leste', real_mens: 22000000, meta_mens: 25000000, p_mens: 88.0 },
-  { key: 'gr-007', label: 'Regional Oeste', real_mens: 18000000, meta_mens: 23000000, p_mens: 78.3 },
-  { key: 'gr-008', label: 'Regional Centro', real_mens: 15000000, meta_mens: 20000000, p_mens: 75.0 }
-])
+const ranking = computed(() => execData.value?.ranking || [])
 
-const mockStatus = ref({
-  hit: [
-    { key: 'gr-001', label: 'Regional Sudeste', p_mens: 112.5 },
-    { key: 'gr-002', label: 'Regional Sul', p_mens: 108.6 },
-    { key: 'gr-003', label: 'Regional Norte', p_mens: 106.7 },
-    { key: 'gr-004', label: 'Regional Centro-Oeste', p_mens: 100.0 }
-  ],
-  quase: [
-    { key: 'gr-005', label: 'Regional Nordeste', p_mens: 92.6 }
-  ],
-  longe: [
-    { key: 'gr-008', label: 'Regional Centro', gap: -5000000 },
-    { key: 'gr-007', label: 'Regional Oeste', gap: -5000000 },
-    { key: 'gr-006', label: 'Regional Leste', gap: -3000000 }
-  ]
+const status = computed(() => execData.value?.status || {
+  hit: [],
+  quase: [],
+  longe: []
 })
 
-const mockChartData = ref({
-  keys: ['2024-01', '2024-02', '2024-03', '2024-04', '2024-05', '2024-06'],
-  labels: ['Jan 2024', 'Fev 2024', 'Mar 2024', 'Abr 2024', 'Mai 2024', 'Jun 2024'],
-  series: [
-    { id: 'credito', label: 'Crédito', values: [85, 92, 88, 95, 98, 102], color: '#2563eb' },
-    { id: 'investimentos', label: 'Investimentos', values: [78, 82, 85, 90, 88, 95], color: '#10b981' },
-    { id: 'seguros', label: 'Seguros', values: [65, 70, 75, 80, 85, 88], color: '#f59e0b' },
-    { id: 'previdencia', label: 'Previdência', values: [72, 75, 78, 82, 85, 90], color: '#8b5cf6' }
-  ]
+const chartData = computed(() => execData.value?.chart || {
+  keys: [],
+  labels: [],
+  series: []
 })
 
-const mockHeatmap = ref({
-  units: [
-    { value: 'gr-001', label: 'Regional Sudeste' },
-    { value: 'gr-002', label: 'Regional Sul' },
-    { value: 'gr-003', label: 'Regional Norte' }
-  ],
-  sections: [
-    { id: 'credito', label: 'Crédito' },
-    { id: 'investimentos', label: 'Investimentos' },
-    { id: 'seguros', label: 'Seguros' },
-    { id: 'previdencia', label: 'Previdência' }
-  ],
-  data: {
-    'gr-001|credito': { real: 18000000, meta: 16000000 },
-    'gr-001|investimentos': { real: 15000000, meta: 14000000 },
-    'gr-001|seguros': { real: 8000000, meta: 7000000 },
-    'gr-001|previdencia': { real: 4000000, meta: 3000000 },
-    'gr-002|credito': { real: 16000000, meta: 15000000 },
-    'gr-002|investimentos': { real: 12000000, meta: 11000000 },
-    'gr-002|seguros': { real: 7000000, meta: 6500000 },
-    'gr-002|previdencia': { real: 3000000, meta: 2500000 },
-    'gr-003|credito': { real: 14000000, meta: 13000000 },
-    'gr-003|investimentos': { real: 10000000, meta: 9500000 },
-    'gr-003|seguros': { real: 6000000, meta: 5500000 },
-    'gr-003|previdencia': { real: 2000000, meta: 2000000 }
-  }
+const heatmap = computed(() => execData.value?.heatmap || {
+  units: [],
+  sections: [],
+  data: {}
 })
 
 const heatmapMode = ref<'secoes' | 'meta'>('secoes')
 
+// Filtros para a API
+const execFilters = computed<ExecFilters>(() => {
+  const filters: ExecFilters = {}
+  
+  if (filterState.value.segmento && filterState.value.segmento.toLowerCase() !== 'todos') {
+    filters.segmento = filterState.value.segmento
+  }
+  if (filterState.value.diretoria && filterState.value.diretoria.toLowerCase() !== 'todas') {
+    filters.diretoria = filterState.value.diretoria
+  }
+  if (filterState.value.gerencia && filterState.value.gerencia.toLowerCase() !== 'todas') {
+    filters.regional = filterState.value.gerencia
+  }
+  if (filterState.value.agencia && filterState.value.agencia.toLowerCase() !== 'todas') {
+    filters.agencia = filterState.value.agencia
+  }
+  if (filterState.value.ggestao && filterState.value.ggestao.toLowerCase() !== 'todos') {
+    filters.gerenteGestao = filterState.value.ggestao
+  }
+  if (filterState.value.gerente && filterState.value.gerente.toLowerCase() !== 'todos') {
+    filters.gerente = filterState.value.gerente
+  }
+  if (period.value?.start) {
+    filters.dataInicio = period.value.start
+  }
+  if (period.value?.end) {
+    filters.dataFim = period.value.end
+  }
+  
+  return filters
+})
+
 // Computed
 const atingimento = computed(() => {
-  if (mockKPIs.value.meta_mens === 0) return 0
-  return (mockKPIs.value.real_mens / mockKPIs.value.meta_mens) * 100
+  if (kpis.value.meta_mens === 0) return 0
+  return (kpis.value.real_mens / kpis.value.meta_mens) * 100
 })
 
 const defasagem = computed(() => {
-  return mockKPIs.value.real_mens - mockKPIs.value.meta_mens
+  return kpis.value.real_mens - kpis.value.meta_mens
 })
 
 const forecast = computed(() => {
   // Simulação: média diária * dias totais
-  const diasDecorridos = 15
-  const diasTotais = 30
-  const mediaDiaria = mockKPIs.value.real_mens / diasDecorridos
+  const diasDecorridos = new Date().getDate()
+  const diasTotais = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()
+  const mediaDiaria = kpis.value.real_mens / Math.max(diasDecorridos, 1)
   return mediaDiaria * diasTotais
 })
 
 const forecastPct = computed(() => {
-  if (mockKPIs.value.meta_mens === 0) return 0
-  return (forecast.value / mockKPIs.value.meta_mens) * 100
+  if (kpis.value.meta_mens === 0) return 0
+  return (forecast.value / kpis.value.meta_mens) * 100
 })
 
 const topRanking = computed(() => {
-  return [...mockRanking.value]
+  return [...ranking.value]
     .sort((a, b) => b.p_mens - a.p_mens)
     .slice(0, 5)
 })
 
 const bottomRanking = computed(() => {
-  return [...mockRanking.value]
+  return [...ranking.value]
     .sort((a, b) => a.p_mens - b.p_mens)
     .slice(0, 5)
     .reverse()
+})
+
+// Carrega dados
+const loadData = async () => {
+  loading.value = true
+  error.value = null
+  
+  try {
+    const data = await getExecData(execFilters.value)
+    if (data) {
+      execData.value = data
+    } else {
+      error.value = 'Erro ao carregar dados executivos'
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Erro desconhecido'
+    console.error('Erro ao carregar dados executivos:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Observa mudanças nos filtros
+watch([execFilters, period], () => {
+  loadData()
+}, { deep: true })
+
+onMounted(() => {
+  loadData()
 })
 
 const contexto = computed(() => {
@@ -153,7 +173,7 @@ const getHeatmapCellClass = (pct: number | null): string => {
 
 const getHeatmapValue = (unit: string, section: string): { pct: number | null; text: string } => {
   const key = `${unit}|${section}`
-  const bucket = mockHeatmap.value.data[key as keyof typeof mockHeatmap.value.data]
+  const bucket = heatmap.value.data[key]
   if (!bucket) return { pct: null, text: '—' }
   
   if (bucket.meta > 0) {
@@ -171,14 +191,14 @@ const getHeatmapValue = (unit: string, section: string): { pct: number | null; t
 // Renderizar gráfico SVG
 const renderChart = () => {
   const container = document.getElementById('exec-chart')
-  if (!container || !mockChartData.value.series.length) return
+  if (!container || !chartData.value.series.length) return
   
   const W = 900
   const H = 260
   const m = { t: 28, r: 36, b: 48, l: 64 }
   const iw = W - m.l - m.r
   const ih = H - m.t - m.b
-  const n = mockChartData.value.labels.length
+  const n = chartData.value.labels.length
   
   const x = (idx: number) => {
     if (n <= 1) return m.l + iw / 2
@@ -186,7 +206,7 @@ const renderChart = () => {
     return m.l + step * idx
   }
   
-  const values = mockChartData.value.series.flatMap(s => s.values.filter(v => v !== null))
+  const values = chartData.value.series.flatMap(s => s.values.filter(v => v !== null && v !== undefined))
   const maxVal = values.length ? Math.max(...values) : 0
   const yMax = Math.max(120, Math.ceil((maxVal || 100) / 10) * 10)
   
@@ -202,7 +222,7 @@ const renderChart = () => {
     gridLines.push({ y: y(val), label: `${Math.round(val)}%` })
   }
   
-  const paths = mockChartData.value.series.map(series => {
+  const paths = chartData.value.series.map(series => {
     let d = ''
     let started = false
     series.values.forEach((value, idx) => {
@@ -217,10 +237,10 @@ const renderChart = () => {
     return `<path class="exec-line" d="${d.trim()}" fill="none" stroke="${series.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><title>${series.label}</title></path>`
   }).join('')
   
-  const points = mockChartData.value.series.map(series => 
+  const points = chartData.value.series.map(series => 
     series.values.map((value, idx) => {
       if (value === null || value === undefined) return ''
-      const monthLabel = mockChartData.value.labels[idx] || String(idx + 1)
+      const monthLabel = chartData.value.labels[idx] || String(idx + 1)
       const valueLabel = `${value.toFixed(1)}%`
       return `<circle class="exec-line__point" cx="${x(idx)}" cy="${y(value)}" r="3.4" fill="${series.color}" stroke="#fff" stroke-width="1.2"><title>${series.label} • ${monthLabel}: ${valueLabel}</title></circle>`
     }).join('')
@@ -231,7 +251,7 @@ const renderChart = () => {
      <text x="${m.l - 6}" y="${line.y + 3}" font-size="10" text-anchor="end" fill="#6b7280">${line.label}</text>`
   ).join('')
   
-  const xlabels = mockChartData.value.labels.map((lab, idx) =>
+  const xlabels = chartData.value.labels.map((lab, idx) =>
     `<text x="${x(idx)}" y="${H - 10}" font-size="10" text-anchor="middle" fill="#6b7280">${lab}</text>`
   ).join('')
   
@@ -246,6 +266,11 @@ const renderChart = () => {
     </svg>`
 }
 
+// Observa mudanças nos dados do gráfico
+watch(chartData, () => {
+  renderChart()
+}, { deep: true })
+
 onMounted(() => {
   renderChart()
 })
@@ -258,18 +283,38 @@ onMounted(() => {
       <TabsNavigation />
 
       <div id="view-exec" class="exec-view">
-        <!-- Contexto -->
-        <div id="exec-context" class="exec-context">
-          <strong>{{ contexto }}</strong>
-        </div>
+        <!-- Skeleton Loading -->
+        <template v-if="loading">
+          <div class="skeleton skeleton--context" style="height: 24px; width: 200px; margin-bottom: 24px; border-radius: 6px;"></div>
+          <div class="exec-kpis">
+            <div class="skeleton skeleton--kpi-card" style="height: 140px; border-radius: 12px;"></div>
+            <div class="skeleton skeleton--kpi-card" style="height: 140px; border-radius: 12px;"></div>
+            <div class="skeleton skeleton--kpi-card" style="height: 140px; border-radius: 12px;"></div>
+          </div>
+          <div class="exec-chart" style="margin-top: 24px;">
+            <div class="skeleton skeleton--chart-title" style="height: 24px; width: 250px; margin-bottom: 16px; border-radius: 6px;"></div>
+            <div class="skeleton skeleton--chart" style="height: 300px; width: 100%; border-radius: 12px;"></div>
+          </div>
+          <div class="exec-panels" style="margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+            <div class="skeleton skeleton--panel" style="height: 400px; border-radius: 12px;"></div>
+            <div class="skeleton skeleton--panel" style="height: 400px; border-radius: 12px;"></div>
+          </div>
+        </template>
 
-        <!-- KPIs -->
-        <div id="exec-kpis" class="exec-kpis">
+        <!-- Conteúdo real -->
+        <template v-else>
+          <!-- Contexto -->
+          <div id="exec-context" class="exec-context">
+            <strong>{{ contexto }}</strong>
+          </div>
+
+          <!-- KPIs -->
+          <div id="exec-kpis" class="exec-kpis">
           <div class="kpi-card">
             <div class="kpi-card__title">Atingimento mensal</div>
             <div class="kpi-card__value">
-              <span :title="formatBRL(mockKPIs.real_mens)">{{ formatBRLReadable(mockKPIs.real_mens) }}</span>
-              <small>/ <span :title="formatBRL(mockKPIs.meta_mens)">{{ formatBRLReadable(mockKPIs.meta_mens) }}</span></small>
+              <span :title="formatBRL(kpis.real_mens)">{{ formatBRLReadable(kpis.real_mens) }}</span>
+              <small>/ <span :title="formatBRL(kpis.meta_mens)">{{ formatBRLReadable(kpis.meta_mens) }}</span></small>
             </div>
             <div class="kpi-card__bar">
               <div 
@@ -295,7 +340,7 @@ onMounted(() => {
             <div class="kpi-card__title">Forecast x Meta</div>
             <div class="kpi-card__value">
               <span :title="formatBRL(forecast)">{{ formatBRLReadable(forecast) }}</span>
-              <small>/ <span :title="formatBRL(mockKPIs.meta_mens)">{{ formatBRLReadable(mockKPIs.meta_mens) }}</span></small>
+              <small>/ <span :title="formatBRL(kpis.meta_mens)">{{ formatBRLReadable(kpis.meta_mens) }}</span></small>
             </div>
             <div class="kpi-card__bar">
               <div 
@@ -316,7 +361,7 @@ onMounted(() => {
             <h3 id="exec-chart-title">Evolução mensal por seção</h3>
             <div id="exec-chart-legend" class="chart-legend">
               <span 
-                v-for="serie in mockChartData.series" 
+                v-for="serie in chartData.series" 
                 :key="serie.id"
                 class="legend-item"
               >
@@ -398,7 +443,7 @@ onMounted(() => {
                 <h4>Hit (≥100%)</h4>
                 <div id="exec-status-hit" class="list-mini">
                   <div 
-                    v-for="item in mockStatus.hit" 
+                    v-for="item in status.hit" 
                     :key="item.key"
                     class="list-mini__row"
                   >
@@ -413,7 +458,7 @@ onMounted(() => {
                 <h4>Quase (90-99%)</h4>
                 <div id="exec-status-quase" class="list-mini">
                   <div 
-                    v-for="item in mockStatus.quase" 
+                    v-for="item in status.quase" 
                     :key="item.key"
                     class="list-mini__row"
                   >
@@ -428,7 +473,7 @@ onMounted(() => {
                 <h4>Longe (maior defasagem)</h4>
                 <div id="exec-status-longe" class="list-mini">
                   <div 
-                    v-for="item in mockStatus.longe" 
+                    v-for="item in status.longe" 
                     :key="item.key"
                     class="list-mini__row"
                   >
@@ -467,10 +512,10 @@ onMounted(() => {
             </div>
           </div>
           <div id="exec-heatmap" class="exec-heatmap">
-            <div class="hm-row hm-head" style="--hm-cols: 4; --hm-first: 240px; --hm-cell: 136px">
+            <div class="hm-row hm-head" :style="`--hm-cols: ${heatmap.sections.length}; --hm-first: 240px; --hm-cell: 136px`">
               <div class="hm-cell hm-corner">Regional \ Família</div>
               <div 
-                v-for="section in mockHeatmap.sections" 
+                v-for="section in heatmap.sections" 
                 :key="section.id"
                 class="hm-cell hm-col"
                 :title="section.label"
@@ -479,14 +524,14 @@ onMounted(() => {
               </div>
             </div>
             <div 
-              v-for="unit in mockHeatmap.units" 
+              v-for="unit in heatmap.units" 
               :key="unit.value"
               class="hm-row"
-              style="--hm-cols: 4; --hm-first: 240px; --hm-cell: 136px"
+              :style="`--hm-cols: ${heatmap.sections.length}; --hm-first: 240px; --hm-cell: 136px`"
             >
               <div class="hm-cell hm-rowh" :title="unit.label">{{ unit.label }}</div>
               <div 
-                v-for="section in mockHeatmap.sections" 
+                v-for="section in heatmap.sections" 
                 :key="section.id"
                 class="hm-cell hm-val"
                 :class="getHeatmapCellClass(getHeatmapValue(unit.value, section.id).pct)"
@@ -497,6 +542,7 @@ onMounted(() => {
             </div>
           </div>
         </div>
+        </template>
       </div>
     </div>
   </div>
@@ -1055,6 +1101,23 @@ onMounted(() => {
 
 .muted {
   color: var(--muted);
+}
+
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 @media (max-width: 768px) {

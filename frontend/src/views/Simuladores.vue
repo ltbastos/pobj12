@@ -1,104 +1,58 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useGlobalFilters } from '../composables/useGlobalFilters'
+import { getSimuladorProducts, type SimuladorProduct } from '../services/simuladorService'
 import { formatINT, formatPoints, formatByMetric, formatBRLReadable } from '../utils/formatUtils'
 import Filters from '../components/Filters.vue'
 import TabsNavigation from '../components/TabsNavigation.vue'
 
-const { filterState } = useGlobalFilters()
-
 // Estado do simulador
 const selectedIndicatorId = ref<string>('')
 const delta = ref<number>(0)
+const loading = ref(false)
+const error = ref<string | null>(null)
 
-// Dados mockados - catálogo de indicadores
-const mockCatalog = [
-  {
-    id: 'cartao_credito_emissao',
-    label: 'Cartão de Crédito - Emissão',
-    sectionId: 'captacao',
-    sectionLabel: 'Captação',
-    metric: 'qtd',
-    meta: 150,
-    realizado: 120,
-    variavelMeta: 50000,
-    variavelReal: 40000,
-    pontosMeta: 15,
-    pontosBrutos: 12,
-    pontos: 12,
-    ultimaAtualizacao: '20/09/2025 08:30'
-  },
-  {
-    id: 'conta_corrente_abertura',
-    label: 'Conta Corrente - Abertura',
-    sectionId: 'captacao',
-    sectionLabel: 'Captação',
-    metric: 'qtd',
-    meta: 200,
-    realizado: 180,
-    variavelMeta: 30000,
-    variavelReal: 27000,
-    pontosMeta: 10,
-    pontosBrutos: 9,
-    pontos: 9,
-    ultimaAtualizacao: '20/09/2025 08:30'
-  },
-  {
-    id: 'emprestimo_consignado',
-    label: 'Empréstimo Consignado',
-    sectionId: 'credito',
-    sectionLabel: 'Crédito',
-    metric: 'valor',
-    meta: 500000,
-    realizado: 420000,
-    variavelMeta: 80000,
-    variavelReal: 67200,
-    pontosMeta: 20,
-    pontosBrutos: 16.8,
-    pontos: 16.8,
-    ultimaAtualizacao: '20/09/2025 08:30'
-  },
-  {
-    id: 'investimento_poupanca',
-    label: 'Investimento - Poupança',
-    sectionId: 'investimento',
-    sectionLabel: 'Investimento',
-    metric: 'valor',
-    meta: 1000000,
-    realizado: 850000,
-    variavelMeta: 60000,
-    variavelReal: 51000,
-    pontosMeta: 12,
-    pontosBrutos: 10.2,
-    pontos: 10.2,
-    ultimaAtualizacao: '20/09/2025 08:30'
-  },
-  {
-    id: 'seguro_vida',
-    label: 'Seguro de Vida',
-    sectionId: 'seguros',
-    sectionLabel: 'Seguros',
-    metric: 'qtd',
-    meta: 80,
-    realizado: 65,
-    variavelMeta: 40000,
-    variavelReal: 32500,
-    pontosMeta: 8,
-    pontosBrutos: 6.5,
-    pontos: 6.5,
-    ultimaAtualizacao: '20/09/2025 08:30'
+// Dados reais - catálogo de indicadores
+const catalog = ref<SimuladorProduct[]>([])
+
+// Carrega dados
+const loadData = async () => {
+  loading.value = true
+  error.value = null
+  
+  try {
+    const data = await getSimuladorProducts()
+    if (data) {
+      catalog.value = data
+      // Seleciona o primeiro produto se não houver seleção
+      if (catalog.value.length > 0 && !selectedIndicatorId.value) {
+        selectedIndicatorId.value = catalog.value[0].id
+      }
+    } else {
+      error.value = 'Erro ao carregar produtos'
+      catalog.value = []
+    }
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : 'Erro desconhecido'
+    console.error('Erro ao carregar produtos:', err)
+    catalog.value = []
+  } finally {
+    loading.value = false
   }
-]
+}
+
+onMounted(() => {
+  loadData()
+})
 
 // Indicador selecionado
 const selectedProduct = computed(() => {
-  return mockCatalog.find(item => item.id === selectedIndicatorId.value) || null
+  return catalog.value.find(item => item.id === selectedIndicatorId.value) || null
 })
 
 // Agrupa indicadores por seção
 const groupedCatalog = computed(() => {
-  const groups = new Map<string, typeof mockCatalog>()
-  mockCatalog.forEach(item => {
+  const groups = new Map<string, SimuladorProduct[]>()
+  catalog.value.forEach(item => {
     const key = item.sectionId || item.sectionLabel || '__'
     if (!groups.has(key)) {
       groups.set(key, [])
@@ -128,8 +82,8 @@ const simulationResults = computed(() => {
   const metric = product.metric || 'valor'
   const meta = Math.max(0, toNumber(product.meta))
   const realizado = Math.max(0, toNumber(product.realizado))
-  const variavelMeta = Math.max(0, toNumber(product.variavelMeta))
-  const variavelReal = Math.max(0, toNumber(product.variavelReal))
+  const variavelMeta = Math.max(0, toNumber(product.variavelMeta || 0))
+  const variavelReal = Math.max(0, toNumber(product.variavelReal || 0))
   const pontosMeta = Math.max(0, toNumber(product.pontosMeta))
   const pontosBrutos = Math.max(0, toNumber(product.pontosBrutos))
   const pontosAtual = Math.max(0, Math.min(pontosMeta || pontosBrutos, toNumber(product.pontos)))
@@ -205,13 +159,6 @@ const applyShortcut = (value: number) => {
   delta.value = nextValue
 }
 
-// Inicializa com o primeiro indicador
-onMounted(() => {
-  if (mockCatalog.length > 0 && !selectedIndicatorId.value && mockCatalog[0]) {
-    selectedIndicatorId.value = mockCatalog[0].id
-  }
-})
-
 // Reseta delta quando muda o indicador
 watch(selectedIndicatorId, () => {
   delta.value = 0
@@ -234,62 +181,93 @@ watch(selectedIndicatorId, () => {
           </header>
 
           <div id="sim-whatif" class="sim-whatif">
-            <!-- Formulário de seleção -->
-            <form id="sim-whatif-form" class="sim-whatif__form" @submit.prevent>
-              <div class="sim-whatif__field">
-                <label for="sim-whatif-indicador" class="muted">INDICADOR</label>
-                <select 
-                  id="sim-whatif-indicador" 
-                  v-model="selectedIndicatorId"
-                  class="input"
-                >
-                  <option value="" disabled>Selecione um indicador</option>
-                  <optgroup 
-                    v-for="group in groupedCatalog" 
-                    :key="group.sectionId"
-                    :label="group.sectionLabel"
-                  >
-                    <option 
-                      v-for="item in group.items" 
-                      :key="item.id"
-                      :value="item.id"
-                    >
-                      {{ item.label }}
-                    </option>
-                  </optgroup>
-                </select>
-              </div>
-
-              <div class="sim-whatif__field">
-                <label for="sim-whatif-extra" class="muted">INCREMENTO</label>
-                <div class="sim-whatif__input-group">
-                  <span id="sim-whatif-prefix" class="sim-whatif__prefix">
-                    {{ selectedProduct?.metric === 'valor' ? 'R$' : '+' }}
-                  </span>
-                  <input 
-                    id="sim-whatif-extra"
-                    type="number"
-                    v-model.number="delta"
-                    :min="0"
-                    :step="selectedProduct?.metric === 'valor' ? 1000 : 1"
-                    class="input"
-                    placeholder="0"
-                  />
+            <!-- Skeleton Loading -->
+            <template v-if="loading">
+              <div class="sim-whatif__skeleton">
+                <div class="sim-whatif__form">
+                  <div class="sim-whatif__field">
+                    <div class="skeleton skeleton--label"></div>
+                    <div class="skeleton skeleton--input"></div>
+                  </div>
+                  <div class="sim-whatif__field">
+                    <div class="skeleton skeleton--label"></div>
+                    <div class="skeleton skeleton--input"></div>
+                    <div class="skeleton skeleton--hint"></div>
+                  </div>
                 </div>
-                <p id="sim-whatif-unit" class="sim-whatif__hint">
-                  <template v-if="selectedProduct">
-                    Meta {{ formatByMetric(selectedProduct.metric, selectedProduct.meta) }} · 
-                    Realizado {{ formatByMetric(selectedProduct.metric, selectedProduct.realizado) }}
-                    <template v-if="selectedProduct.meta > selectedProduct.realizado">
-                      · Falta {{ formatByMetric(selectedProduct.metric, selectedProduct.meta - selectedProduct.realizado) }}
-                    </template>
-                  </template>
-                  <template v-else>
-                    Selecione um indicador elegível.
-                  </template>
-                </p>
+                <div class="skeleton skeleton--shortcuts"></div>
+                <div class="sim-whatif__results">
+                  <div class="skeleton skeleton--title"></div>
+                  <div class="skeleton skeleton--subtitle"></div>
+                  <div class="sim-whatif-cards">
+                    <div class="skeleton skeleton--card"></div>
+                    <div class="skeleton skeleton--card"></div>
+                    <div class="skeleton skeleton--card"></div>
+                  </div>
+                </div>
               </div>
-            </form>
+            </template>
+
+            <!-- Conteúdo real -->
+            <template v-else>
+              <!-- Formulário de seleção -->
+              <form id="sim-whatif-form" class="sim-whatif__form" @submit.prevent>
+                <div class="sim-whatif__field">
+                  <label for="sim-whatif-indicador" class="muted">INDICADOR</label>
+                  <select 
+                    id="sim-whatif-indicador" 
+                    v-model="selectedIndicatorId"
+                    class="input"
+                    :disabled="catalog.length === 0"
+                  >
+                    <option value="" disabled>Selecione um indicador</option>
+                    <optgroup 
+                      v-for="group in groupedCatalog" 
+                      :key="group.sectionId"
+                      :label="group.sectionLabel"
+                    >
+                      <option 
+                        v-for="item in group.items" 
+                        :key="item.id"
+                        :value="item.id"
+                      >
+                        {{ item.label }}
+                      </option>
+                    </optgroup>
+                  </select>
+                </div>
+
+                <div class="sim-whatif__field">
+                  <label for="sim-whatif-extra" class="muted">INCREMENTO</label>
+                  <div class="sim-whatif__input-group">
+                    <span id="sim-whatif-prefix" class="sim-whatif__prefix">
+                      {{ selectedProduct?.metric === 'valor' ? 'R$' : '+' }}
+                    </span>
+                    <input 
+                      id="sim-whatif-extra"
+                      type="number"
+                      v-model.number="delta"
+                      :min="0"
+                      :step="selectedProduct?.metric === 'valor' ? 1000 : 1"
+                      class="input"
+                      placeholder="0"
+                      :disabled="!selectedProduct"
+                    />
+                  </div>
+                  <p id="sim-whatif-unit" class="sim-whatif__hint">
+                    <template v-if="selectedProduct">
+                      Meta {{ formatByMetric(selectedProduct.metric, selectedProduct.meta) }} · 
+                      Realizado {{ formatByMetric(selectedProduct.metric, selectedProduct.realizado) }}
+                      <template v-if="selectedProduct.meta > selectedProduct.realizado">
+                        · Falta {{ formatByMetric(selectedProduct.metric, selectedProduct.meta - selectedProduct.realizado) }}
+                      </template>
+                    </template>
+                    <template v-else>
+                      Selecione um indicador elegível.
+                    </template>
+                  </p>
+                </div>
+              </form>
 
             <!-- Atalhos rápidos -->
             <div 
@@ -319,7 +297,7 @@ watch(selectedIndicatorId, () => {
                   <template v-if="selectedProduct">
                     Impacto em {{ selectedProduct.label }}
                   </template>
-                  <template v-else-if="mockCatalog.length === 0">
+                  <template v-else-if="catalog.length === 0">
                     Sem indicadores elegíveis
                   </template>
                   <template v-else>
@@ -330,18 +308,24 @@ watch(selectedIndicatorId, () => {
                   <template v-if="selectedProduct">
                     {{ selectedProduct.sectionLabel }} · Meta de {{ formatByMetric(selectedProduct.metric, selectedProduct.meta) }}
                   </template>
-                  <template v-else-if="mockCatalog.length === 0">
-                    Aplique outros filtros ou volte mais tarde para usar o simulador.
+                  <template v-else-if="catalog.length === 0">
+                    Nenhum indicador disponível no momento.
                   </template>
                   <template v-else>
-                    Os valores consideram os filtros aplicados na visão principal.
+                    Selecione um indicador e informe um incremento para ver o impacto.
                   </template>
                 </p>
               </div>
 
               <div v-if="!selectedProduct" class="sim-whatif__empty">
-                <template v-if="mockCatalog.length === 0">
-                  Nenhum indicador com meta em valor ou quantidade está disponível com os filtros atuais.
+                <template v-if="loading">
+                  Carregando indicadores...
+                </template>
+                <template v-else-if="error">
+                  {{ error }}
+                </template>
+                <template v-else-if="catalog.length === 0">
+                  Nenhum indicador com meta em valor ou quantidade está disponível.
                 </template>
                 <template v-else>
                   Selecione um indicador com meta em valor ou quantidade para liberar a simulação.
@@ -451,10 +435,11 @@ watch(selectedIndicatorId, () => {
                   </template>
                 </p>
                 <p class="sim-whatif__foot-note">
-                  Projeção linear considerando os filtros atuais. Resultados reais podem variar conforme regras específicas do indicador.
+                  Projeção linear baseada nos dados atuais. Resultados reais podem variar conforme regras específicas do indicador.
                 </p>
               </div>
             </div>
+            </template>
           </div>
         </section>
       </div>
@@ -812,8 +797,88 @@ watch(selectedIndicatorId, () => {
   font-style: italic;
 }
 
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton--label {
+  height: 12px;
+  width: 80px;
+  margin-bottom: 8px;
+}
+
+.skeleton--input {
+  height: 42px;
+  width: 100%;
+}
+
+.skeleton--hint {
+  height: 16px;
+  width: 60%;
+  margin-top: 8px;
+}
+
+.skeleton--shortcuts {
+  height: 48px;
+  width: 100%;
+  border-radius: 10px;
+}
+
+.skeleton--title {
+  height: 24px;
+  width: 200px;
+  margin-bottom: 8px;
+}
+
+.skeleton--subtitle {
+  height: 18px;
+  width: 300px;
+  margin-bottom: 20px;
+}
+
+.skeleton--card {
+  height: 200px;
+  width: 100%;
+  border-radius: 18px;
+}
+
+.sim-whatif__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sim-whatif__skeleton .sim-whatif__form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.sim-whatif__skeleton .sim-whatif-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
 @media (max-width: 768px) {
   .sim-whatif__form {
+    grid-template-columns: 1fr;
+  }
+
+  .sim-whatif__skeleton .sim-whatif__form {
     grid-template-columns: 1fr;
   }
 
@@ -827,4 +892,3 @@ watch(selectedIndicatorId, () => {
   }
 }
 </style>
-

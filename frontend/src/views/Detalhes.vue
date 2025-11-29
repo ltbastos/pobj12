@@ -473,6 +473,11 @@ function calculateSummary(items: DetalhesItem[]) {
 
 const detailOpenRows = ref<Set<string>>(new Set())
 
+function handleAction(payload: { type: 'ticket' | 'opportunities', node: TreeNode }) {
+  // TODO: Implementar ações
+  console.log('Action:', payload.type, payload.node)
+}
+
 function toggleRow(nodeId: string) {
   const node = findNodeById(treeData.value, nodeId)
   const isContract = node?.level === 'contrato'
@@ -784,150 +789,166 @@ onMounted(() => {
             </div>
           </div>
 
-          <div v-if="loading" class="loading-state">
-            <p>Carregando detalhes...</p>
-          </div>
+          <!-- Skeleton Loading -->
+          <template v-if="loading">
+            <div class="detalhes-skeleton">
+              <div class="skeleton skeleton--table-header" style="height: 40px; width: 100%; margin-bottom: 12px; border-radius: 8px;"></div>
+              <div class="skeleton skeleton--table-row" style="height: 48px; width: 100%; margin-bottom: 8px; border-radius: 8px;"></div>
+              <div class="skeleton skeleton--table-row" style="height: 48px; width: 100%; margin-bottom: 8px; border-radius: 8px;"></div>
+              <div class="skeleton skeleton--table-row" style="height: 48px; width: 100%; margin-bottom: 8px; border-radius: 8px;"></div>
+              <div class="skeleton skeleton--table-row" style="height: 48px; width: 100%; margin-bottom: 8px; border-radius: 8px;"></div>
+              <div class="skeleton skeleton--table-row" style="height: 48px; width: 100%; margin-bottom: 8px; border-radius: 8px;"></div>
+              <div class="skeleton skeleton--table-row" style="height: 48px; width: 100%; margin-bottom: 8px; border-radius: 8px;"></div>
+              <div class="skeleton skeleton--table-row" style="height: 48px; width: 100%; margin-bottom: 8px; border-radius: 8px;"></div>
+              <div class="skeleton skeleton--table-row" style="height: 48px; width: 100%; margin-bottom: 8px; border-radius: 8px;"></div>
+              <div class="skeleton skeleton--table-row" style="height: 48px; width: 100%; margin-bottom: 8px; border-radius: 8px;"></div>
+            </div>
+          </template>
 
-          <div v-else-if="error" class="error-state">
-            <p>{{ error }}</p>
-          </div>
+          <!-- Conteúdo real -->
+          <template v-else>
+            <div v-if="error" class="error-state">
+              <p>{{ error }}</p>
+            </div>
 
-          <div v-else-if="showCards && contratosData.length === 0" class="empty-state">
-            <p>Nenhum contrato encontrado para a busca.</p>
-          </div>
+            <div v-else-if="showCards && contratosData.length === 0" class="empty-state">
+              <p>Nenhum contrato encontrado para a busca.</p>
+            </div>
 
-          <div v-else-if="!showCards && treeData.length === 0" class="empty-state">
-            <p>Nenhum dado encontrado para os filtros selecionados.</p>
-          </div>
+            <div v-else-if="!showCards && treeData.length === 0" class="empty-state">
+              <p>Nenhum dado encontrado para os filtros selecionados.</p>
+            </div>
 
-          <!-- Cards de contratos (quando há busca) -->
-          <div v-else-if="showCards" class="contratos-grid">
-            <div
-              v-for="contrato in contratosData"
-              :key="contrato.id"
-              class="contrato-card"
-            >
-              <div class="contrato-card__header">
-                <h4 class="contrato-card__title">{{ contrato.contratoId }}</h4>
-                <div class="contrato-card__badge" :class="{
-                  'is-success': contrato.summary.atingimento_p >= 100,
-                  'is-warning': contrato.summary.atingimento_p >= 50 && contrato.summary.atingimento_p < 100,
-                  'is-danger': contrato.summary.atingimento_p < 50
-                }">
-                  {{ contrato.summary.atingimento_p.toFixed(1) }}%
-                </div>
-              </div>
-
-              <div class="contrato-card__body">
-                <div class="contrato-card__info">
-                  <div class="contrato-card__info-item">
-                    <span class="contrato-card__label">Gerente:</span>
-                    <span class="contrato-card__value">{{ contrato.detail.gerente || '—' }}</span>
-                  </div>
-                  <div v-if="contrato.detail.gerente_gestao" class="contrato-card__info-item">
-                    <span class="contrato-card__label">Gerente de gestão:</span>
-                    <span class="contrato-card__value">{{ contrato.detail.gerente_gestao }}</span>
-                  </div>
-                  <div class="contrato-card__info-item">
-                    <span class="contrato-card__label">Canal:</span>
-                    <span class="contrato-card__value">{{ contrato.detail.canal_venda || '—' }}</span>
-                  </div>
-                  <div class="contrato-card__info-item">
-                    <span class="contrato-card__label">Tipo:</span>
-                    <span class="contrato-card__value">{{ contrato.detail.tipo_venda || '—' }}</span>
-                  </div>
-                  <div class="contrato-card__info-item">
-                    <span class="contrato-card__label">Modalidade:</span>
-                    <span class="contrato-card__value">{{ contrato.detail.modalidade_pagamento || '—' }}</span>
+            <!-- Cards de contratos (quando há busca) -->
+            <div v-else-if="showCards" class="contratos-grid">
+              <div
+                v-for="contrato in contratosData"
+                :key="contrato.id"
+                class="contrato-card"
+              >
+                <div class="contrato-card__header">
+                  <h4 class="contrato-card__title">{{ contrato.contratoId }}</h4>
+                  <div class="contrato-card__badge" :class="{
+                    'is-success': contrato.summary.atingimento_p >= 100,
+                    'is-warning': contrato.summary.atingimento_p >= 50 && contrato.summary.atingimento_p < 100,
+                    'is-danger': contrato.summary.atingimento_p < 50
+                  }">
+                    {{ contrato.summary.atingimento_p.toFixed(1) }}%
                   </div>
                 </div>
 
-                <div class="contrato-card__metrics">
-                  <div class="contrato-card__metric">
-                    <span class="contrato-card__metric-label">Realizado</span>
-                    <span class="contrato-card__metric-value">{{ formatCurrency(contrato.summary.valor_realizado) }}</span>
+                <div class="contrato-card__body">
+                  <div class="contrato-card__info">
+                    <div class="contrato-card__info-item">
+                      <span class="contrato-card__label">Gerente:</span>
+                      <span class="contrato-card__value">{{ contrato.detail.gerente || '—' }}</span>
+                    </div>
+                    <div v-if="contrato.detail.gerente_gestao" class="contrato-card__info-item">
+                      <span class="contrato-card__label">Gerente de gestão:</span>
+                      <span class="contrato-card__value">{{ contrato.detail.gerente_gestao }}</span>
+                    </div>
+                    <div class="contrato-card__info-item">
+                      <span class="contrato-card__label">Canal:</span>
+                      <span class="contrato-card__value">{{ contrato.detail.canal_venda || '—' }}</span>
+                    </div>
+                    <div class="contrato-card__info-item">
+                      <span class="contrato-card__label">Tipo:</span>
+                      <span class="contrato-card__value">{{ contrato.detail.tipo_venda || '—' }}</span>
+                    </div>
+                    <div class="contrato-card__info-item">
+                      <span class="contrato-card__label">Modalidade:</span>
+                      <span class="contrato-card__value">{{ contrato.detail.modalidade_pagamento || '—' }}</span>
+                    </div>
                   </div>
-                  <div class="contrato-card__metric">
-                    <span class="contrato-card__metric-label">Meta</span>
-                    <span class="contrato-card__metric-value">{{ formatCurrency(contrato.summary.valor_meta) }}</span>
-                  </div>
-                  <div class="contrato-card__metric">
-                    <span class="contrato-card__metric-label">Pontos</span>
-                    <span class="contrato-card__metric-value">{{ formatINT(contrato.summary.pontos) }}</span>
-                  </div>
-                  <div class="contrato-card__metric">
-                    <span class="contrato-card__metric-label">Peso</span>
-                    <span class="contrato-card__metric-value">{{ formatINT(contrato.summary.peso) }}</span>
-                  </div>
-                </div>
 
-                <div v-if="contrato.detail.dt_vencimento" class="contrato-card__dates">
-                  <div class="contrato-card__date-item">
-                    <span class="contrato-card__date-label">Vencimento:</span>
-                    <span class="contrato-card__date-value">{{ formatDate(contrato.detail.dt_vencimento) }}</span>
+                  <div class="contrato-card__metrics">
+                    <div class="contrato-card__metric">
+                      <span class="contrato-card__metric-label">Realizado</span>
+                      <span class="contrato-card__metric-value">{{ formatCurrency(contrato.summary.valor_realizado) }}</span>
+                    </div>
+                    <div class="contrato-card__metric">
+                      <span class="contrato-card__metric-label">Meta</span>
+                      <span class="contrato-card__metric-value">{{ formatCurrency(contrato.summary.valor_meta) }}</span>
+                    </div>
+                    <div class="contrato-card__metric">
+                      <span class="contrato-card__metric-label">Pontos</span>
+                      <span class="contrato-card__metric-value">{{ formatINT(contrato.summary.pontos) }}</span>
+                    </div>
+                    <div class="contrato-card__metric">
+                      <span class="contrato-card__metric-label">Peso</span>
+                      <span class="contrato-card__metric-value">{{ formatINT(contrato.summary.peso) }}</span>
+                    </div>
                   </div>
-                  <div v-if="contrato.detail.dt_cancelamento" class="contrato-card__date-item">
-                    <span class="contrato-card__date-label">Cancelamento:</span>
-                    <span class="contrato-card__date-value">{{ formatDate(contrato.detail.dt_cancelamento) }}</span>
-                  </div>
-                </div>
 
-                <div v-if="contrato.detail.motivo_cancelamento" class="contrato-card__cancelamento">
-                  <span class="contrato-card__cancelamento-label">Motivo:</span>
-                  <span class="contrato-card__cancelamento-value">{{ contrato.detail.motivo_cancelamento }}</span>
+                  <div v-if="contrato.detail.dt_vencimento" class="contrato-card__dates">
+                    <div class="contrato-card__date-item">
+                      <span class="contrato-card__date-label">Vencimento:</span>
+                      <span class="contrato-card__date-value">{{ formatDate(contrato.detail.dt_vencimento) }}</span>
+                    </div>
+                    <div v-if="contrato.detail.dt_cancelamento" class="contrato-card__date-item">
+                      <span class="contrato-card__date-label">Cancelamento:</span>
+                      <span class="contrato-card__date-value">{{ formatDate(contrato.detail.dt_cancelamento) }}</span>
+                    </div>
+                  </div>
+
+                  <div v-if="contrato.detail.motivo_cancelamento" class="contrato-card__cancelamento">
+                    <span class="contrato-card__cancelamento-label">Motivo:</span>
+                    <span class="contrato-card__cancelamento-value">{{ contrato.detail.motivo_cancelamento }}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <!-- Árvore hierárquica (quando não há busca) -->
-          <div v-else class="table-wrapper">
-            <table class="tree-table">
-                  <thead>
-                    <tr>
-                      <th>
-                        <button
-                          type="button"
-                          class="tree-sort"
-                          :aria-pressed="sortState.id === '__label__' && sortState.direction ? 'true' : 'false'"
-                          @click="handleSort('__label__')"
-                        >
-                          {{ firstColumnLabel }}
-                          <span class="tree-sort__icon"><i :class="getSortIcon('__label__')"></i></span>
-                        </button>
-                      </th>
-                  <th
-                    v-for="columnId in activeColumns"
-                    :key="columnId"
-                    class="col-number"
-                  >
-                    <button
-                      type="button"
-                      class="tree-sort"
-                      :aria-pressed="sortState.id === columnId && sortState.direction ? 'true' : 'false'"
-                      @click="handleSort(columnId)"
+            <!-- Árvore hierárquica (quando não há busca) -->
+            <div v-else class="table-wrapper">
+              <table class="tree-table">
+                <thead>
+                  <tr>
+                    <th>
+                      <button
+                        type="button"
+                        class="tree-sort"
+                        :aria-pressed="sortState.id === '__label__' && sortState.direction ? 'true' : 'false'"
+                        @click="handleSort('__label__')"
+                      >
+                        {{ firstColumnLabel }}
+                        <span class="tree-sort__icon"><i :class="getSortIcon('__label__')"></i></span>
+                      </button>
+                    </th>
+                    <th
+                      v-for="columnId in activeColumns"
+                      :key="columnId"
+                      class="col-number"
                     >
-                      {{ getColumnLabel(columnId) }}
-                      <span class="tree-sort__icon"><i :class="getSortIcon(columnId)"></i></span>
-                    </button>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <template v-for="node in treeData" :key="node.id">
-                  <TreeTableRow
-                    :node="node"
-                    :level="0"
-                    :expanded="isExpanded(node.id)"
-                    :expanded-rows="expandedRows"
-                    :detail-open="detailOpenRows.has(node.id)"
-                    :active-columns="activeColumns"
-                    @toggle="(id) => toggleRow(id)"
-                  />
-                </template>
-              </tbody>
-            </table>
-          </div>
+                      <button
+                        type="button"
+                        class="tree-sort"
+                        :aria-pressed="sortState.id === columnId && sortState.direction ? 'true' : 'false'"
+                        @click="handleSort(columnId)"
+                      >
+                        {{ getColumnLabel(columnId) }}
+                        <span class="tree-sort__icon"><i :class="getSortIcon(columnId)"></i></span>
+                      </button>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template v-for="node in treeData" :key="node.id">
+                    <TreeTableRow
+                      :node="node"
+                      :level="0"
+                      :expanded="isExpanded(node.id)"
+                      :expanded-rows="expandedRows"
+                      :detail-open="detailOpenRows.has(node.id)"
+                      :active-columns="activeColumns"
+                      @toggle="(id) => toggleRow(id)"
+                      @action="handleAction"
+                    />
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </template>
         </div>
       </div>
     </div>
@@ -1318,7 +1339,27 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.loading-state,
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.detalhes-skeleton {
+  padding: 16px;
+}
+
 .error-state,
 .empty-state {
   padding: 48px 24px;

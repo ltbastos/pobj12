@@ -265,8 +265,19 @@ export interface RankingItem {
 }
 
 export interface RankingFilters {
+  segmento?: string
+  diretoria?: string
+  regional?: string
+  agencia?: string
   gerenteGestao?: string
+  gerente?: string
+  dataInicio?: string
+  dataFim?: string
 }
+
+// ============================================================================
+// VARIÁVEIS
+// ============================================================================
 
 // ============================================================================
 // VARIÁVEIS

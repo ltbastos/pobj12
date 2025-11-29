@@ -11,11 +11,37 @@ const { filterState, period } = useGlobalFilters()
 const rankingData = ref<RankingItem[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
-const rankingType = ref<'pobj' | 'produto' | 'historico'>('pobj')
 
-const rankingFilters = computed<RankingFilters>(() => ({
-  gerenteGestao: filterState.value.ggestao || undefined
-}))
+const rankingFilters = computed<RankingFilters>(() => {
+  const filters: RankingFilters = {}
+  
+  if (filterState.value.segmento && filterState.value.segmento.toLowerCase() !== 'todos') {
+    filters.segmento = filterState.value.segmento
+  }
+  if (filterState.value.diretoria && filterState.value.diretoria.toLowerCase() !== 'todas') {
+    filters.diretoria = filterState.value.diretoria
+  }
+  if (filterState.value.gerencia && filterState.value.gerencia.toLowerCase() !== 'todas') {
+    filters.regional = filterState.value.gerencia
+  }
+  if (filterState.value.agencia && filterState.value.agencia.toLowerCase() !== 'todas') {
+    filters.agencia = filterState.value.agencia
+  }
+  if (filterState.value.ggestao && filterState.value.ggestao.toLowerCase() !== 'todos') {
+    filters.gerenteGestao = filterState.value.ggestao
+  }
+  if (filterState.value.gerente && filterState.value.gerente.toLowerCase() !== 'todos') {
+    filters.gerente = filterState.value.gerente
+  }
+  if (period.value?.start) {
+    filters.dataInicio = period.value.start
+  }
+  if (period.value?.end) {
+    filters.dataFim = period.value.end
+  }
+  
+  return filters
+})
 
 const loadRanking = async () => {
   loading.value = true
@@ -296,39 +322,66 @@ const shouldMaskName = (item: any, index: number): boolean => {
       <TabsNavigation />
 
       <div class="ranking-view">
-        <div v-if="loading" class="loading-state">
-          <p>Carregando ranking...</p>
-        </div>
+        <!-- Skeleton Loading -->
+        <template v-if="loading">
+          <div class="ranking-content">
+            <div class="card card--ranking">
+              <header class="card__header rk-head">
+                <div class="skeleton skeleton--title" style="height: 24px; width: 150px; margin-bottom: 8px;"></div>
+                <div class="skeleton skeleton--subtitle" style="height: 16px; width: 300px;"></div>
+              </header>
+              <div class="rk-summary">
+                <div class="rk-badges">
+                  <div class="skeleton skeleton--badge" style="height: 32px; width: 120px; border-radius: 6px;"></div>
+                  <div class="skeleton skeleton--badge" style="height: 32px; width: 140px; border-radius: 6px;"></div>
+                  <div class="skeleton skeleton--badge" style="height: 32px; width: 180px; border-radius: 6px;"></div>
+                </div>
+              </div>
+              <div class="ranking-table-wrapper">
+                <table class="rk-table">
+                  <thead>
+                    <tr>
+                      <th class="pos-col">#</th>
+                      <th class="unit-col">Unidade</th>
+                      <th class="points-col">Pontos (mensal)</th>
+                      <th class="points-col">Pontos (acumulado)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="i in 10" :key="i" class="rk-row">
+                      <td class="pos-col"><div class="skeleton skeleton--text" style="height: 16px; width: 20px; margin: 0 auto;"></div></td>
+                      <td class="unit-col"><div class="skeleton skeleton--text" style="height: 16px; width: 80%;"></div></td>
+                      <td class="points-col"><div class="skeleton skeleton--text" style="height: 16px; width: 60px; margin: 0 auto;"></div></td>
+                      <td class="points-col"><div class="skeleton skeleton--text" style="height: 16px; width: 60px; margin: 0 auto;"></div></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </template>
 
-        <div v-else-if="error" class="error-state">
-          <p>{{ error }}</p>
-        </div>
+        <!-- Conteúdo real -->
+        <template v-else>
+          <div v-if="error" class="error-state">
+            <p>{{ error }}</p>
+          </div>
 
-        <div v-else-if="rankingData.length === 0" class="empty-state">
-          <p v-if="filterState.ggestao">
-            Sem dados de ranking disponíveis para o gerente de gestão selecionado.
-          </p>
-          <p v-else>
-            Selecione um gerente de gestão nos filtros para visualizar o ranking.
-          </p>
-        </div>
+          <div v-else-if="rankingData.length === 0" class="empty-state">
+            <p v-if="filterState.ggestao">
+              Sem dados de ranking disponíveis para o gerente de gestão selecionado.
+            </p>
+            <p v-else>
+              Selecione um gerente de gestão nos filtros para visualizar o ranking.
+            </p>
+          </div>
 
-        <div v-else class="ranking-content">
+          <div v-else class="ranking-content">
           <div class="card card--ranking">
             <header class="card__header rk-head">
               <div class="title-subtitle">
                 <h3>Rankings</h3>
                 <p class="muted">Compare diferentes visões respeitando os filtros aplicados.</p>
-              </div>
-              <div class="rk-head__controls">
-                <div class="rk-control">
-                  <label for="rk-type" class="muted">TIPO DE RANKING</label>
-                  <select id="rk-type" v-model="rankingType" class="input input--sm">
-                    <option value="pobj">Ranking POBJ</option>
-                    <option value="produto">Ranking por produto</option>
-                    <option value="historico">Histórico anual</option>
-                  </select>
-                </div>
               </div>
             </header>
 
@@ -375,6 +428,7 @@ const shouldMaskName = (item: any, index: number): boolean => {
             </div>
           </div>
         </div>
+        </template>
       </div>
     </div>
   </div>

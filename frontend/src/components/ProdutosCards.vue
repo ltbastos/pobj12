@@ -182,15 +182,32 @@ const getMetricLabel = (metric: string): string => {
 
 <template>
   <div id="grid-familias">
-    <div v-if="loading" class="loading-state">
-      <p>Carregando produtos...</p>
-    </div>
+    <!-- Skeleton Loading -->
+    <template v-if="loading">
+      <div class="produtos-skeleton">
+        <div class="skeleton skeleton--section-title" style="height: 28px; width: 200px; margin-bottom: 16px; border-radius: 6px;"></div>
+        <div class="cards-grid">
+          <div class="skeleton skeleton--card" style="height: 180px; border-radius: 12px;"></div>
+          <div class="skeleton skeleton--card" style="height: 180px; border-radius: 12px;"></div>
+          <div class="skeleton skeleton--card" style="height: 180px; border-radius: 12px;"></div>
+          <div class="skeleton skeleton--card" style="height: 180px; border-radius: 12px;"></div>
+        </div>
+        <div class="skeleton skeleton--section-title" style="height: 28px; width: 200px; margin: 32px 0 16px; border-radius: 6px;"></div>
+        <div class="cards-grid">
+          <div class="skeleton skeleton--card" style="height: 180px; border-radius: 12px;"></div>
+          <div class="skeleton skeleton--card" style="height: 180px; border-radius: 12px;"></div>
+          <div class="skeleton skeleton--card" style="height: 180px; border-radius: 12px;"></div>
+        </div>
+      </div>
+    </template>
 
-    <div v-else-if="error" class="error-state">
-      <p>{{ error }}</p>
-    </div>
+    <!-- Conteúdo real -->
+    <template v-else>
+      <div v-if="error" class="error-state">
+        <p>{{ error }}</p>
+      </div>
 
-    <template v-else-if="produtosPorFamilia.length > 0">
+      <template v-else-if="produtosPorFamilia.length > 0">
       <div
         v-for="section in produtosPorFamilia"
         :key="section.id"
@@ -337,17 +354,39 @@ const getMetricLabel = (metric: string): string => {
           </article>
         </div>
       </div>
-    </template>
+      </template>
 
-    <div v-else class="empty-state">
-      <p>Nenhum produto encontrado</p>
-    </div>
+      <div v-else class="empty-state">
+        <p>Nenhum produto encontrado</p>
+      </div>
+    </template>
   </div>
 </template>
 
 <style scoped>
-/* Usa os estilos globais do CSS, apenas adiciona estilos específicos se necessário */
-.loading-state,
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.produtos-skeleton .cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
 .error-state,
 .empty-state {
   grid-column: 1 / -1;

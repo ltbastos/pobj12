@@ -45,6 +45,12 @@ export enum ApiRoutes {
   // Ranking
   RANKING = '/api/pobj/ranking',
 
+  // Executivo
+  EXEC = '/api/pobj/exec',
+
+  // Simulador
+  SIMULADOR = '/api/pobj/simulador',
+
   // Agent
   AGENT = '/api/agent',
 

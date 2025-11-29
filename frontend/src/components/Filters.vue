@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { getInit, type InitData } from '../services/initService'
 import { useHierarchyFilters } from '../composables/useHierarchyFilters'
 import { usePeriodManager } from '../composables/usePeriodManager'
@@ -8,6 +9,9 @@ import { useGlobalFilters } from '../composables/useGlobalFilters'
 import Button from './Button.vue'
 import SelectSearch from './SelectSearch.vue'
 import type { FilterOption } from '../types'
+
+const route = useRoute()
+const isSimuladoresPage = computed(() => route.name === 'Simuladores')
 
 const advancedFiltersOpen = ref(false)
 const showAdvancedButton = ref(true)
@@ -308,7 +312,7 @@ watch(() => period.value, (newPeriod) => {
         />
       </div>
       <div class="filters__actions">
-        <Button id="btn-filtrar" variant="primary" icon="ti ti-search" @click="handleFilter">
+        <Button id="btn-filtrar" variant="primary" icon="ti ti-search" :disabled="isSimuladoresPage" @click="handleFilter">
           Filtrar
         </Button>
         <Button id="btn-limpar" variant="secondary" icon="ti ti-x" @click="handleClear">

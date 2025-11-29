@@ -2,30 +2,31 @@
 
 namespace App\Controller\Pobj;
 
-use App\Application\UseCase\Pobj\RankingUseCase;
+use App\Application\UseCase\Pobj\ExecUseCase;
 use App\Controller\ControllerBase;
 use App\Domain\DTO\FilterDTO;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
-class RankingController extends ControllerBase
+class ExecController extends ControllerBase
 {
-    private $rankingUseCase;
+    /** @var ExecUseCase */
+    private $execUseCase;
 
-    public function __construct(RankingUseCase $rankingUseCase)
+    public function __construct(ExecUseCase $execUseCase)
     {
-        $this->rankingUseCase = $rankingUseCase;
+        $this->execUseCase = $execUseCase;
     }
 
     /**
-     * @Route("/api/pobj/ranking", name="api_pobj_ranking", methods={"GET"})
+     * @Route("/api/pobj/exec", name="api_pobj_exec", methods={"GET"})
      */
     public function handle(Request $request): JsonResponse
     {
         $filters = new FilterDTO($request->query->all());
-        $result = $this->rankingUseCase->handle($filters);
-        
+        $result = $this->execUseCase->handle($filters);
+
         return $this->success($result);
     }
 }

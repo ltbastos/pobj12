@@ -1,8 +1,11 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { getCalendario, getDefaultPeriod, formatBRDate, type CalendarioItem } from '../services/calendarioService'
 import type { Period } from '../types'
 
 export function usePeriodManager() {
+  const route = useRoute()
+  const isSimuladoresPage = computed(() => route.name === 'Simuladores')
   const period = ref<Period>(getDefaultPeriod())
   const calendarioData = ref<CalendarioItem[]>([])
 
@@ -23,6 +26,7 @@ export function usePeriodManager() {
 
     const startFormatted = formatBRDate(period.value.start)
     const endFormatted = formatBRDate(period.value.end)
+    const isDisabled = isSimuladoresPage.value
 
     labelElement.innerHTML = `
       <div class="period-inline">
@@ -32,17 +36,24 @@ export function usePeriodManager() {
           até
           <strong><span id="lbl-periodo-fim">${endFormatted}</span></strong>
         </span>
-        <button id="btn-alterar-data" type="button" class="link-action" style="color: #b30000;">
+        <button id="btn-alterar-data" type="button" class="link-action" style="color: #b30000;" ${isDisabled ? 'disabled' : ''}>
           <i class="ti ti-chevron-down"></i> Alterar data
         </button>
       </div>
     `
 
-    // Re-bind do evento do botão
-    const btn = document.getElementById('btn-alterar-data')
+    // Re-bind do evento do botão apenas se não estiver desabilitado
+    const btn = document.getElementById('btn-alterar-data') as HTMLButtonElement
     if (btn) {
-      btn.removeEventListener('click', handleOpenDatePopover)
-      btn.addEventListener('click', handleOpenDatePopover)
+      btn.disabled = isDisabled
+      if (!isDisabled) {
+        btn.removeEventListener('click', handleOpenDatePopover)
+        btn.addEventListener('click', handleOpenDatePopover)
+      } else {
+        btn.removeEventListener('click', handleOpenDatePopover)
+        btn.style.opacity = '0.5'
+        btn.style.cursor = 'not-allowed'
+      }
     }
   }
 
@@ -151,6 +162,11 @@ export function usePeriodManager() {
 
   onMounted(async () => {
     await loadCalendario()
+    updatePeriodLabels()
+  })
+
+  // Observa mudanças na rota para atualizar o estado do botão
+  watch(() => route.name, () => {
     updatePeriodLabels()
   })
 

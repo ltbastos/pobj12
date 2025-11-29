@@ -2,6 +2,7 @@
 
 namespace App\Application\UseCase\Pobj;
 
+use App\Domain\DTO\FilterDTO;
 use App\Repository\Pobj\FHistoricoRankingPobjRepository;
 
 class RankingUseCase
@@ -13,9 +14,9 @@ class RankingUseCase
         $this->repository = $repository;
     }
 
-    public function handle($filters = null): array
+    public function handle(?FilterDTO $filters = null): array
     {
-        return $this->repository->findAllOrderedByRanking();
+        return $this->repository->findRankingWithFilters($filters);
     }
 }
 
