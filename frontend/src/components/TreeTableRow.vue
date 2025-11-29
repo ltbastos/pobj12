@@ -5,7 +5,7 @@ import { formatINT, formatCurrency, formatDate, formatBRL, formatBRLReadable, fo
 export interface TreeNode {
   id: string
   label: string
-  level: 'segmento' | 'diretoria' | 'regional' | 'agencia' | 'gerente' | 'familia' | 'indicador' | 'subindicador' | 'contrato'
+  level: 'segmento' | 'diretoria' | 'regional' | 'agencia' | 'gGestao' | 'gerente' | 'familia' | 'indicador' | 'subindicador' | 'contrato'
   children: TreeNode[]
   data: any[]
   summary: {
@@ -25,6 +25,7 @@ export interface TreeNode {
     canal_venda?: string
     tipo_venda?: string
     gerente?: string
+    gerente_gestao?: string
     modalidade_pagamento?: string
     dt_vencimento?: string
     dt_cancelamento?: string

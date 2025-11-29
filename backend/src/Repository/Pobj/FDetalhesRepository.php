@@ -59,6 +59,10 @@ class FDetalhesRepository extends ServiceEntityRepository
 
         $params = [];
         $whereClause = '';
+        
+        // Adiciona os parâmetros do cargo para o CASE e subqueries (precisa estar antes da query)
+        $params['cargoGerente'] = Cargo::GERENTE;
+        $params['cargoGerenteGestao'] = Cargo::GERENTE_GESTAO;
 
         if ($filters) {
             // Filtros de estrutura (aplica apenas o mais específico da hierarquia)
@@ -237,10 +241,6 @@ class FDetalhesRepository extends ServiceEntityRepository
                     ON cal_comp.data = det.competencia
                 WHERE 1=1 {$whereClause}
                 ORDER BY est.diretoria_id, est.regional_id, est.agencia_id, est.nome, prod.familia_id, prod.indicador_id, prod.subindicador_id, fr.id_contrato";
-        
-        // Adiciona os parâmetros do cargo para o CASE
-        $params['cargoGerente'] = Cargo::GERENTE;
-        $params['cargoGerenteGestao'] = Cargo::GERENTE_GESTAO;
 
         $connection = $this->getEntityManager()->getConnection();
         $result = $connection->executeQuery($sql, $params);

@@ -113,18 +113,15 @@ export function useDetalhesData(
     let timeoutId: ReturnType<typeof setTimeout> | null = null
     
     watch(
-      () => ({
-        filters: filterState.value,
-        period: period.value
-      }),
-      (current) => {
+      [filterState, period],
+      ([currentFilters, currentPeriod]) => {
         // Debounce para evitar múltiplas chamadas rápidas
         if (timeoutId) {
           clearTimeout(timeoutId)
         }
         
         timeoutId = setTimeout(() => {
-          const filters = buildFiltersFromState(current.filters, current.period)
+          const filters = buildFiltersFromState(currentFilters, currentPeriod)
           fetchDetalhes(filters)
           timeoutId = null
         }, 100) // 100ms de debounce

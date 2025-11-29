@@ -7,7 +7,7 @@ import { useDetalhesData } from '../composables/useDetalhesData'
 import { formatINT, formatCurrency, formatDate } from '../utils/formatUtils'
 import Filters from '../components/Filters.vue'
 import TabsNavigation from '../components/TabsNavigation.vue'
-import TreeTableRow from '../components/TreeTableRow.vue'
+import TreeTableRow, { type TreeNode } from '../components/TreeTableRow.vue'
 import TableViewChips from '../components/TableViewChips.vue'
 import DetailViewBar, { type DetailView } from '../components/DetailViewBar.vue'
 import AppliedFiltersBar from '../components/AppliedFiltersBar.vue'
@@ -81,38 +81,7 @@ const detailViews = ref<DetailView[]>([
   }
 ])
 
-// Agrupa dados por hierarquia
-interface TreeNode {
-  id: string
-  label: string
-  level: 'segmento' | 'diretoria' | 'regional' | 'agencia' | 'gGestao' | 'gerente' | 'familia' | 'indicador' | 'subindicador' | 'contrato'
-  children: TreeNode[]
-  data: DetalhesItem[]
-  summary: {
-    valor_realizado: number
-    valor_meta: number
-    atingimento_v: number
-    atingimento_p: number
-    meta_diaria: number
-    referencia_hoje: number
-    pontos: number
-    meta_diaria_necessaria: number
-    peso: number
-    projecao: number
-    data: string
-  }
-  expanded?: boolean
-  detail?: {
-    canal_venda?: string
-    tipo_venda?: string
-    gerente?: string
-    gerente_gestao?: string
-    modalidade_pagamento?: string
-    dt_vencimento?: string
-    dt_cancelamento?: string
-    motivo_cancelamento?: string
-  }
-}
+// Usa o tipo TreeNode importado de TreeTableRow
 
 // Não precisa mais carregar da API, os dados já vêm pré-filtrados do resumo
 // Os dados são computados automaticamente via computed property
@@ -224,6 +193,7 @@ const contratosData = computed(() => {
       canal_venda?: string
       tipo_venda?: string
       gerente?: string
+      gerente_gestao?: string
       modalidade_pagamento?: string
       dt_vencimento?: string
       dt_cancelamento?: string
