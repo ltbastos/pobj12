@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
-import { getDetalhes, type DetalhesItem, type DetalhesFilters } from '../services/detalhesService'
+import { ref, computed, onMounted } from 'vue'
+import type { DetalhesItem } from '../services/detalhesService'
 import { useGlobalFilters } from '../composables/useGlobalFilters'
 import { usePeriodManager } from '../composables/usePeriodManager'
+import { useDetalhesData } from '../composables/useDetalhesData'
 import { formatINT, formatCurrency, formatDate } from '../utils/formatUtils'
 import Filters from '../components/Filters.vue'
 import TabsNavigation from '../components/TabsNavigation.vue'
@@ -15,9 +16,8 @@ import DetailColumnDesigner from '../components/DetailColumnDesigner.vue'
 const { filterState } = useGlobalFilters()
 const { period } = usePeriodManager()
 
-const detalhesData = ref<DetalhesItem[]>([])
-const loading = ref(false)
-const error = ref<string | null>(null)
+// Usa o composable que carrega os dados uma vez e filtra automaticamente
+const { detalhes: detalhesData, loading, error } = useDetalhesData(filterState, period)
 const expandedRows = ref<Set<string>>(new Set())
 const searchTerm = ref('')
 const compactMode = ref(false)
@@ -114,38 +114,8 @@ interface TreeNode {
   }
 }
 
-const loadDetalhes = async () => {
-  loading.value = true
-  error.value = null
-
-  try {
-    const filters: DetalhesFilters = {
-      segmento: filterState.value.segmento || undefined,
-      diretoria: filterState.value.diretoria || undefined,
-      regional: filterState.value.gerencia || undefined,
-      agencia: filterState.value.agencia || undefined,
-      gerente: filterState.value.gerente || undefined,
-      familia: filterState.value.familia || undefined,
-      indicador: filterState.value.indicador || undefined,
-      subindicador: filterState.value.subindicador || undefined,
-      dataInicio: period.value.start,
-      dataFim: period.value.end
-    }
-
-    const data = await getDetalhes(filters)
-    if (data) {
-      detalhesData.value = data
-    } else {
-      error.value = 'Não foi possível carregar os dados de detalhes'
-      detalhesData.value = []
-    }
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Erro ao carregar detalhes'
-    detalhesData.value = []
-  } finally {
-    loading.value = false
-  }
-}
+// Não precisa mais carregar da API, os dados já vêm pré-filtrados do resumo
+// Os dados são computados automaticamente via computed property
 
 // Mapeamento de níveis hierárquicos
 const LEVEL_HIERARCHY: Record<string, string[]> = {
@@ -222,21 +192,97 @@ function sortNodes(nodes: TreeNode[]): TreeNode[] {
   }))
 }
 
-// Agrupa dados em árvore hierárquica baseado na visão selecionada
-const treeData = computed(() => {
-  if (!detalhesData.value.length) return []
+// Dados de contratos em formato de card (quando há busca)
+const contratosData = computed(() => {
+  if (!searchTerm.value.trim() || !detalhesData.value.length) return []
 
-  // Filtra por termo de busca se houver
-  let filtered = detalhesData.value
-  if (searchTerm.value.trim()) {
-    const term = searchTerm.value.toLowerCase().trim()
-    filtered = detalhesData.value.filter(item =>
-      item.id_contrato?.toLowerCase().includes(term) ||
-      item.gerente_nome?.toLowerCase().includes(term) ||
-      item.familia_nome?.toLowerCase().includes(term) ||
-      item.ds_indicador?.toLowerCase().includes(term)
-    )
+  const term = searchTerm.value.toLowerCase().trim()
+  const filtered = detalhesData.value.filter(item =>
+    item.id_contrato?.toLowerCase().includes(term) ||
+    item.registro_id?.toLowerCase().includes(term) ||
+    item.gerente_nome?.toLowerCase().includes(term) ||
+    item.familia_nome?.toLowerCase().includes(term) ||
+    item.ds_indicador?.toLowerCase().includes(term)
+  )
+
+  // Agrupa por contrato
+  const contratos = new Map<string, DetalhesItem[]>()
+  filtered.forEach(item => {
+    const key = item.id_contrato || item.registro_id || 'sem-contrato'
+    if (!contratos.has(key)) {
+      contratos.set(key, [])
+    }
+    contratos.get(key)!.push(item)
+  })
+
+  const result: Array<{
+    id: string
+    contratoId: string
+    items: DetalhesItem[]
+    summary: ReturnType<typeof calculateSummary>
+    detail: {
+      canal_venda?: string
+      tipo_venda?: string
+      gerente?: string
+      modalidade_pagamento?: string
+      dt_vencimento?: string
+      dt_cancelamento?: string
+      motivo_cancelamento?: string
+    }
+  }> = []
+
+  contratos.forEach((items, contratoId) => {
+    const firstItem = items[0]
+    if (!firstItem) return
+    result.push({
+      id: `contrato-${contratoId}`,
+      contratoId,
+      items,
+      summary: calculateSummary(items),
+      detail: {
+        canal_venda: firstItem.canal_venda,
+        tipo_venda: firstItem.tipo_venda,
+        gerente: firstItem.gerente_nome,
+        modalidade_pagamento: firstItem.modalidade_pagamento,
+        dt_vencimento: firstItem.dt_vencimento,
+        dt_cancelamento: firstItem.dt_cancelamento,
+        motivo_cancelamento: firstItem.motivo_cancelamento
+      }
+    })
+  })
+
+  // Aplica ordenação se houver
+  if (sortState.value.id && sortState.value.direction) {
+    result.sort((a, b) => {
+      let aVal: number | string = 0
+      let bVal: number | string = 0
+
+      if (sortState.value.id === '__label__') {
+        aVal = a.contratoId
+        bVal = b.contratoId
+      } else {
+        const summaryKey = sortState.value.id as keyof typeof a.summary
+        aVal = a.summary[summaryKey] ?? 0
+        bVal = b.summary[summaryKey] ?? 0
+      }
+
+      let comparison = 0
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        comparison = aVal - bVal
+      } else {
+        comparison = String(aVal).localeCompare(String(bVal), 'pt-BR')
+      }
+
+      return sortState.value.direction === 'asc' ? comparison : -comparison
+    })
   }
+
+  return result
+})
+
+// Agrupa dados em árvore hierárquica baseado na visão selecionada (quando não há busca)
+const treeData = computed(() => {
+  if (!detalhesData.value.length || searchTerm.value.trim()) return []
 
   // Obtém a hierarquia baseada na visão selecionada
   const hierarchy: string[] = (LEVEL_HIERARCHY[tableView.value] as string[]) || LEVEL_HIERARCHY.diretoria
@@ -246,7 +292,7 @@ const treeData = computed(() => {
   // Se a visão for 'contrato', mostra todos os contratos diretamente
   if (tableView.value === 'contrato') {
     const contratos = new Map<string, DetalhesItem[]>()
-    filtered.forEach(item => {
+    detalhesData.value.forEach(item => {
       const key = item.id_contrato || item.registro_id || 'sem-contrato'
       if (!contratos.has(key)) {
         contratos.set(key, [])
@@ -278,12 +324,15 @@ const treeData = computed(() => {
   } else {
     // Agrupa começando pelo primeiro nível da hierarquia
     const hierarchyArray: string[] = hierarchy || LEVEL_HIERARCHY.diretoria
-    result = buildTreeHierarchy(filtered, hierarchyArray, 0)
+    result = buildTreeHierarchy(detalhesData.value, hierarchyArray, 0)
   }
 
   // Aplica ordenação se houver
   return sortNodes(result)
 })
+
+// Computed para verificar se deve mostrar cards ou árvore
+const showCards = computed(() => searchTerm.value.trim().length > 0)
 
 function buildTreeHierarchy(items: DetalhesItem[], hierarchy: string[], level: number): TreeNode[] {
   if (level >= hierarchy.length || items.length === 0) return []
@@ -674,12 +723,8 @@ onMounted(() => {
     console.error('Erro ao carregar visões salvas:', e)
   }
 
-  loadDetalhes()
+  // Não precisa mais chamar loadDetalhes() pois os dados são computados automaticamente
 })
-
-watch([filterState, period], () => {
-  loadDetalhes()
-}, { deep: true })
 </script>
 
 <template>
@@ -784,10 +829,91 @@ watch([filterState, period], () => {
             <p>{{ error }}</p>
           </div>
 
-          <div v-else-if="treeData.length === 0" class="empty-state">
+          <div v-else-if="showCards && contratosData.length === 0" class="empty-state">
+            <p>Nenhum contrato encontrado para a busca.</p>
+          </div>
+
+          <div v-else-if="!showCards && treeData.length === 0" class="empty-state">
             <p>Nenhum dado encontrado para os filtros selecionados.</p>
           </div>
 
+          <!-- Cards de contratos (quando há busca) -->
+          <div v-else-if="showCards" class="contratos-grid">
+            <div
+              v-for="contrato in contratosData"
+              :key="contrato.id"
+              class="contrato-card"
+            >
+              <div class="contrato-card__header">
+                <h4 class="contrato-card__title">{{ contrato.contratoId }}</h4>
+                <div class="contrato-card__badge" :class="{
+                  'is-success': contrato.summary.atingimento_p >= 100,
+                  'is-warning': contrato.summary.atingimento_p >= 50 && contrato.summary.atingimento_p < 100,
+                  'is-danger': contrato.summary.atingimento_p < 50
+                }">
+                  {{ contrato.summary.atingimento_p.toFixed(1) }}%
+                </div>
+              </div>
+
+              <div class="contrato-card__body">
+                <div class="contrato-card__info">
+                  <div class="contrato-card__info-item">
+                    <span class="contrato-card__label">Gerente:</span>
+                    <span class="contrato-card__value">{{ contrato.detail.gerente || '—' }}</span>
+                  </div>
+                  <div class="contrato-card__info-item">
+                    <span class="contrato-card__label">Canal:</span>
+                    <span class="contrato-card__value">{{ contrato.detail.canal_venda || '—' }}</span>
+                  </div>
+                  <div class="contrato-card__info-item">
+                    <span class="contrato-card__label">Tipo:</span>
+                    <span class="contrato-card__value">{{ contrato.detail.tipo_venda || '—' }}</span>
+                  </div>
+                  <div class="contrato-card__info-item">
+                    <span class="contrato-card__label">Modalidade:</span>
+                    <span class="contrato-card__value">{{ contrato.detail.modalidade_pagamento || '—' }}</span>
+                  </div>
+                </div>
+
+                <div class="contrato-card__metrics">
+                  <div class="contrato-card__metric">
+                    <span class="contrato-card__metric-label">Realizado</span>
+                    <span class="contrato-card__metric-value">{{ formatCurrency(contrato.summary.valor_realizado) }}</span>
+                  </div>
+                  <div class="contrato-card__metric">
+                    <span class="contrato-card__metric-label">Meta</span>
+                    <span class="contrato-card__metric-value">{{ formatCurrency(contrato.summary.valor_meta) }}</span>
+                  </div>
+                  <div class="contrato-card__metric">
+                    <span class="contrato-card__metric-label">Pontos</span>
+                    <span class="contrato-card__metric-value">{{ formatINT(contrato.summary.pontos) }}</span>
+                  </div>
+                  <div class="contrato-card__metric">
+                    <span class="contrato-card__metric-label">Peso</span>
+                    <span class="contrato-card__metric-value">{{ formatINT(contrato.summary.peso) }}</span>
+                  </div>
+                </div>
+
+                <div v-if="contrato.detail.dt_vencimento" class="contrato-card__dates">
+                  <div class="contrato-card__date-item">
+                    <span class="contrato-card__date-label">Vencimento:</span>
+                    <span class="contrato-card__date-value">{{ formatDate(contrato.detail.dt_vencimento) }}</span>
+                  </div>
+                  <div v-if="contrato.detail.dt_cancelamento" class="contrato-card__date-item">
+                    <span class="contrato-card__date-label">Cancelamento:</span>
+                    <span class="contrato-card__date-value">{{ formatDate(contrato.detail.dt_cancelamento) }}</span>
+                  </div>
+                </div>
+
+                <div v-if="contrato.detail.motivo_cancelamento" class="contrato-card__cancelamento">
+                  <span class="contrato-card__cancelamento-label">Motivo:</span>
+                  <span class="contrato-card__cancelamento-value">{{ contrato.detail.motivo_cancelamento }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Árvore hierárquica (quando não há busca) -->
           <div v-else class="table-wrapper" :class="{ 'is-compact': compactMode }">
             <table class="tree-table">
                   <thead>
@@ -1354,6 +1480,176 @@ watch([filterState, period], () => {
 @media (max-width: 640px) {
   .table-toolbar__btn {
     flex: 1 1 100%;
+  }
+}
+
+.contratos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+.contrato-card {
+  background: var(--panel);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.contrato-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px rgba(17, 23, 41, 0.12);
+}
+
+.contrato-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(36, 107, 253, 0.08), rgba(255, 255, 255, 0));
+  border-bottom: 1px solid var(--stroke);
+}
+
+.contrato-card__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.contrato-card__badge {
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--omega-badge-bg);
+  color: var(--info);
+}
+
+.contrato-card__badge.is-success {
+  background: rgba(22, 163, 74, 0.12);
+  color: var(--omega-success);
+}
+
+.contrato-card__badge.is-warning {
+  background: rgba(249, 115, 22, 0.12);
+  color: var(--omega-warning);
+}
+
+.contrato-card__badge.is-danger {
+  background: rgba(220, 38, 38, 0.12);
+  color: var(--omega-danger);
+}
+
+.contrato-card__body {
+  padding: 16px;
+}
+
+.contrato-card__info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--stroke);
+}
+
+.contrato-card__info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.contrato-card__label {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.contrato-card__value {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.contrato-card__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--stroke);
+}
+
+.contrato-card__metric {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.contrato-card__metric-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.contrato-card__metric-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.contrato-card__dates {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.contrato-card__date-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.contrato-card__date-label {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.contrato-card__date-value {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.contrato-card__cancelamento {
+  padding: 12px;
+  background: rgba(220, 38, 38, 0.08);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.contrato-card__cancelamento-label {
+  display: block;
+  color: var(--omega-danger);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.contrato-card__cancelamento-value {
+  color: var(--text);
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .contratos-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
