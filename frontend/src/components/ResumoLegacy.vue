@@ -62,7 +62,7 @@ const monthKeys = computed(() => {
   const endDate = new Date(end + 'T00:00:00Z')
   const months: string[] = []
 
-  let current = new Date(startDate)
+  const current = new Date(startDate)
   while (current <= endDate) {
     const year = current.getUTCFullYear()
     const month = String(current.getUTCMonth() + 1).padStart(2, '0')

@@ -358,25 +358,25 @@ const shouldMaskName = (item: any, index: number): boolean => {
                 </table>
               </div>
             </div>
-          </div>
+        </div>
         </template>
 
         <!-- Conteúdo real -->
         <template v-else>
           <div v-if="error" class="error-state">
-            <p>{{ error }}</p>
-          </div>
+          <p>{{ error }}</p>
+        </div>
 
-          <div v-else-if="rankingData.length === 0" class="empty-state">
-            <p v-if="filterState.ggestao">
-              Sem dados de ranking disponíveis para o gerente de gestão selecionado.
-            </p>
-            <p v-else>
-              Selecione um gerente de gestão nos filtros para visualizar o ranking.
-            </p>
-          </div>
+        <div v-else-if="rankingData.length === 0" class="empty-state">
+          <p v-if="filterState.ggestao">
+            Sem dados de ranking disponíveis para o gerente de gestão selecionado.
+          </p>
+          <p v-else>
+            Selecione um gerente de gestão nos filtros para visualizar o ranking.
+          </p>
+        </div>
 
-          <div v-else class="ranking-content">
+        <div v-else class="ranking-content">
           <div class="card card--ranking">
             <header class="card__header rk-head">
               <div class="title-subtitle">
