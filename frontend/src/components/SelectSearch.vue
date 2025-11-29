@@ -42,16 +42,16 @@ const simplificarTexto = (text: string): string => {
 /**
  * Opções filtradas baseadas no termo de busca
  */
-const filteredOptions = computed(() => {
-  if (!searchTerm.value) {
-    return props.options.slice(0, 10) // Mostra apenas as primeiras 10 quando não há busca
-  }
-  
-  const term = simplificarTexto(searchTerm.value)
-  return props.options
-    .filter(opt => simplificarTexto(opt.label).includes(term))
-    .slice(0, 12) // Limita a 12 resultados
-})
+  const filteredOptions = computed(() => {
+    if (!searchTerm.value) {
+      return props.options.slice(0, 10) // Mostra apenas as primeiras 10 quando não há busca
+    }
+    
+    const term = simplificarTexto(searchTerm.value)
+    return props.options
+      .filter(opt => simplificarTexto(opt.nome).includes(term))
+      .slice(0, 12) // Limita a 12 resultados
+  })
 
 /**
  * Label do valor selecionado
@@ -59,7 +59,7 @@ const filteredOptions = computed(() => {
 const selectedLabel = computed(() => {
   if (!props.modelValue) return props.placeholder
   const selected = props.options.find(opt => opt.id === props.modelValue)
-  return selected?.label || props.placeholder
+  return selected?.nome || props.placeholder
 })
 
 /**
@@ -145,7 +145,7 @@ watch(() => props.disabled, (disabled) => {
     >
       <option v-if="!modelValue" value="">{{ placeholder }}</option>
       <option v-for="option in options" :key="option.id" :value="option.id">
-        {{ option.label }}
+        {{ option.nome }}
       </option>
     </select>
     
@@ -198,7 +198,7 @@ watch(() => props.disabled, (disabled) => {
           :class="{ 'is-selected': option.id === modelValue }"
           @click="selectOption(option)"
         >
-          {{ option.label }}
+          {{ option.nome }}
         </button>
       </div>
     </div>

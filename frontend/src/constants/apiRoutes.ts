@@ -3,8 +3,8 @@
  * Centraliza todas as rotas da API para facilitar manutenção e evitar erros de digitação
  */
 export enum ApiRoutes {
-  // Estrutura organizacional
-  ESTRUTURA = '/api/estrutura',
+  // Inicialização
+  INIT = '/api/pobj/init',
 
   // Resumo
   RESUMO = '/api/resumo',
@@ -19,10 +19,10 @@ export enum ApiRoutes {
   PRODUTOS = '/api/produtos',
 
   // Calendário
-  CALENDARIO = '/api/calendario',
+  CALENDARIO = '/api/pobj/calendario',
 
   // Realizados
-  REALIZADOS = '/api/realizados',
+  REALIZADOS = '/api/pobj/realizados',
 
   // Metas
   METAS = '/api/metas',

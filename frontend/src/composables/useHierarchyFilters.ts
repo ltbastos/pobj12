@@ -4,7 +4,7 @@
  */
 
 import { ref, computed, watch, type Ref } from 'vue'
-import type { EstruturaData } from '../services/estruturaService'
+import type { EstruturaData } from '../services/initService'
 import type { FilterOption, HierarchySelection } from '../types'
 
 const normalizeId = (val: any): string => {

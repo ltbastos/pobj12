@@ -12,17 +12,14 @@
  */
 export interface FilterOption {
   id: string
-  label: string
-  nome?: string
-  // Campos de relacionamento hierárquico organizacional
+  nome: string
   id_segmento?: string
   id_diretoria?: string
   id_regional?: string
   id_agencia?: string
   id_gestor?: string
   funcional?: string
-  id_original?: string // ID numérico original (para comparações hierárquicas)
-  // Campos de relacionamento hierárquico de produtos
+  id_original?: string 
   id_familia?: string
   id_indicador?: string
 }
@@ -40,13 +37,13 @@ export interface HierarchySelection {
 }
 
 // ============================================================================
-// ESTRUTURA ORGANIZACIONAL
+// INIT
 // ============================================================================
 
 /**
  * Dados completos da estrutura organizacional retornados pela API
  */
-export interface EstruturaData {
+export interface InitData {
   segmentos: any[]
   diretorias: any[]
   regionais: any[]
@@ -64,8 +61,7 @@ export interface EstruturaData {
  */
 export interface SegmentoItem {
   id: string | number
-  label: string
-  nome?: string
+  nome: string
 }
 
 // ============================================================================

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { getEstrutura, type EstruturaData } from '../services/estruturaService'
+import { getInit, type InitData } from '../services/initService'
 import { useHierarchyFilters } from '../composables/useHierarchyFilters'
 import { usePeriodManager } from '../composables/usePeriodManager'
 import { useAccumulatedView, syncPeriodFromAccumulatedView } from '../composables/useAccumulatedView'
@@ -12,7 +12,7 @@ import type { FilterOption } from '../types'
 const advancedFiltersOpen = ref(false)
 const showAdvancedButton = ref(true)
 const loading = ref(true)
-const estruturaData = ref<EstruturaData | null>(null)
+const initData = ref<InitData | null>(null)
 
 // Usa filtros globais
 const { filterState, period: globalPeriod, updateFilter, updatePeriod, clearFilters } = useGlobalFilters()
@@ -38,7 +38,7 @@ const {
   handleGerenteGestaoChange,
   handleGerenteChange,
   clearAll: clearHierarchy
-} = useHierarchyFilters(estruturaData)
+} = useHierarchyFilters(initData)
 
 // Filtros não hierárquicos
 const familias = ref<FilterOption[]>([])
@@ -159,7 +159,6 @@ const normalizeOption = (item: any): FilterOption => {
 
   return {
     id,
-    label,
     nome: label,
     id_familia: idFamilia ? String(idFamilia).trim() : undefined,
     id_indicador: idIndicador ? String(idIndicador).trim() : undefined
@@ -174,10 +173,10 @@ const buildOptions = (data: any[]): FilterOption[] => {
 const loadEstrutura = async (): Promise<void> => {
   try {
     loading.value = true
-    const data = await getEstrutura()
+    const data = await getInit()
 
     if (data) {
-      estruturaData.value = data
+      initData.value = data
       familias.value = buildOptions(data.familias || [])
       indicadores.value = buildOptions(data.indicadores || [])
       allSubindicadores.value = buildOptions(data.subindicadores || [])
@@ -379,7 +378,7 @@ watch(() => period.value, (newPeriod) => {
           <SelectSearch
             id="f-secao"
             :model-value="selectedFamilia"
-            :options="[{ id: '', label: 'Selecione...' }, ...familias]"
+            :options="[{ id: '', nome: 'Selecione...' }, ...familias]"
             placeholder="Selecione..."
             label="Família"
             :disabled="loading"
@@ -391,7 +390,7 @@ watch(() => period.value, (newPeriod) => {
           <SelectSearch
             id="f-familia"
             :model-value="selectedIndicador"
-            :options="[{ id: '', label: 'Selecione...' }, ...indicadores]"
+            :options="[{ id: '', nome: 'Selecione...' }, ...indicadores]"
             placeholder="Selecione..."
             label="Indicadores"
             :disabled="loading"
@@ -403,7 +402,7 @@ watch(() => period.value, (newPeriod) => {
           <SelectSearch
             id="f-produto"
             :model-value="selectedSubindicador"
-            :options="[{ id: '', label: 'Selecione...' }, ...subindicadores]"
+            :options="[{ id: '', nome: 'Selecione...' }, ...subindicadores]"
             placeholder="Selecione..."
             label="Subindicador"
             :disabled="loading || !selectedIndicador || !hasSubindicadores"
