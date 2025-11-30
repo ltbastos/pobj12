@@ -71,7 +71,7 @@ import {
 interface Props {
   name: string
   size?: number | string
-  class?: string
+  class?: string | Record<string, boolean> | Array<string | Record<string, boolean>>
   color?: string
   stroke?: number
 }
