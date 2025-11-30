@@ -10,7 +10,7 @@ export function useOmegaRender(
     const currentUsers = omega.users.value
     userSelect.innerHTML = ''
 
-    currentUsers.forEach((user) => {
+    currentUsers.forEach((user: any) => {
       const option = document.createElement('option')
       option.value = user.id
       option.textContent = user.name
@@ -61,7 +61,7 @@ export function useOmegaRender(
 
     navElement.innerHTML = ''
 
-    navItems.forEach((item) => {
+    navItems.forEach((item: any) => {
       const navItem = document.createElement('button')
       navItem.className = 'omega-nav__item'
       navItem.type = 'button'
@@ -104,7 +104,7 @@ export function useOmegaRender(
 
       // Agrupa por departamento (usando Map para evitar duplicatas)
       const departments = new Map<string, string>()
-      structure.forEach((item) => {
+      structure.forEach((item: any) => {
         if (item.departamento && !departments.has(item.departamento)) {
           departments.set(item.departamento, item.departamento_id || item.departamento)
         }
@@ -149,7 +149,7 @@ export function useOmegaRender(
 
     // Filtra tipos baseado no departamento selecionado
     const types = new Set<string>()
-    structure.forEach((item) => {
+    structure.forEach((item: any) => {
       if (item.tipo) {
         // Se há departamento selecionado, filtra por ele
         if (departmentId) {
@@ -186,7 +186,7 @@ export function useOmegaRender(
     const selectedStatuses = filters.filters.value.statuses || []
 
     statusHost.innerHTML = ''
-    statuses.forEach((status) => {
+    statuses.forEach((status: any) => {
       const option = document.createElement('label')
       option.className = 'omega-filter-status__option'
       const isChecked = selectedStatuses.includes(status.id)
@@ -287,11 +287,11 @@ export function useOmegaRender(
     const currentView = omega.currentView.value
 
     if (currentView === 'my' && currentUser) {
-      filteredTickets = tickets.filter((t) => t.requesterId === currentUser.id)
+      filteredTickets = tickets.filter((t: any) => t.requesterId === currentUser.id)
     } else if (currentView === 'assigned' && currentUser) {
-      filteredTickets = tickets.filter((t) => t.ownerId === currentUser.id)
+      filteredTickets = tickets.filter((t: any) => t.ownerId === currentUser.id)
     } else if (currentView === 'queue' && currentUser) {
-      filteredTickets = tickets.filter((t) =>
+      filteredTickets = tickets.filter((t: any) =>
         currentUser.queues.includes(t.queue)
       )
     }
@@ -301,7 +301,7 @@ export function useOmegaRender(
 
     tbody.innerHTML = ''
 
-    filteredTickets.forEach((ticket, index) => {
+    filteredTickets.forEach((ticket: any, index: number) => {
       const row = document.createElement('tr')
       row.className = 'omega-table__row'
       row.setAttribute('data-ticket-id', ticket.id)
@@ -309,7 +309,7 @@ export function useOmegaRender(
       row.style.transform = 'translateY(10px)'
       row.style.transition = `opacity 0.3s ease ${index * 0.03}s, transform 0.3s ease ${index * 0.03}s`
 
-      const status = statuses.find((s) => s.id === ticket.status) || statuses[0] || { id: 'unknown', label: 'Desconhecido', tone: 'neutral' as const }
+      const status = statuses.find((s: any) => s.id === ticket.status) || statuses[0] || { id: 'unknown', label: 'Desconhecido', tone: 'neutral' as const }
       const priorityMeta = omega.getPriorityMeta(ticket.priority)
 
       const openedDate = new Date(ticket.opened)

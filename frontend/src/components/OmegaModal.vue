@@ -295,9 +295,66 @@ function handleRefresh() {
 }
 
 const drawerOpen = ref(false)
+const drawerInitialData = ref<{ department?: string; type?: string; observation?: string } | undefined>(undefined)
 
-function handleNewTicket() {
+function handleNewTicket(initialData?: { department?: string; type?: string; observation?: string }) {
+  drawerInitialData.value = initialData
   drawerOpen.value = true
+}
+
+// Função para construir observação a partir dos detalhes do nó
+function buildObservationFromDetail(detail: any): string {
+  if (!detail || !detail.node) return ''
+  
+  const node = detail.node
+  const parts: string[] = []
+  
+  if (node.label) {
+    parts.push(`Item: ${node.label}`)
+  }
+  
+  if (node.level) {
+    parts.push(`Nível: ${node.level}`)
+  }
+  
+  if (node.summary) {
+    const summary = node.summary
+    if (summary.valor_realizado) {
+      parts.push(`Realizado: R$ ${summary.valor_realizado.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
+    }
+    if (summary.valor_meta) {
+      parts.push(`Meta: R$ ${summary.valor_meta.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
+    }
+    if (summary.atingimento_p !== undefined) {
+      parts.push(`Atingimento: ${summary.atingimento_p.toFixed(1)}%`)
+    }
+  }
+  
+  if (node.detail) {
+    const detailInfo = node.detail
+    if (detailInfo.gerente) {
+      parts.push(`Gerente: ${detailInfo.gerente}`)
+    }
+    if (detailInfo.canal_venda) {
+      parts.push(`Canal: ${detailInfo.canal_venda}`)
+    }
+  }
+  
+  return parts.join('\n')
+}
+
+// Função exposta globalmente para abrir o modal com dados iniciais
+function openOmegaWithData(detail: { department?: string; type?: string; observation?: string; openDrawer?: boolean }) {
+  openModal()
+  if (detail.openDrawer) {
+    nextTick(() => {
+      handleNewTicket({
+        department: detail.department,
+        type: detail.type,
+        observation: detail.observation
+      })
+    })
+  }
 }
 
 // Função para mostrar feedback no formulário
@@ -791,14 +848,33 @@ function registerGlobalOpener() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   globalAny.__openOmegaFromVue = (detail?: any) => {
     if (!omega.isLoading.value) {
-      openModal()
-    } else {
+      if (detail && (detail.openDrawer || detail.intent === 'new-ticket')) {
+        openOmegaWithData({
+          department: detail.preferredQueue || detail.queue || 'POBJ',
+          type: detail.type,
+          observation: detail.observation || buildObservationFromDetail(detail),
+          openDrawer: true
+        })
+      } else {
+        openModal()
+      }
     }
   }
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   globalAny.openOmegaModule = (detail?: any) => {
-    openModal()
+    if (!omega.isLoading.value) {
+      if (detail && (detail.openDrawer || detail.intent === 'new-ticket')) {
+        openOmegaWithData({
+          department: detail.preferredQueue || detail.queue || 'POBJ',
+          type: detail.type,
+          observation: detail.observation || buildObservationFromDetail(detail),
+          openDrawer: true
+        })
+      } else {
+        openModal()
+      }
+    }
   }
   
   globalAny.openOmega = globalAny.openOmegaModule
@@ -924,6 +1000,7 @@ onBeforeUnmount(() => {
     <OmegaDrawer
       :omega="omega"
       :open="drawerOpen"
+      :initial-data="drawerInitialData"
       @update:open="drawerOpen = $event"
       @submit="handleNewTicketSubmit"
     />

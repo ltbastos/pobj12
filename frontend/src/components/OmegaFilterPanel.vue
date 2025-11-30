@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { Teleport } from 'vue'
 import SelectInput from './SelectInput.vue'
 import SelectSearch from './SelectSearch.vue'
 import type { FilterOption } from '../types'
@@ -140,6 +141,23 @@ function handleClear() {
   emit('clear')
 }
 
+function handleClose() {
+  // Restaura os valores locais para os filtros atuais antes de fechar
+  const currentFilters = props.filters.filters.value
+  localFilters.value = {
+    id: currentFilters.id || '',
+    requester: currentFilters.requester || '',
+    department: currentFilters.departments[0] || '',
+    type: currentFilters.type || '',
+    priority: currentFilters.priority || '',
+    statuses: [...currentFilters.statuses],
+    openedFrom: currentFilters.openedFrom || '',
+    openedTo: currentFilters.openedTo || ''
+  }
+  
+  emit('update:open', false)
+}
+
 function toggleStatus(statusId: string) {
   const index = localFilters.value.statuses.indexOf(statusId)
   if (index > -1) {
@@ -151,14 +169,35 @@ function toggleStatus(statusId: string) {
 </script>
 
 <template>
-  <div
-    v-if="open"
-    id="omega-filter-panel"
-    class="omega-filter-panel"
-    role="dialog"
-    aria-modal="false"
-  >
-    <form id="omega-filter-form" class="omega-filter-form" @submit.prevent="handleApply">
+  <Teleport to="body">
+    <div
+      v-if="open"
+      id="omega-filter-panel-wrapper"
+      class="omega-filter-panel-wrapper"
+    >
+      <div
+        class="omega-filter-panel__overlay"
+        @click="handleClose"
+      ></div>
+      <div
+        id="omega-filter-panel"
+        class="omega-filter-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="omega-filter-panel-title"
+      >
+        <header class="omega-filter-panel__header">
+          <h3 id="omega-filter-panel-title">Filtros</h3>
+          <button
+            class="omega-icon-btn"
+            type="button"
+            aria-label="Fechar filtros"
+            @click="handleClose"
+          >
+            <i class="ti ti-x"></i>
+          </button>
+        </header>
+        <form id="omega-filter-form" class="omega-filter-form" @submit.prevent="handleApply">
       <div class="omega-filter-form__grid">
         <label class="omega-field" for="omega-filter-id">
           <span class="omega-field__label">ID do chamado</span>
@@ -269,14 +308,33 @@ function toggleStatus(statusId: string) {
         </button>
       </footer>
     </form>
-  </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
-.omega-filter-panel {
+.omega-filter-panel-wrapper {
   position: fixed;
-  top: 96px;
-  right: 40px;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 96px 40px 40px;
+  pointer-events: none;
+}
+
+.omega-filter-panel__overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 20, 36, 0.15);
+  backdrop-filter: blur(2px);
+  pointer-events: auto;
+}
+
+.omega-filter-panel {
+  position: relative;
   min-width: 360px;
   max-width: 520px;
   width: min(520px, calc(100vw - 80px));
@@ -286,8 +344,71 @@ function toggleStatus(statusId: string) {
   border: 1px solid rgba(148, 163, 184, 0.28);
   box-shadow: 0 32px 70px rgba(15, 23, 42, 0.18);
   padding: 22px;
-  z-index: 9999 !important;
   overflow: visible;
   isolation: isolate;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.omega-filter-panel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.omega-filter-panel__header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text, #0f1424);
+}
+
+.omega-icon-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--muted, #6b7280);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.omega-icon-btn:hover {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text, #0f1424);
+}
+
+.omega-filter-form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.omega-filter-form::-webkit-scrollbar {
+  width: 6px;
+}
+
+.omega-filter-form::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.omega-filter-form::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+
+.omega-filter-form::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
 }
 </style>

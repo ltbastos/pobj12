@@ -10,11 +10,11 @@ export function useOmegaBulk(omega: any) {
     if (!select) return
 
     const statuses = omega.statuses.value
-    select.innerHTML = statuses.map((status) => {
+    select.innerHTML = statuses.map((status: any) => {
       return `<option value="${status.id}">${status.label}</option>`
     }).join('')
 
-    const current = bulkStatus.value && statuses.some(s => s.id === bulkStatus.value)
+    const current = bulkStatus.value && statuses.some((s: any) => s.id === bulkStatus.value)
       ? bulkStatus.value
       : (statuses[0]?.id || '')
     select.value = current
@@ -22,7 +22,7 @@ export function useOmegaBulk(omega: any) {
   }
 
   function handleBulkStatusSubmit(status: string) {
-    const statuses = omega.statuses.value.map(s => s.id)
+    const statuses = omega.statuses.value.map((s: any) => s.id)
     if (!status || !statuses.includes(status)) return
 
     const selection = Array.from(selectedTicketIds.value)
@@ -32,11 +32,11 @@ export function useOmegaBulk(omega: any) {
     if (!currentUser) return
 
     const now = new Date().toISOString()
-    const statusMeta = omega.statuses.value.find(s => s.id === status) || { label: status }
+    const statusMeta = omega.statuses.value.find((s: any) => s.id === status) || { label: status }
 
     // Atualiza tickets selecionados
     selection.forEach((id) => {
-      const ticket = omega.tickets.value.find((item) => item.id === id)
+      const ticket = omega.tickets.value.find((item: any) => item.id === id)
       if (!ticket) return
 
       // Atualiza status do ticket
@@ -67,12 +67,12 @@ export function useOmegaBulk(omega: any) {
     const hasSelection = selectedTicketIds.value.size > 0
 
     if (panel) {
-      panel.hidden = !bulkPanelOpen.value || !hasSelection
+      (panel as HTMLElement).hidden = !bulkPanelOpen.value || !hasSelection
     }
 
     const bulkBtn = root.querySelector('#omega-bulk-status') as HTMLElement
     if (bulkBtn) {
-      bulkBtn.disabled = !hasSelection
+      (bulkBtn as HTMLButtonElement).disabled = !hasSelection
     }
 
     if (bulkPanelOpen.value && hasSelection) {

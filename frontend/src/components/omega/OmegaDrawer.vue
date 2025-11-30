@@ -8,9 +8,16 @@ import type { useOmega } from '../../composables/useOmega'
 interface Props {
   omega: ReturnType<typeof useOmega>
   open: boolean
+  initialData?: {
+    department?: string
+    type?: string
+    observation?: string
+  }
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  initialData: () => ({})
+})
 
 const emit = defineEmits<{
   'update:open': [open: boolean]
@@ -226,17 +233,33 @@ watch(() => props.open, (isOpen) => {
     flowTargetEmail.value = ''
     clearFeedback()
   } else {
-    // Define departamento padrão se disponível
-    nextTick(() => {
-      if (departmentOptions.value.length > 0 && !department.value) {
-        const defaultDept = currentUser.value?.defaultQueue
-        if (defaultDept && departmentOptions.value.some(d => d.id === defaultDept)) {
-          department.value = defaultDept
-        } else {
-          department.value = departmentOptions.value[0].id
+      // Aplica dados iniciais se fornecidos
+      nextTick(() => {
+        if (props.initialData) {
+          if (props.initialData.department) {
+            department.value = props.initialData.department
+          }
+          if (props.initialData.type) {
+            // Aguarda o departamento ser definido antes de definir o tipo
+            nextTick(() => {
+              type.value = props.initialData.type || null
+            })
+          }
+          if (props.initialData.observation) {
+            observation.value = props.initialData.observation
+          }
         }
-      }
-    })
+        
+        // Define departamento padrão se não foi fornecido
+        if (departmentOptions.value.length > 0 && !department.value) {
+          const defaultDept = currentUser.value?.defaultQueue || 'POBJ'
+          if (defaultDept && departmentOptions.value.some(d => d.id === defaultDept)) {
+            department.value = defaultDept
+          } else {
+            department.value = departmentOptions.value[0]?.id || null
+          }
+        }
+      })
   }
 }, { immediate: true })
 

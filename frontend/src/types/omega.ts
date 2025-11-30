@@ -47,7 +47,7 @@ export interface OmegaUser {
   junction: string
   functional: string
   queues: string[]
-  defaultQueue: string | null
+  defaultQueue?: string | null | undefined
   teamId: string | null
 }
 
@@ -89,10 +89,10 @@ export interface OmegaTicketContext {
 }
 
 export interface OmegaHistoryEntry {
-  date: string
-  actorId: string
-  action: string
-  comment: string
+  date?: string | null | undefined
+  actorId?: string | null | undefined
+  action?: string | null | undefined
+  comment?: string | null | undefined
   status: string
   attachments?: Array<{ id: string; name: string }>
 }

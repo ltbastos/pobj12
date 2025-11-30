@@ -110,7 +110,7 @@ function mapApiUserToOmegaUser(apiUser: ApiUser): OmegaUser {
     junction: '', // Não vem da API
     functional: apiUser.funcional,
     queues,
-    defaultQueue: queues.length > 0 ? queues[0] : null,
+    defaultQueue: queues.length > 0 ? queues[0] || null : null,
     teamId: null // Não vem da API diretamente
   }
 }
@@ -128,9 +128,9 @@ function parseHistory(historyString: string): OmegaHistoryEntry[] {
     if (segments.length >= 5) {
       try {
         entries.push({
-          date: segments[0],
-          actorId: segments[1],
-          action: segments[2],
+          date: segments[0] || '',
+          actorId: segments[1] || '',
+          action: segments[2] || '',
           comment: segments[3] || '',
           status: segments[4] || '',
           attachments: segments[5] ? (typeof segments[5] === 'string' ? JSON.parse(segments[5]) : segments[5]) : undefined
