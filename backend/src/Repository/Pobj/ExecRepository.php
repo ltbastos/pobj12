@@ -50,7 +50,7 @@ class ExecRepository extends ServiceEntityRepository
         $dataFim = $filters ? $filters->getDataFim() : null;
 
         if ($dataInicio && $dataFim) {
-            // Usa período dos filtros
+            // Usa período dos filtros (otimizado: usa colunas de data diretamente)
             $startDate = new \DateTime($dataInicio);
             $endDate = new \DateTime($dataFim);
             $startYear = (int)$startDate->format('Y');
@@ -58,51 +58,53 @@ class ExecRepository extends ServiceEntityRepository
             $endYear = (int)$endDate->format('Y');
             $endMonth = (int)$endDate->format('m');
             
-            $dateFilter = " AND c.data >= :dataInicio AND c.data <= :dataFim";
+            // Filtros separados para realizados e metas (usam colunas diferentes)
+            $dateFilterRealizados = " AND r.data_realizado >= :dataInicio AND r.data_realizado <= :dataFim";
+            $dateFilterMeta = " AND m.data_meta >= :dataInicio AND m.data_meta <= :dataFim";
             $params['dataInicio'] = $dataInicio;
             $params['dataFim'] = $dataFim;
         } else {
-            // Usa mês atual
+            // Usa mês atual (otimizado: usa colunas de data diretamente)
             $currentYear = $today->format('Y');
             $currentMonthNum = (int)$today->format('m');
-            $dateFilter = " AND YEAR(c.data) = :ano AND MONTH(c.data) = :mes";
+            $dateFilterRealizados = " AND YEAR(r.data_realizado) = :ano AND MONTH(r.data_realizado) = :mes";
+            $dateFilterMeta = " AND YEAR(m.data_meta) = :ano AND MONTH(m.data_meta) = :mes";
             $params['ano'] = $currentYear;
             $params['mes'] = $currentMonthNum;
         }
 
-        // Realizado mensal
+        // Realizado mensal (otimizado: remove join desnecessário com d_calendario)
         $sqlRealMens = "SELECT COALESCE(SUM(r.realizado), 0) as total
             FROM {$fRealizadosTable} AS r
-            INNER JOIN {$dCalendarioTable} AS c ON c.data = r.data_realizado
             INNER JOIN {$dEstruturaTable} AS est ON est.funcional = r.funcional
-            WHERE 1=1 {$dateFilter} {$whereClause}";
+            WHERE 1=1 {$dateFilterRealizados} {$whereClause}";
 
-        // Meta mensal
+        // Meta mensal (otimizado: remove join desnecessário com d_calendario)
         $sqlMetaMens = "SELECT COALESCE(SUM(m.meta_mensal), 0) as total
             FROM {$fMetaTable} AS m
-            INNER JOIN {$dCalendarioTable} AS c ON c.data = m.data_meta
             INNER JOIN {$dEstruturaTable} AS est ON est.funcional = m.funcional
-            WHERE 1=1 {$dateFilter} {$whereClause}";
+            WHERE 1=1 {$dateFilterMeta} {$whereClause}";
 
         // Realizado acumulado (ano atual até o mês atual ou período)
+        // Otimizado: usa colunas de data diretamente
         if ($dataInicio && $dataFim) {
-            $dateFilterAcum = " AND c.data >= :dataInicio AND c.data <= :dataFim";
+            $dateFilterAcum = " AND r.data_realizado >= :dataInicio AND r.data_realizado <= :dataFim";
+            $dateFilterMetaAcum = " AND m.data_meta >= :dataInicio AND m.data_meta <= :dataFim";
         } else {
-            $dateFilterAcum = " AND YEAR(c.data) = :ano AND MONTH(c.data) <= :mes";
+            $dateFilterAcum = " AND YEAR(r.data_realizado) = :ano AND MONTH(r.data_realizado) <= :mes";
+            $dateFilterMetaAcum = " AND YEAR(m.data_meta) = :ano AND MONTH(m.data_meta) <= :mes";
         }
 
         $sqlRealAcum = "SELECT COALESCE(SUM(r.realizado), 0) as total
             FROM {$fRealizadosTable} AS r
-            INNER JOIN {$dCalendarioTable} AS c ON c.data = r.data_realizado
             INNER JOIN {$dEstruturaTable} AS est ON est.funcional = r.funcional
             WHERE 1=1 {$dateFilterAcum} {$whereClause}";
 
-        // Meta acumulada
+        // Meta acumulada (otimizado: remove join desnecessário com d_calendario)
         $sqlMetaAcum = "SELECT COALESCE(SUM(m.meta_mensal), 0) as total
             FROM {$fMetaTable} AS m
-            INNER JOIN {$dCalendarioTable} AS c ON c.data = m.data_meta
             INNER JOIN {$dEstruturaTable} AS est ON est.funcional = m.funcional
-            WHERE 1=1 {$dateFilterAcum} {$whereClause}";
+            WHERE 1=1 {$dateFilterMetaAcum} {$whereClause}";
 
         $conn = $this->getEntityManager()->getConnection();
 
@@ -164,11 +166,9 @@ class ExecRepository extends ServiceEntityRepository
                 FROM {$regionalTable} AS reg
                 INNER JOIN {$dEstruturaTable} AS est ON est.regional_id = reg.id
                 LEFT JOIN {$fRealizadosTable} AS r ON r.funcional = est.funcional
-                LEFT JOIN {$dCalendarioTable} AS cr ON cr.data = r.data_realizado
-                    " . ($dataInicio && $dataFim ? "AND cr.data >= :dataInicio AND cr.data <= :dataFim" : ($dataInicio ? "AND YEAR(cr.data) = :ano AND MONTH(cr.data) = :mes" : "")) . "
+                    " . ($dataInicio && $dataFim ? "AND r.data_realizado >= :dataInicio AND r.data_realizado <= :dataFim" : ($dataInicio ? "AND YEAR(r.data_realizado) = :ano AND MONTH(r.data_realizado) = :mes" : "")) . "
                 LEFT JOIN {$fMetaTable} AS m ON m.funcional = est.funcional
-                LEFT JOIN {$dCalendarioTable} AS cm ON cm.data = m.data_meta
-                    " . ($dataInicio && $dataFim ? "AND cm.data >= :dataInicio AND cm.data <= :dataFim" : ($dataInicio ? "AND YEAR(cm.data) = :ano AND MONTH(cm.data) = :mes" : "")) . "
+                    " . ($dataInicio && $dataFim ? "AND m.data_meta >= :dataInicio AND m.data_meta <= :dataFim" : ($dataInicio ? "AND YEAR(m.data_meta) = :ano AND MONTH(m.data_meta) = :mes" : "")) . "
                 WHERE reg.id IS NOT NULL {$whereClause}
                 GROUP BY reg.id, reg.nome
                 HAVING real_mens > 0 OR meta_mens > 0
@@ -396,20 +396,20 @@ class ExecRepository extends ServiceEntityRepository
         $dataInicio = $filters ? $filters->getDataInicio() : null;
         $dataFim = $filters ? $filters->getDataFim() : null;
 
-        // Define filtros de data para os JOINs
+        // Define filtros de data diretamente nas colunas (otimização: remove joins desnecessários)
         $dateFilterRealizados = '';
         $dateFilterMeta = '';
         
         if ($dataInicio && $dataFim) {
-            $dateFilterRealizados = " AND cr.data >= :dataInicio AND cr.data <= :dataFim";
-            $dateFilterMeta = " AND cm.data >= :dataInicio AND cm.data <= :dataFim";
+            $dateFilterRealizados = " AND r.data_realizado >= :dataInicio AND r.data_realizado <= :dataFim";
+            $dateFilterMeta = " AND m.data_meta >= :dataInicio AND m.data_meta <= :dataFim";
             $params['dataInicio'] = $dataInicio;
             $params['dataFim'] = $dataFim;
         } else {
             $currentYear = $today->format('Y');
             $currentMonthNum = (int)$today->format('m');
-            $dateFilterRealizados = " AND YEAR(cr.data) = :ano AND MONTH(cr.data) = :mes";
-            $dateFilterMeta = " AND YEAR(cm.data) = :ano AND MONTH(cm.data) = :mes";
+            $dateFilterRealizados = " AND YEAR(r.data_realizado) = :ano AND MONTH(r.data_realizado) = :mes";
+            $dateFilterMeta = " AND YEAR(m.data_meta) = :ano AND MONTH(m.data_meta) = :mes";
             $params['ano'] = $currentYear;
             $params['mes'] = $currentMonthNum;
         }
@@ -424,12 +424,10 @@ class ExecRepository extends ServiceEntityRepository
                 FROM {$regionalTable} AS reg
                 INNER JOIN {$dEstruturaTable} AS est ON est.regional_id = reg.id
                 INNER JOIN {$fRealizadosTable} AS r ON r.funcional = est.funcional
-                INNER JOIN {$dCalendarioTable} AS cr ON cr.data = r.data_realizado{$dateFilterRealizados}
                 INNER JOIN {$dProdutosTable} AS prod ON prod.id = r.produto_id
                 INNER JOIN {$familiaTable} AS fam ON fam.id = prod.familia_id
                 LEFT JOIN {$fMetaTable} AS m ON m.produto_id = prod.id
                     AND m.funcional = est.funcional
-                LEFT JOIN {$dCalendarioTable} AS cm ON cm.data = m.data_meta{$dateFilterMeta}
                 WHERE reg.id IS NOT NULL {$whereClause}
                 GROUP BY reg.id, reg.nome, fam.id, fam.nm_familia
                 HAVING realizado > 0 OR meta > 0

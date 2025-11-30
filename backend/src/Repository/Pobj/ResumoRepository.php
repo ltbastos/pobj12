@@ -28,6 +28,53 @@ class ResumoRepository extends ServiceEntityRepository
     }
 
     /**
+     * Constrói subconsulta otimizada para metas (sem joins desnecessários)
+     */
+    private function buildMetaSubquery(string $fMetaTable, string $dEstruturaTable, string $metaFilter, ?FilterDTO $filters): string
+    {
+        $estruturaJoin = $this->needsEstruturaJoin($filters) ? "INNER JOIN {$dEstruturaTable} AS e1 ON e1.funcional = m.funcional" : "";
+        return "SELECT 
+                    m.produto_id, 
+                    SUM(m.meta_mensal) AS total_meta
+                FROM {$fMetaTable} AS m
+                {$estruturaJoin}
+                WHERE 1=1 {$metaFilter}
+                GROUP BY m.produto_id";
+    }
+
+    /**
+     * Constrói subconsulta otimizada para realizados (sem joins desnecessários)
+     */
+    private function buildRealizadosSubquery(string $fRealizadosTable, string $dEstruturaTable, string $realizadosFilter, ?FilterDTO $filters): string
+    {
+        $estruturaJoin = $this->needsEstruturaJoin($filters) ? "INNER JOIN {$dEstruturaTable} AS e2 ON e2.funcional = r.funcional" : "";
+        return "SELECT 
+                    r.produto_id, 
+                    SUM(r.realizado) AS total_realizado,
+                    MAX(r.data_realizado) AS ultima_atualizacao
+                FROM {$fRealizadosTable} AS r
+                {$estruturaJoin}
+                WHERE r.produto_id IS NOT NULL {$realizadosFilter}
+                GROUP BY r.produto_id";
+    }
+
+    /**
+     * Constrói subconsulta otimizada para pontos (sem joins desnecessários)
+     */
+    private function buildPontosSubquery(string $fPontosTable, string $dEstruturaTable, string $pontosFilter, ?FilterDTO $filters): string
+    {
+        $estruturaJoin = $this->needsEstruturaJoin($filters) ? "INNER JOIN {$dEstruturaTable} AS e3 ON e3.funcional = p.funcional" : "";
+        return "SELECT 
+                    p.produto_id, 
+                    SUM(p.realizado) AS total_pontos,
+                    SUM(p.meta) AS total_meta_pontos
+                FROM {$fPontosTable} AS p
+                {$estruturaJoin}
+                WHERE 1=1 {$pontosFilter}
+                GROUP BY p.produto_id";
+    }
+
+    /**
      * Retorna produtos com dados agregados (realizados, metas, pontos, variável)
      * para renderização dos cards
      */
@@ -55,37 +102,31 @@ class ResumoRepository extends ServiceEntityRepository
             $dataFim = $filters->getDataFim();
             
             if ($dataInicio) {
-                $metaFilter .= " AND c1.data >= :metaDataInicio";
-                $realizadosFilter .= " AND c2.data >= :realizadosDataInicio";
-                $pontosFilter .= " AND c3.data >= :pontosDataInicio";
+                // Otimização: usa diretamente as colunas de data sem join com d_calendario
+                $metaFilter .= " AND m.data_meta >= :metaDataInicio";
+                $realizadosFilter .= " AND r.data_realizado >= :realizadosDataInicio";
+                $pontosFilter .= " AND p.data_realizado >= :pontosDataInicio";
                 $params['metaDataInicio'] = $dataInicio;
                 $params['realizadosDataInicio'] = $dataInicio;
                 $params['pontosDataInicio'] = $dataInicio;
             }
             
             if ($dataFim) {
-                $metaFilter .= " AND c1.data <= :metaDataFim";
-                $realizadosFilter .= " AND c2.data <= :realizadosDataFim";
-                $pontosFilter .= " AND c3.data <= :pontosDataFim";
+                // Otimização: usa diretamente as colunas de data sem join com d_calendario
+                $metaFilter .= " AND m.data_meta <= :metaDataFim";
+                $realizadosFilter .= " AND r.data_realizado <= :realizadosDataFim";
+                $pontosFilter .= " AND p.data_realizado <= :pontosDataFim";
                 $params['metaDataFim'] = $dataFim;
                 $params['realizadosDataFim'] = $dataFim;
                 $params['pontosDataFim'] = $dataFim;
             }
             
-            // Filtros de estrutura (com prefixos e sufixos diferentes para cada subconsulta)
-            $estruturaFiltersMeta = $this->buildEstruturaFilters($filters, $params, 'e1', 'meta');
-            $estruturaFiltersRealizados = $this->buildEstruturaFilters($filters, $params, 'e2', 'realizados');
-            $estruturaFiltersPontos = $this->buildEstruturaFilters($filters, $params, 'e3', 'pontos');
-            $metaFilter .= $estruturaFiltersMeta;
-            $realizadosFilter .= $estruturaFiltersRealizados;
-            $pontosFilter .= $estruturaFiltersPontos;
-            
-            // Filtros de gerente e gerente gestão (aplicados diretamente no funcional)
+            // Filtros de gerente e gerente gestão (aplicados diretamente no funcional - mais eficiente)
             $gerente = $filters->getGerente();
             $gerenteGestao = $filters->getGerenteGestao();
             
             if ($gerente !== null && $gerente !== '') {
-                // Se tem gerente, filtra apenas por funcional (gerente)
+                // Se tem gerente, filtra apenas por funcional (gerente) - evita join com estrutura
                 $metaFilter .= " AND m.funcional = :gerenteFuncionalMeta";
                 $realizadosFilter .= " AND r.funcional = :gerenteFuncionalRealizados";
                 $pontosFilter .= " AND p.funcional = :gerenteFuncionalPontos";
@@ -93,13 +134,22 @@ class ResumoRepository extends ServiceEntityRepository
                 $params['gerenteFuncionalRealizados'] = $gerente;
                 $params['gerenteFuncionalPontos'] = $gerente;
             } elseif ($gerenteGestao !== null && $gerenteGestao !== '') {
-                // Se tem gerente gestão, filtra apenas por funcional (gerente gestão)
+                // Se tem gerente gestão, filtra apenas por funcional (gerente gestão) - evita join com estrutura
                 $metaFilter .= " AND m.funcional = :gerenteGestaoFuncionalMeta";
                 $realizadosFilter .= " AND r.funcional = :gerenteGestaoFuncionalRealizados";
                 $pontosFilter .= " AND p.funcional = :gerenteGestaoFuncionalPontos";
                 $params['gerenteGestaoFuncionalMeta'] = $gerenteGestao;
                 $params['gerenteGestaoFuncionalRealizados'] = $gerenteGestao;
                 $params['gerenteGestaoFuncionalPontos'] = $gerenteGestao;
+            } else {
+                // Filtros de estrutura (só aplica se não houver gerente/gerenteGestao)
+                // Com prefixos e sufixos diferentes para cada subconsulta
+                $estruturaFiltersMeta = $this->buildEstruturaFilters($filters, $params, 'e1', 'meta');
+                $estruturaFiltersRealizados = $this->buildEstruturaFilters($filters, $params, 'e2', 'realizados');
+                $estruturaFiltersPontos = $this->buildEstruturaFilters($filters, $params, 'e3', 'pontos');
+                $metaFilter .= $estruturaFiltersMeta;
+                $realizadosFilter .= $estruturaFiltersRealizados;
+                $pontosFilter .= $estruturaFiltersPontos;
             }
             
             // Filtros de produto (aplica apenas o mais específico da hierarquia)
@@ -153,36 +203,13 @@ class ResumoRepository extends ServiceEntityRepository
                 LEFT JOIN {$indicadorTable} AS i ON i.id = dp.indicador_id
                 LEFT JOIN {$subindicadorTable} AS s ON s.id = dp.subindicador_id
                 LEFT JOIN (
-                    SELECT 
-                        m.produto_id, 
-                        SUM(m.meta_mensal) AS total_meta
-                    FROM {$fMetaTable} AS m
-                    LEFT JOIN {$dCalendarioTable} AS c1 ON c1.data = m.data_meta
-                    LEFT JOIN {$dEstruturaTable} AS e1 ON e1.funcional = m.funcional
-                    WHERE 1=1 {$metaFilter}
-                    GROUP BY m.produto_id
+                    " . $this->buildMetaSubquery($fMetaTable, $dEstruturaTable, $metaFilter, $filters) . "
                 ) AS fm ON fm.produto_id = dp.id
                 LEFT JOIN (
-                    SELECT 
-                        r.produto_id, 
-                        SUM(r.realizado) AS total_realizado,
-                        MAX(c2.data) AS ultima_atualizacao
-                    FROM {$fRealizadosTable} AS r
-                    LEFT JOIN {$dCalendarioTable} AS c2 ON c2.data = r.data_realizado
-                    LEFT JOIN {$dEstruturaTable} AS e2 ON e2.funcional = r.funcional
-                    WHERE r.produto_id IS NOT NULL {$realizadosFilter}
-                    GROUP BY r.produto_id
+                    " . $this->buildRealizadosSubquery($fRealizadosTable, $dEstruturaTable, $realizadosFilter, $filters) . "
                 ) AS fr ON fr.produto_id = dp.id
                 LEFT JOIN (
-                    SELECT 
-                        p.produto_id, 
-                        SUM(p.realizado) AS total_pontos,
-                        SUM(p.meta) AS total_meta_pontos
-                    FROM {$fPontosTable} AS p
-                    LEFT JOIN {$dCalendarioTable} AS c3 ON c3.data = p.data_realizado
-                    LEFT JOIN {$dEstruturaTable} AS e3 ON e3.funcional = p.funcional
-                    WHERE 1=1 {$pontosFilter}
-                    GROUP BY p.produto_id
+                    " . $this->buildPontosSubquery($fPontosTable, $dEstruturaTable, $pontosFilter, $filters) . "
                 ) AS fp ON fp.produto_id = dp.id
                 WHERE 1=1 {$produtoFilter}
                 ORDER BY f.nm_familia ASC, i.nm_indicador ASC, s.nm_subindicador ASC";
@@ -221,37 +248,31 @@ class ResumoRepository extends ServiceEntityRepository
             $dataFim = $filters->getDataFim();
             
             if ($dataInicio) {
-                $metaFilter .= " AND c1.data >= :metaDataInicio";
-                $realizadosFilter .= " AND c2.data >= :realizadosDataInicio";
-                $pontosFilter .= " AND c3.data >= :pontosDataInicio";
+                // Otimização: usa diretamente as colunas de data sem join com d_calendario
+                $metaFilter .= " AND m.data_meta >= :metaDataInicio";
+                $realizadosFilter .= " AND r.data_realizado >= :realizadosDataInicio";
+                $pontosFilter .= " AND p.data_realizado >= :pontosDataInicio";
                 $params['metaDataInicio'] = $dataInicio;
                 $params['realizadosDataInicio'] = $dataInicio;
                 $params['pontosDataInicio'] = $dataInicio;
             }
             
             if ($dataFim) {
-                $metaFilter .= " AND c1.data <= :metaDataFim";
-                $realizadosFilter .= " AND c2.data <= :realizadosDataFim";
-                $pontosFilter .= " AND c3.data <= :pontosDataFim";
+                // Otimização: usa diretamente as colunas de data sem join com d_calendario
+                $metaFilter .= " AND m.data_meta <= :metaDataFim";
+                $realizadosFilter .= " AND r.data_realizado <= :realizadosDataFim";
+                $pontosFilter .= " AND p.data_realizado <= :pontosDataFim";
                 $params['metaDataFim'] = $dataFim;
                 $params['realizadosDataFim'] = $dataFim;
                 $params['pontosDataFim'] = $dataFim;
             }
             
-            // Filtros de estrutura (com prefixos e sufixos diferentes para cada subconsulta)
-            $estruturaFiltersMeta = $this->buildEstruturaFilters($filters, $params, 'e1', 'meta');
-            $estruturaFiltersRealizados = $this->buildEstruturaFilters($filters, $params, 'e2', 'realizados');
-            $estruturaFiltersPontos = $this->buildEstruturaFilters($filters, $params, 'e3', 'pontos');
-            $metaFilter .= $estruturaFiltersMeta;
-            $realizadosFilter .= $estruturaFiltersRealizados;
-            $pontosFilter .= $estruturaFiltersPontos;
-            
-            // Filtros de gerente e gerente gestão (aplicados diretamente no funcional)
+            // Filtros de gerente e gerente gestão (aplicados diretamente no funcional - mais eficiente)
             $gerente = $filters->getGerente();
             $gerenteGestao = $filters->getGerenteGestao();
             
             if ($gerente !== null && $gerente !== '') {
-                // Se tem gerente, filtra apenas por funcional (gerente)
+                // Se tem gerente, filtra apenas por funcional (gerente) - evita join com estrutura
                 $metaFilter .= " AND m.funcional = :gerenteFuncionalMeta";
                 $realizadosFilter .= " AND r.funcional = :gerenteFuncionalRealizados";
                 $pontosFilter .= " AND p.funcional = :gerenteFuncionalPontos";
@@ -259,13 +280,22 @@ class ResumoRepository extends ServiceEntityRepository
                 $params['gerenteFuncionalRealizados'] = $gerente;
                 $params['gerenteFuncionalPontos'] = $gerente;
             } elseif ($gerenteGestao !== null && $gerenteGestao !== '') {
-                // Se tem gerente gestão, filtra apenas por funcional (gerente gestão)
+                // Se tem gerente gestão, filtra apenas por funcional (gerente gestão) - evita join com estrutura
                 $metaFilter .= " AND m.funcional = :gerenteGestaoFuncionalMeta";
                 $realizadosFilter .= " AND r.funcional = :gerenteGestaoFuncionalRealizados";
                 $pontosFilter .= " AND p.funcional = :gerenteGestaoFuncionalPontos";
                 $params['gerenteGestaoFuncionalMeta'] = $gerenteGestao;
                 $params['gerenteGestaoFuncionalRealizados'] = $gerenteGestao;
                 $params['gerenteGestaoFuncionalPontos'] = $gerenteGestao;
+            } else {
+                // Filtros de estrutura (só aplica se não houver gerente/gerenteGestao)
+                // Com prefixos e sufixos diferentes para cada subconsulta
+                $estruturaFiltersMeta = $this->buildEstruturaFilters($filters, $params, 'e1', 'meta');
+                $estruturaFiltersRealizados = $this->buildEstruturaFilters($filters, $params, 'e2', 'realizados');
+                $estruturaFiltersPontos = $this->buildEstruturaFilters($filters, $params, 'e3', 'pontos');
+                $metaFilter .= $estruturaFiltersMeta;
+                $realizadosFilter .= $estruturaFiltersRealizados;
+                $pontosFilter .= $estruturaFiltersPontos;
             }
             
             // Filtros de produto (aplica apenas o mais específico da hierarquia)
@@ -319,36 +349,13 @@ class ResumoRepository extends ServiceEntityRepository
                 LEFT JOIN {$indicadorTable} AS i ON i.id = dp.indicador_id
                 LEFT JOIN {$subindicadorTable} AS s ON s.id = dp.subindicador_id
                 LEFT JOIN (
-                    SELECT 
-                        m.produto_id, 
-                        SUM(m.meta_mensal) AS total_meta
-                    FROM {$fMetaTable} AS m
-                    LEFT JOIN {$dCalendarioTable} AS c1 ON c1.data = m.data_meta
-                    LEFT JOIN {$dEstruturaTable} AS e1 ON e1.funcional = m.funcional
-                    WHERE 1=1 {$metaFilter}
-                    GROUP BY m.produto_id
+                    " . $this->buildMetaSubquery($fMetaTable, $dEstruturaTable, $metaFilter, $filters) . "
                 ) AS fm ON fm.produto_id = dp.id
                 LEFT JOIN (
-                    SELECT 
-                        r.produto_id, 
-                        SUM(r.realizado) AS total_realizado,
-                        MAX(c2.data) AS ultima_atualizacao
-                    FROM {$fRealizadosTable} AS r
-                    LEFT JOIN {$dCalendarioTable} AS c2 ON c2.data = r.data_realizado
-                    LEFT JOIN {$dEstruturaTable} AS e2 ON e2.funcional = r.funcional
-                    WHERE r.produto_id IS NOT NULL {$realizadosFilter}
-                    GROUP BY r.produto_id
+                    " . $this->buildRealizadosSubquery($fRealizadosTable, $dEstruturaTable, $realizadosFilter, $filters) . "
                 ) AS fr ON fr.produto_id = dp.id
                 LEFT JOIN (
-                    SELECT 
-                        p.produto_id, 
-                        SUM(p.realizado) AS total_pontos,
-                        SUM(p.meta) AS total_meta_pontos
-                    FROM {$fPontosTable} AS p
-                    LEFT JOIN {$dCalendarioTable} AS c3 ON c3.data = p.data_realizado
-                    LEFT JOIN {$dEstruturaTable} AS e3 ON e3.funcional = p.funcional
-                    WHERE 1=1 {$pontosFilter}
-                    GROUP BY p.produto_id
+                    " . $this->buildPontosSubquery($fPontosTable, $dEstruturaTable, $pontosFilter, $filters) . "
                 ) AS fp ON fp.produto_id = dp.id
                 WHERE 1=1 {$produtoFilter}
                 ORDER BY f.nm_familia ASC, i.nm_indicador ASC, s.nm_subindicador ASC";
@@ -1108,6 +1115,32 @@ class ResumoRepository extends ServiceEntityRepository
         }
 
         return $filtersSql;
+    }
+
+    /**
+     * Verifica se é necessário fazer join com d_estrutura baseado nos filtros
+     * Retorna true apenas se houver filtros de estrutura (agencia, regional, diretoria, segmento)
+     * e não houver filtros de gerente/gerenteGestao (que já filtram por funcional diretamente)
+     */
+    private function needsEstruturaJoin(?FilterDTO $filters): bool
+    {
+        if (!$filters) {
+            return false;
+        }
+
+        $gerente = $filters->getGerente();
+        $gerenteGestao = $filters->getGerenteGestao();
+        
+        // Se tem gerente ou gerente gestão, não precisa de join com estrutura
+        if (($gerente !== null && $gerente !== '') || ($gerenteGestao !== null && $gerenteGestao !== '')) {
+            return false;
+        }
+
+        // Precisa de join apenas se houver filtros de estrutura
+        return ($filters->getAgencia() !== null && $filters->getAgencia() !== '') ||
+               ($filters->getRegional() !== null && $filters->getRegional() !== '') ||
+               ($filters->getDiretoria() !== null && $filters->getDiretoria() !== '') ||
+               ($filters->getSegmento() !== null && $filters->getSegmento() !== '');
     }
 }
 

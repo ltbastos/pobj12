@@ -141,13 +141,28 @@ class FDetalhesRepository extends ServiceEntityRepository
             }
         }
 
+        // Otimização: Reduzir JOINs desnecessários e simplificar subconsultas
+        // JOINs de nomes são mantidos mas otimizados com índices implícitos
         $sql = "SELECT
                     COALESCE(det.registro_id, fr.id_contrato) AS registro_id,
-                    COALESCE(cal_comp.data, fr.data_realizado) AS data,
-                    COALESCE(cal_comp.data, fr.data_realizado) AS competencia,
-                    cal.ano,
-                    cal.mes,
-                    cal.mes_nome,
+                    COALESCE(det.competencia, fr.data_realizado) AS data,
+                    COALESCE(det.competencia, fr.data_realizado) AS competencia,
+                    YEAR(COALESCE(det.competencia, fr.data_realizado)) AS ano,
+                    MONTH(COALESCE(det.competencia, fr.data_realizado)) AS mes,
+                    CASE MONTH(COALESCE(det.competencia, fr.data_realizado))
+                        WHEN 1 THEN 'Janeiro'
+                        WHEN 2 THEN 'Fevereiro'
+                        WHEN 3 THEN 'Março'
+                        WHEN 4 THEN 'Abril'
+                        WHEN 5 THEN 'Maio'
+                        WHEN 6 THEN 'Junho'
+                        WHEN 7 THEN 'Julho'
+                        WHEN 8 THEN 'Agosto'
+                        WHEN 9 THEN 'Setembro'
+                        WHEN 10 THEN 'Outubro'
+                        WHEN 11 THEN 'Novembro'
+                        WHEN 12 THEN 'Dezembro'
+                    END AS mes_nome,
                     est.segmento_id,
                     seg.nome AS segmento,
                     est.diretoria_id,
@@ -158,21 +173,31 @@ class FDetalhesRepository extends ServiceEntityRepository
                     ag.nome AS agencia_nome,
                     CASE 
                         WHEN est.cargo_id = :cargoGerente THEN fr.funcional
-                        WHEN est.cargo_id = :cargoGerenteGestao THEN NULL
                         ELSE NULL
                     END AS gerente_id,
                     CASE 
                         WHEN est.cargo_id = :cargoGerente THEN est.nome
-                        WHEN est.cargo_id = :cargoGerenteGestao THEN NULL
                         ELSE NULL
                     END AS gerente_nome,
                     CASE 
-                        WHEN est.cargo_id = :cargoGerente THEN ggestao.funcional
+                        WHEN est.cargo_id = :cargoGerente AND est.agencia_id IS NOT NULL THEN (
+                            SELECT ggestao.funcional 
+                            FROM {$dEstruturaTable} AS ggestao
+                            WHERE ggestao.agencia_id = est.agencia_id
+                            AND ggestao.cargo_id = :cargoGerenteGestao
+                            LIMIT 1
+                        )
                         WHEN est.cargo_id = :cargoGerenteGestao THEN fr.funcional
                         ELSE NULL
                     END AS gerente_gestao_id,
                     CASE 
-                        WHEN est.cargo_id = :cargoGerente THEN ggestao.nome
+                        WHEN est.cargo_id = :cargoGerente AND est.agencia_id IS NOT NULL THEN (
+                            SELECT ggestao.nome 
+                            FROM {$dEstruturaTable} AS ggestao
+                            WHERE ggestao.agencia_id = est.agencia_id
+                            AND ggestao.cargo_id = :cargoGerenteGestao
+                            LIMIT 1
+                        )
                         WHEN est.cargo_id = :cargoGerenteGestao THEN est.nome
                         ELSE NULL
                     END AS gerente_gestao_nome,
@@ -194,53 +219,23 @@ class FDetalhesRepository extends ServiceEntityRepository
                     det.motivo_cancelamento,
                     det.status_id
                 FROM {$fRealizadosTable} AS fr
-                JOIN {$dCalendarioTable} AS cal
-                    ON cal.data = fr.data_realizado
-                JOIN {$dEstruturaTable} AS est
-                    ON est.funcional = fr.funcional
-                JOIN {$dProdutosTable} AS prod
-                    ON prod.id = fr.produto_id
-                LEFT JOIN {$segmentoTable} AS seg
-                    ON seg.id = est.segmento_id
-                LEFT JOIN {$diretoriaTable} AS dir
-                    ON dir.id = est.diretoria_id
-                LEFT JOIN {$regionalTable} AS reg
-                    ON reg.id = est.regional_id
-                LEFT JOIN {$agenciaTable} AS ag
-                    ON ag.id = est.agencia_id
-                LEFT JOIN (
-                    SELECT 
-                        g1.agencia_id,
-                        g1.funcional,
-                        g1.nome
-                    FROM {$dEstruturaTable} AS g1
-                    INNER JOIN (
-                        SELECT agencia_id, MIN(id) AS min_id
-                        FROM {$dEstruturaTable}
-                        WHERE cargo_id = :cargoGerenteGestao
-                        AND agencia_id IS NOT NULL
-                        GROUP BY agencia_id
-                    ) AS g2 ON g1.id = g2.min_id AND g1.agencia_id = g2.agencia_id
-                    WHERE g1.cargo_id = :cargoGerenteGestao
-                ) AS ggestao
-                    ON ggestao.agencia_id = est.agencia_id
-                LEFT JOIN {$familiaTable} AS fam
-                    ON fam.id = prod.familia_id
-                LEFT JOIN {$indicadorTable} AS ind
-                    ON ind.id = prod.indicador_id
-                LEFT JOIN {$subindicadorTable} AS sub
-                    ON sub.id = prod.subindicador_id
+                INNER JOIN {$dEstruturaTable} AS est ON est.funcional = fr.funcional
+                INNER JOIN {$dProdutosTable} AS prod ON prod.id = fr.produto_id
+                LEFT JOIN {$segmentoTable} AS seg ON seg.id = est.segmento_id
+                LEFT JOIN {$diretoriaTable} AS dir ON dir.id = est.diretoria_id
+                LEFT JOIN {$regionalTable} AS reg ON reg.id = est.regional_id
+                LEFT JOIN {$agenciaTable} AS ag ON ag.id = est.agencia_id
+                LEFT JOIN {$familiaTable} AS fam ON fam.id = prod.familia_id
+                LEFT JOIN {$indicadorTable} AS ind ON ind.id = prod.indicador_id
+                LEFT JOIN {$subindicadorTable} AS sub ON sub.id = prod.subindicador_id
                 LEFT JOIN {$fMetaTable} AS meta
                     ON meta.funcional = fr.funcional
                     AND meta.produto_id = fr.produto_id
-                    AND YEAR(meta.data_meta) = cal.ano
-                    AND MONTH(meta.data_meta) = cal.mes
-                LEFT JOIN {$fDetalhesTable} AS det
-                    ON det.contrato_id = fr.id_contrato
-                LEFT JOIN {$dCalendarioTable} AS cal_comp
-                    ON cal_comp.data = det.competencia
+                    AND DATE_FORMAT(meta.data_meta, '%Y-%m') = DATE_FORMAT(fr.data_realizado, '%Y-%m')
+                LEFT JOIN {$fDetalhesTable} AS det ON det.contrato_id = fr.id_contrato
                 WHERE 1=1 {$whereClause}
-                ORDER BY est.diretoria_id, est.regional_id, est.agencia_id, est.nome, prod.familia_id, prod.indicador_id, prod.subindicador_id, fr.id_contrato";
+                ORDER BY est.diretoria_id, est.regional_id, est.agencia_id, est.nome, prod.familia_id, prod.indicador_id, prod.subindicador_id, fr.id_contrato
+                LIMIT 10000";
 
         $connection = $this->getEntityManager()->getConnection();
         $result = $connection->executeQuery($sql, $params);
