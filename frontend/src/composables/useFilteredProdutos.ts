@@ -4,9 +4,6 @@ import { useResumoData } from './useResumoData'
 import type { FilterState } from './useGlobalFilters'
 import type { ProdutoCard } from './useProdutos'
 
-/**
- * Composable que integra filtros hierárquicos, período e produtos
- */
 export function useFilteredProdutos(
   filterState: Ref<FilterState> | ComputedRef<FilterState>,
   period: Ref<Period> | ComputedRef<Period>

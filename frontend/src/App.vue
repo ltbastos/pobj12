@@ -15,7 +15,6 @@ const route = useRoute()
 
 <template>
   <div class="app">
-    <!-- Skip Links para navegação rápida -->
     <a href="#main-content" class="skip-link">Pular para conteúdo principal</a>
     <a href="#main-navigation" class="skip-link">Pular para navegação</a>
     
@@ -68,7 +67,6 @@ body {
   font-family: "Bradesco", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-/* Garante que os ícones Tabler Icons sejam renderizados corretamente */
 .ti {
   font-family: 'tabler-icons' !important;
   font-style: normal;
@@ -80,7 +78,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Marca d'água global aplicada em todas as páginas */
 body {
   background-color: #f6f7fc;
   background-image:
@@ -120,7 +117,6 @@ body {
   width: 100%;
 }
 
-/* Transições de página */
 .page-enter-active {
   transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1);
 }

@@ -1,8 +1,5 @@
 import { ref, type Ref } from 'vue'
 
-/**
- * Composable para feedback visual e microinterações
- */
 export function useFeedback() {
   const isLoading = ref(false)
   const isSuccess = ref(false)
@@ -23,7 +20,6 @@ export function useFeedback() {
     isLoading.value = false
     if (msg) message.value = msg
     
-    // Auto-hide após 3 segundos
     setTimeout(() => {
       isSuccess.value = false
       message.value = null
@@ -36,7 +32,6 @@ export function useFeedback() {
     isLoading.value = false
     if (msg) message.value = msg
     
-    // Auto-hide após 5 segundos
     setTimeout(() => {
       isError.value = false
       message.value = null
@@ -62,9 +57,6 @@ export function useFeedback() {
   }
 }
 
-/**
- * Hook para animação de ripple em botões
- */
 export function useRipple(element: Ref<HTMLElement | null>) {
   const createRipple = (event: MouseEvent) => {
     const button = element.value
@@ -87,7 +79,6 @@ export function useRipple(element: Ref<HTMLElement | null>) {
 
     button.appendChild(circle)
 
-    // Remove após animação
     setTimeout(() => {
       circle.remove()
     }, 600)
@@ -96,9 +87,6 @@ export function useRipple(element: Ref<HTMLElement | null>) {
   return { createRipple }
 }
 
-/**
- * Hook para animação de pulse
- */
 export function usePulse() {
   const pulse = (element: HTMLElement) => {
     element.classList.add('pulse-animation')
@@ -110,9 +98,6 @@ export function usePulse() {
   return { pulse }
 }
 
-/**
- * Hook para animação de shake (erro)
- */
 export function useShake() {
   const shake = (element: HTMLElement) => {
     element.classList.add('shake-animation')

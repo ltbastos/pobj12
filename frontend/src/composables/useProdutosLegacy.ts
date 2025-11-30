@@ -51,7 +51,6 @@ export function useProdutosLegacy() {
   const error = resumo.error
   const getCurrentMonthBusinessSnapshot = resumo.businessSnapshot
 
-  // Agrupa produtos por família e indicador
   const produtosPorFamilia = computed<LegacySection[]>(() => {
     const familiasMap = new Map<string, Map<string, LegacyItem>>()
     
@@ -69,24 +68,19 @@ export function useProdutosLegacy() {
       
       const indicadoresMap = familiasMap.get(familiaId)!
       
-      // Se o indicador já existe, soma os valores dos subindicadores
       if (indicadoresMap.has(indicadorId)) {
         const itemExistente = indicadoresMap.get(indicadorId)!
         
-        // Preserva o peso se ainda não foi definido ou atualiza se necessário
         if (!itemExistente.peso && produto.peso) {
           itemExistente.peso = Number(produto.peso) || 0
           itemExistente.pontosMeta = Number(produto.pontos_meta ?? produto.peso) || 0
         }
         
-        // Soma os valores dos subindicadores
         itemExistente.meta = (itemExistente.meta || 0) + (produto.meta || 0)
         itemExistente.realizado = (itemExistente.realizado || 0) + (produto.realizado || 0)
         
-        // Combina meses (soma valores por mês)
         const mesesMap = new Map<string, { meta: number; realizado: number }>()
         
-        // Adiciona meses do item existente
         itemExistente.months.forEach(m => {
           mesesMap.set(m.mes, { meta: m.meta, realizado: m.realizado })
         })
@@ -100,7 +94,6 @@ export function useProdutosLegacy() {
           })
         })
         
-        // Reconstrói array de meses
         itemExistente.months = Array.from(mesesMap.entries()).map(([mes, dados]) => ({
           mes,
           meta: dados.meta,
@@ -108,13 +101,11 @@ export function useProdutosLegacy() {
           atingimento: dados.meta > 0 ? (dados.realizado / dados.meta) * 100 : 0
         }))
         
-        // Atualiza monthMeta e monthReal (mês atual)
-        const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM
+        const currentMonth = new Date().toISOString().slice(0, 7)
         const currentMonthData = itemExistente.months.find(m => m.mes === currentMonth)
         itemExistente.monthMeta = currentMonthData?.meta || 0
         itemExistente.monthReal = currentMonthData?.realizado || 0
         
-        // Adiciona subindicador como filho se existir
         if (produto.id_subindicador && produto.subindicador) {
           if (!itemExistente.children) {
             itemExistente.children = []
@@ -138,7 +129,6 @@ export function useProdutosLegacy() {
           itemExistente.children.push(subItem)
         }
       } else {
-        // Cria novo item para o indicador
         const currentMonth = new Date().toISOString().slice(0, 7)
         const currentMonthData = produto.meses.find(m => m.mes === currentMonth)
         
@@ -158,7 +148,6 @@ export function useProdutosLegacy() {
           children: []
         }
         
-        // Adiciona subindicador como filho se existir
         if (produto.id_subindicador && produto.subindicador) {
           const subItem: LegacyItem = {
             id: produto.id_subindicador,
@@ -182,7 +171,6 @@ export function useProdutosLegacy() {
       }
     })
     
-    // Cria um mapa de nomes de família
     const familiaNames = new Map<string, string>()
     produtos.value.forEach(p => {
       if (p.id_familia && !familiaNames.has(p.id_familia)) {
@@ -190,7 +178,6 @@ export function useProdutosLegacy() {
       }
     })
     
-    // Calcula valores adicionais para cada item (referência, projeção, etc.)
     const snapshot = getCurrentMonthBusinessSnapshot.value
     const diasTotais = snapshot.total || 1
     const diasDecorridos = snapshot.elapsed || 0
@@ -201,38 +188,30 @@ export function useProdutosLegacy() {
       const realVal = item.realizado || 0
       const pesoVal = item.pontosMeta || item.peso || 0
       
-      // Referência para hoje: (meta / dias úteis no mês) * dias úteis trabalhados
       const referenciaHoje = diasTotais > 0 
         ? (metaVal / diasTotais) * diasDecorridos 
         : 0
       
-      // Falta para a meta
       const faltaParaMeta = Math.max(0, metaVal - realVal)
       
-      // Meta diária necessária: (Falta para a meta) / dias úteis que faltam
       const metaDiariaNecessaria = diasRestantes > 0 
         ? faltaParaMeta / diasRestantes 
         : 0
       
-      // Projeção (forecast): (Realizado / dias úteis trabalhados) * dias que faltam + o realizado
       const projecao = diasDecorridos > 0 
         ? ((realVal / diasDecorridos) * diasRestantes) + realVal 
         : realVal
       
-      // Usa pontos do backend se disponível, senão calcula
       let pontos: number
       let pontosBrutos: number
       if (item.pontosBackend !== undefined) {
-        // Usa pontos do backend
         pontos = item.pontosBackend
         pontosBrutos = pontos
       } else {
-        // Calcula pontos (limitado pelo peso) - fallback para compatibilidade
         pontosBrutos = Math.min(pesoVal, realVal)
         pontos = Math.max(0, Math.min(pesoVal, pontosBrutos))
       }
       
-      // Calcula atingimento (percentual)
       const ating = metaVal > 0 ? (realVal / metaVal) : 0
       
       const enriched: LegacyItem = {
@@ -245,7 +224,6 @@ export function useProdutosLegacy() {
         ating
       }
       
-      // Enriquece também os filhos
       if (item.children && item.children.length > 0) {
         enriched.children = item.children.map(enrichItem)
       }
@@ -253,11 +231,9 @@ export function useProdutosLegacy() {
       return enriched
     }
     
-    // Converte o mapa em array de seções
     return Array.from(familiasMap.entries()).map(([familiaId, indicadoresMap]) => {
       const items = Array.from(indicadoresMap.values()).map(enrichItem)
       
-      // Calcula totais da seção
       const pontosTotal = items.reduce((acc, item) => acc + (item.pontosMeta || 0), 0)
       const pontosHit = items.reduce((acc, item) => acc + (item.pontos || 0), 0)
       const metaTotal = items.reduce((acc, item) => acc + (item.meta || 0), 0)

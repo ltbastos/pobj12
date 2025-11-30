@@ -4,9 +4,6 @@ import { useResumoData } from './useResumoData'
 import type { Period } from '../types'
 import type { FilterState } from './useGlobalFilters'
 
-/**
- * Composable para calcular o resumo geral (indicadores, pontos, variável)
- */
 export function useResumoSummary(
   filterState: Ref<FilterState> | ComputedRef<FilterState>,
   period: Ref<Period> | ComputedRef<Period>
@@ -40,7 +37,6 @@ export function useResumoSummary(
     }
   })
 
-  // Calcula summary dos produtos
   const summary = computed(() => {
     const familias = produtosPorFamilia.value || []
 
