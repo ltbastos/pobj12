@@ -53,3 +53,4 @@ CREATE TABLE IF NOT EXISTS `pobj_notifications` (
   KEY `idx_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+
