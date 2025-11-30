@@ -436,6 +436,25 @@ function openTicketDetails(ticketId: string) {
   // TODO: Implementar abertura do modal de detalhes
 }
 
+function toggleFullscreen(modalElement: HTMLElement, button: HTMLElement) {
+  const isFullscreen = modalElement.classList.contains('omega-modal--fullscreen')
+  const nextState = !isFullscreen
+  
+  modalElement.classList.toggle('omega-modal--fullscreen', nextState)
+  
+  // Atualiza atributos do botão
+  button.setAttribute('aria-pressed', nextState ? 'true' : 'false')
+  button.setAttribute('aria-label', nextState ? 'Sair de tela cheia' : 'Entrar em tela cheia')
+  
+  // Atualiza ícone
+  const icon = button.querySelector('i')
+  if (icon) {
+    icon.className = nextState ? 'ti ti-arrows-minimize' : 'ti ti-arrows-maximize'
+  }
+  
+  console.log(`🖥️ Tela cheia ${nextState ? 'ativada' : 'desativada'}`)
+}
+
 function openModal() {
   console.log('🚀 Abrindo modal Omega...')
   isOpen.value = true
@@ -593,6 +612,31 @@ onMounted(() => {
             }
           })
         }
+        
+        // Adiciona listener para botão de tela cheia
+        const fullscreenButton = modalElement.querySelector('#omega-fullscreen') as HTMLElement
+        if (fullscreenButton) {
+          fullscreenButton.addEventListener('click', () => {
+            toggleFullscreen(modalElement, fullscreenButton)
+          })
+        }
+        
+        // Adiciona listener para tecla F (atalho de tela cheia)
+        const handleKeyPress = (e: KeyboardEvent) => {
+          if (e.key === 'f' || e.key === 'F') {
+            const modal = document.getElementById('omega-modal')
+            const btn = modal?.querySelector('#omega-fullscreen')
+            if (modal && btn && !modal.hidden && btn instanceof HTMLElement) {
+              toggleFullscreen(modal, btn)
+            }
+          }
+        }
+        document.addEventListener('keydown', handleKeyPress)
+        
+        // Limpa listener ao desmontar
+        onBeforeUnmount(() => {
+          document.removeEventListener('keydown', handleKeyPress)
+        })
       }
     }, 50)
   })
