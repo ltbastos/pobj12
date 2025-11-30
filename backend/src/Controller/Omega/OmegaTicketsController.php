@@ -62,7 +62,9 @@ class OmegaTicketsController extends ControllerBase
         
         try {
             $result = $this->omegaTicketsUseCase->createTicket($data);
-            return $this->success($result);
+            // Converte a entidade para array para serialização JSON
+            $ticketArray = $this->omegaTicketsUseCase->ticketToArray($result);
+            return $this->success($ticketArray);
         } catch (\Exception $e) {
             return $this->error($e->getMessage(), 500);
         }

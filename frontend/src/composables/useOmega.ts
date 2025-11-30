@@ -12,7 +12,6 @@ import {
 import type { OmegaUser } from '../types/omega'
 import type {
   OmegaInitData,
-  OmegaUser,
   OmegaTicket,
   OmegaStatus,
   OmegaStructure,
