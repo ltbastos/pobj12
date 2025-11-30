@@ -14,9 +14,6 @@ class SimuladorUseCase
         $this->simuladorRepository = $simuladorRepository;
     }
 
-    /**
-     * Retorna os produtos com dados para o simulador
-     */
     public function handle(?FilterDTO $filters = null): array
     {
         return $this->simuladorRepository->findProdutosForSimulador($filters);

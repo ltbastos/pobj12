@@ -11,7 +11,6 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class SimuladorController extends ControllerBase
 {
-    /** @var SimuladorUseCase */
     private $simuladorUseCase;
 
     public function __construct(SimuladorUseCase $simuladorUseCase)
@@ -19,9 +18,7 @@ class SimuladorController extends ControllerBase
         $this->simuladorUseCase = $simuladorUseCase;
     }
 
-    /**
-     * @Route("/api/pobj/simulador", name="api_pobj_simulador", methods={"GET"})
-     */
+    /** @Route("/api/pobj/simulador", name="api_pobj_simulador", methods={"GET"}) */
     public function handle(Request $request): JsonResponse
     {
         $filters = new FilterDTO($request->query->all());

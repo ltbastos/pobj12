@@ -14,9 +14,6 @@ class ExecUseCase
         $this->execRepository = $execRepository;
     }
 
-    /**
-     * Retorna os dados para a visão executiva
-     */
     public function handle(?FilterDTO $filters = null): array
     {
         $kpis = $this->execRepository->findKPIs($filters);

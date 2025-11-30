@@ -1,23 +1,23 @@
 <?php
 
-namespace App\Controller\Pobj;
+namespace App\Controller\Omega;
 
-use App\Application\UseCase\Pobj\InitUseCase;
+use App\Application\UseCase\Omega\OmegaInitUseCase;
 use App\Controller\ControllerBase;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
-class InitController extends ControllerBase
+class OmegaInitController extends ControllerBase
 {
     private $initUseCase;
 
-    public function __construct(InitUseCase $initUseCase)
+    public function __construct(OmegaInitUseCase $initUseCase)
     {
         $this->initUseCase = $initUseCase;
     }
 
-    /** @Route("/api/pobj/init", name="api_pobj_init", methods={"GET"}) */
+    /** @Route("/api/omega/init", name="api_omega_init", methods={"GET"}) */
     public function handle(Request $request): JsonResponse
     {
         $result = $this->initUseCase->handle();

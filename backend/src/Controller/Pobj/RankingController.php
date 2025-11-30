@@ -18,9 +18,7 @@ class RankingController extends ControllerBase
         $this->rankingUseCase = $rankingUseCase;
     }
 
-    /**
-     * @Route("/api/pobj/ranking", name="api_pobj_ranking", methods={"GET"})
-     */
+    /** @Route("/api/pobj/ranking", name="api_pobj_ranking", methods={"GET"}) */
     public function handle(Request $request): JsonResponse
     {
         $filters = new FilterDTO($request->query->all());

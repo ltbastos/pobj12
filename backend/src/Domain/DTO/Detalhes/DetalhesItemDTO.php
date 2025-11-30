@@ -12,7 +12,6 @@ class DetalhesItemDTO
     public $mes;
     public $mes_nome;
     
-    // Estrutura organizacional
     public $segmento_id;
     public $segmento;
     public $diretoria_id;
@@ -26,7 +25,6 @@ class DetalhesItemDTO
     public $gerente_gestao_id;
     public $gerente_gestao_nome;
     
-    // Produto
     public $familia_id;
     public $familia_nome;
     public $id_indicador;
@@ -35,12 +33,10 @@ class DetalhesItemDTO
     public $subindicador;
     public $peso;
     
-    // Valores
     public $valor_realizado;
     public $valor_meta;
     public $meta_mensal;
     
-    // Detalhes do contrato
     public $canal_venda;
     public $tipo_venda;
     public $modalidade_pagamento;

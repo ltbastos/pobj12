@@ -11,7 +11,6 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class ResumoController extends ControllerBase
 {
-    /** @var ResumoUseCase */
     private $resumoUseCase;
 
     public function __construct(ResumoUseCase $resumoUseCase)
@@ -19,9 +18,7 @@ class ResumoController extends ControllerBase
         $this->resumoUseCase = $resumoUseCase;
     }
 
-    /**
-     * @Route("/api/pobj/resumo", name="api_pobj_resumo", methods={"GET"})
-     */
+    /** @Route("/api/pobj/resumo", name="api_pobj_resumo", methods={"GET"}) */
     public function handle(Request $request): JsonResponse
     {
         $filters = new FilterDTO($request->query->all());

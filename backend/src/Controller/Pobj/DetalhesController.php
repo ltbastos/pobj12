@@ -18,9 +18,7 @@ class DetalhesController extends ControllerBase
         $this->detalhesUseCase = $detalhesUseCase;
     }
 
-    /**
-     * @Route("/api/pobj/detalhes", name="api_pobj_detalhes", methods={"GET"})
-     */
+    /** @Route("/api/pobj/detalhes", name="api_pobj_detalhes", methods={"GET"}) */
     public function handle(Request $request): JsonResponse
     {
         $filters = new FilterDTO($request->query->all());

@@ -11,7 +11,6 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class ExecController extends ControllerBase
 {
-    /** @var ExecUseCase */
     private $execUseCase;
 
     public function __construct(ExecUseCase $execUseCase)
@@ -19,9 +18,7 @@ class ExecController extends ControllerBase
         $this->execUseCase = $execUseCase;
     }
 
-    /**
-     * @Route("/api/pobj/exec", name="api_pobj_exec", methods={"GET"})
-     */
+    /** @Route("/api/pobj/exec", name="api_pobj_exec", methods={"GET"}) */
     public function handle(Request $request): JsonResponse
     {
         $filters = new FilterDTO($request->query->all());

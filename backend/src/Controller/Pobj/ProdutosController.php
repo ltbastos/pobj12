@@ -18,9 +18,7 @@ class ProdutosController extends ControllerBase
         $this->produtoUseCase = $produtoUseCase;
     }
 
-    /**
-     * @Route("/api/produtos", name="api_produtos", methods={"GET"})
-     */
+    /** @Route("/api/produtos", name="api_produtos", methods={"GET"}) */
     public function handle(Request $request): JsonResponse
     {
         $filters = new FilterDTO($request->query->all());
@@ -29,9 +27,7 @@ class ProdutosController extends ControllerBase
         return $this->success($result);
     }
 
-    /**
-     * @Route("/api/produtos/mensais", name="api_produtos_mensais", methods={"GET"})
-     */
+    /** @Route("/api/produtos/mensais", name="api_produtos_mensais", methods={"GET"}) */
     public function handleMonthly(Request $request): JsonResponse
     {
         $filters = new FilterDTO($request->query->all());

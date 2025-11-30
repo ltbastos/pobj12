@@ -15,7 +15,6 @@ abstract class ControllerBase
 
     protected function success($data): JsonResponse
     {
-        // Se o data já tem estrutura de paginação (com 'data' e 'pagination'), retorna diretamente
         if (is_array($data) && isset($data['data']) && isset($data['pagination'])) {
             return $this->json([
                 'success' => true,

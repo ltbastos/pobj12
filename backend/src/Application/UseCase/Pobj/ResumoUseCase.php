@@ -22,9 +22,6 @@ class ResumoUseCase
         $this->resumoRepository = $resumoRepository;
     }
 
-    /**
-     * Retorna o payload completo consumido pelo ResumoView
-     */
     public function handle(?FilterDTO $filters = null): array
     {
         $produtos = $this->resumoRepository->findProdutos($filters);
@@ -33,7 +30,6 @@ class ResumoUseCase
         $calendario = $this->resumoRepository->findCalendario();
         $businessSnapshot = $this->buildBusinessSnapshot($calendario);
 
-        // Converte para DTOs
         $cards = array_map(function($produto) {
             return CardDTO::fromArray($produto)->toArray();
         }, $produtos);
@@ -56,9 +52,6 @@ class ResumoUseCase
         ];
     }
 
-    /**
-     * Calcula snapshot de dias úteis do mês corrente
-     */
     private function buildBusinessSnapshot(array $calendario): array
     {
         $today = new DateTimeImmutable('today');

@@ -8,9 +8,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
-/**
- * Controller para operações relacionadas a usuários Omega
- */
 class OmegaUsersController extends ControllerBase
 {
     private $omegaUsersUseCase;
@@ -20,9 +17,7 @@ class OmegaUsersController extends ControllerBase
         $this->omegaUsersUseCase = $omegaUsersUseCase;
     }
 
-    /**
-     * @Route("/api/omega/users", name="api_omega_users", methods={"GET"})
-     */
+    /** @Route("/api/omega/users", name="api_omega_users", methods={"GET"}) */
     public function handle(Request $request): JsonResponse
     {
         $result = $this->omegaUsersUseCase->getAllUsers();

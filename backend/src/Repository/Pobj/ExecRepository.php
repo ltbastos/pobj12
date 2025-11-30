@@ -21,9 +21,6 @@ class ExecRepository extends ServiceEntityRepository
         parent::__construct($registry, DProduto::class);
     }
 
-    /**
-     * Retorna o nome da tabela de uma entidade
-     */
     private function getTableName(string $entityClass): string
     {
         return $this->getEntityManager()
@@ -31,9 +28,6 @@ class ExecRepository extends ServiceEntityRepository
             ->getTableName();
     }
 
-    /**
-     * Busca KPIs agregados (real_mens, meta_mens, real_acum, meta_acum)
-     */
     public function findKPIs(?FilterDTO $filters = null): array
     {
         $fRealizadosTable = $this->getTableName(FRealizados::class);
@@ -44,13 +38,11 @@ class ExecRepository extends ServiceEntityRepository
         $params = [];
         $whereClause = $this->buildWhereClause($filters, $params, false);
 
-        // Calcula período baseado nos filtros ou mês atual
         $today = new \DateTime();
         $dataInicio = $filters ? $filters->getDataInicio() : null;
         $dataFim = $filters ? $filters->getDataFim() : null;
 
         if ($dataInicio && $dataFim) {
-            // Usa período dos filtros (otimizado: usa colunas de data diretamente)
             $startDate = new \DateTime($dataInicio);
             $endDate = new \DateTime($dataFim);
             $startYear = (int)$startDate->format('Y');
@@ -58,13 +50,11 @@ class ExecRepository extends ServiceEntityRepository
             $endYear = (int)$endDate->format('Y');
             $endMonth = (int)$endDate->format('m');
             
-            // Filtros separados para realizados e metas (usam colunas diferentes)
             $dateFilterRealizados = " AND r.data_realizado >= :dataInicio AND r.data_realizado <= :dataFim";
             $dateFilterMeta = " AND m.data_meta >= :dataInicio AND m.data_meta <= :dataFim";
             $params['dataInicio'] = $dataInicio;
             $params['dataFim'] = $dataFim;
         } else {
-            // Usa mês atual (otimizado: usa colunas de data diretamente)
             $currentYear = $today->format('Y');
             $currentMonthNum = (int)$today->format('m');
             $dateFilterRealizados = " AND YEAR(r.data_realizado) = :ano AND MONTH(r.data_realizado) = :mes";
@@ -73,20 +63,16 @@ class ExecRepository extends ServiceEntityRepository
             $params['mes'] = $currentMonthNum;
         }
 
-        // Realizado mensal (otimizado: remove join desnecessário com d_calendario)
         $sqlRealMens = "SELECT COALESCE(SUM(r.realizado), 0) as total
             FROM {$fRealizadosTable} AS r
             INNER JOIN {$dEstruturaTable} AS est ON est.funcional = r.funcional
             WHERE 1=1 {$dateFilterRealizados} {$whereClause}";
 
-        // Meta mensal (otimizado: remove join desnecessário com d_calendario)
         $sqlMetaMens = "SELECT COALESCE(SUM(m.meta_mensal), 0) as total
             FROM {$fMetaTable} AS m
             INNER JOIN {$dEstruturaTable} AS est ON est.funcional = m.funcional
             WHERE 1=1 {$dateFilterMeta} {$whereClause}";
 
-        // Realizado acumulado (ano atual até o mês atual ou período)
-        // Otimizado: usa colunas de data diretamente
         if ($dataInicio && $dataFim) {
             $dateFilterAcum = " AND r.data_realizado >= :dataInicio AND r.data_realizado <= :dataFim";
             $dateFilterMetaAcum = " AND m.data_meta >= :dataInicio AND m.data_meta <= :dataFim";
@@ -100,7 +86,6 @@ class ExecRepository extends ServiceEntityRepository
             INNER JOIN {$dEstruturaTable} AS est ON est.funcional = r.funcional
             WHERE 1=1 {$dateFilterAcum} {$whereClause}";
 
-        // Meta acumulada (otimizado: remove join desnecessário com d_calendario)
         $sqlMetaAcum = "SELECT COALESCE(SUM(m.meta_mensal), 0) as total
             FROM {$fMetaTable} AS m
             INNER JOIN {$dEstruturaTable} AS est ON est.funcional = m.funcional
@@ -121,9 +106,6 @@ class ExecRepository extends ServiceEntityRepository
         ];
     }
 
-    /**
-     * Busca ranking por regional (top 5 e bottom 5)
-     */
     public function findRankingByRegional(?FilterDTO $filters = null): array
     {
         $fRealizadosTable = $this->getTableName(FRealizados::class);
@@ -192,9 +174,6 @@ class ExecRepository extends ServiceEntityRepository
         return $ranking;
     }
 
-    /**
-     * Busca status por regional (hit, quase, longe)
-     */
     public function findStatusByRegional(?FilterDTO $filters = null): array
     {
         $ranking = $this->findRankingByRegional($filters);
@@ -228,7 +207,6 @@ class ExecRepository extends ServiceEntityRepository
             }
         }
 
-        // Ordena longe por gap (menor primeiro = maior defasagem)
         usort($longe, function($a, $b) {
             return $a['gap'] <=> $b['gap'];
         });
@@ -236,13 +214,10 @@ class ExecRepository extends ServiceEntityRepository
         return [
             'hit' => $hit,
             'quase' => $quase,
-            'longe' => array_slice($longe, 0, 3) // Top 3 maiores defasagens
+            'longe' => array_slice($longe, 0, 3)
         ];
     }
 
-    /**
-     * Busca dados para o gráfico de evolução mensal por seção (família)
-     */
     public function findChartData(?FilterDTO $filters = null): array
     {
         $fRealizadosTable = $this->getTableName(FRealizados::class);
@@ -259,7 +234,6 @@ class ExecRepository extends ServiceEntityRepository
         $dataInicio = $filters ? $filters->getDataInicio() : null;
         $dataFim = $filters ? $filters->getDataFim() : null;
 
-        // Busca últimos 6 meses ou período dos filtros
         $months = [];
         if ($dataInicio && $dataFim) {
             $start = new \DateTime($dataInicio);
@@ -274,12 +248,10 @@ class ExecRepository extends ServiceEntityRepository
                 ];
                 $current->modify('+1 month');
             }
-            // Limita a 6 meses
             if (count($months) > 6) {
                 $months = array_slice($months, -6);
             }
         } else {
-            // Busca últimos 6 meses
             for ($i = 5; $i >= 0; $i--) {
                 $date = clone $today;
                 $date->modify("-{$i} months");
@@ -349,7 +321,6 @@ class ExecRepository extends ServiceEntityRepository
             $seriesMap[$familiaId]['values'][$mes] = $pct;
         }
 
-        // Preenche valores para todos os meses
         $series = [];
         $colors = ['#2563eb', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4'];
         $colorIndex = 0;
@@ -376,9 +347,6 @@ class ExecRepository extends ServiceEntityRepository
         ];
     }
 
-    /**
-     * Busca dados para o heatmap (regionais × seções/famílias)
-     */
     public function findHeatmap(?FilterDTO $filters = null): array
     {
         $fRealizadosTable = $this->getTableName(FRealizados::class);
@@ -396,7 +364,6 @@ class ExecRepository extends ServiceEntityRepository
         $dataInicio = $filters ? $filters->getDataInicio() : null;
         $dataFim = $filters ? $filters->getDataFim() : null;
 
-        // Define filtros de data diretamente nas colunas (otimização: remove joins desnecessários)
         $dateFilterRealizados = '';
         $dateFilterMeta = '';
         
@@ -477,9 +444,6 @@ class ExecRepository extends ServiceEntityRepository
         ];
     }
 
-    /**
-     * Constrói a cláusula WHERE baseada nos filtros
-     */
     private function buildWhereClause(?FilterDTO $filters, array &$params, bool $includeDateFilters = true): string
     {
         $whereClause = '';
@@ -501,7 +465,6 @@ class ExecRepository extends ServiceEntityRepository
             $whereClause .= " AND est.funcional = :gerenteFuncional";
             $params['gerenteFuncional'] = $gerente;
         } elseif ($gerenteGestao !== null && $gerenteGestao !== '') {
-            // Se tiver gerente gestão, filtra por todos os gerentes da mesma estrutura
             $whereClause .= " AND EXISTS (
                 SELECT 1 FROM {$estruturaTable} AS ggestao 
                 WHERE ggestao.funcional = :gerenteGestaoFuncional
@@ -514,7 +477,6 @@ class ExecRepository extends ServiceEntityRepository
             $params['gerenteGestaoFuncional'] = $gerenteGestao;
             $params['cargoGerenteGestao'] = Cargo::GERENTE_GESTAO;
         } else {
-            // Aplica apenas o filtro mais específico da hierarquia de estrutura
             if ($agencia !== null && $agencia !== '') {
                 $whereClause .= " AND est.agencia_id = :agencia";
                 $params['agencia'] = $agencia;
@@ -530,7 +492,6 @@ class ExecRepository extends ServiceEntityRepository
             }
         }
 
-        // Filtros de data (se solicitados)
         if ($includeDateFilters) {
             $dataInicio = $filters->getDataInicio();
             $dataFim = $filters->getDataFim();

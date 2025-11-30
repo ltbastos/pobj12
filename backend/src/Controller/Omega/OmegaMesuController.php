@@ -9,9 +9,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
-/**
- * Controller para operações relacionadas a estrutura Omega Mesu
- */
 class OmegaMesuController extends ControllerBase
 {
     private $omegaMesuUseCase;
@@ -21,9 +18,7 @@ class OmegaMesuController extends ControllerBase
         $this->omegaMesuUseCase = $omegaMesuUseCase;
     }
 
-    /**
-     * @Route("/api/omega/mesu", name="api_omega_mesu", methods={"GET"})
-     */
+    /** @Route("/api/omega/mesu", name="api_omega_mesu", methods={"GET"}) */
     public function handle(Request $request): JsonResponse
     {
         $filters = new FilterDTO($request->query->all());

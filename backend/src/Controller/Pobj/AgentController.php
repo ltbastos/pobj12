@@ -17,9 +17,7 @@ class AgentController extends ControllerBase
         $this->agentUseCase = $agentUseCase;
     }
 
-    /**
-     * @Route("/api/agent", name="api_agent", methods={"POST"})
-     */
+    /** @Route("/api/agent", name="api_agent", methods={"POST"}) */
     public function handle(Request $request): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);

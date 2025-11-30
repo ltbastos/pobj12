@@ -30,18 +30,12 @@ class InitUseCase
         ];
     }
 
-    /**
-     * Converte array de DTOs para array de arrays
-     * @param array $dtos
-     * @return array
-     */
     private function convertDtosToArray(array $dtos): array
     {
         $result = array_map(function ($dto) {
             return method_exists($dto, 'toArray') ? $dto->toArray() : $dto;
         }, $dtos);
         
-        // Garante que retorna um array indexado numericamente (não associativo)
         return array_values($result);
     }
 }

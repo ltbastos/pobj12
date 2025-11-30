@@ -8,9 +8,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 
-/**
- * Controller para operações relacionadas a status Omega
- */
 class OmegaStatusController extends ControllerBase
 {
     private $omegaStatusUseCase;
@@ -20,9 +17,7 @@ class OmegaStatusController extends ControllerBase
         $this->omegaStatusUseCase = $omegaStatusUseCase;
     }
 
-    /**
-     * @Route("/api/omega/statuses", name="api_omega_statuses", methods={"GET"})
-     */
+    /** @Route("/api/omega/statuses", name="api_omega_statuses", methods={"GET"}) */
     public function handle(Request $request): JsonResponse
     {
         $result = $this->omegaStatusUseCase->getAllStatus();

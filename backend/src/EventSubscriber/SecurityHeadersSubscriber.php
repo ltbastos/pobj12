@@ -20,7 +20,6 @@ class SecurityHeadersSubscriber implements EventSubscriberInterface
         $response = $event->getResponse();
         $request = $event->getRequest();
 
-        // CORS Headers
         $origin = $request->headers->get('Origin');
         $allowedOrigins = $this->getAllowedOrigins();
         
@@ -35,13 +34,11 @@ class SecurityHeadersSubscriber implements EventSubscriberInterface
         $response->headers->set('Access-Control-Allow-Credentials', 'true');
         $response->headers->set('Access-Control-Max-Age', '3600');
 
-        // Security Headers
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('X-XSS-Protection', '1; mode=block');
 
-        // Handle OPTIONS preflight requests
         if ($request->getMethod() === 'OPTIONS') {
             $response->setStatusCode(200);
             $response->setContent('');
@@ -56,7 +53,6 @@ class SecurityHeadersSubscriber implements EventSubscriberInterface
             return array_map('trim', explode(',', $envOrigins));
         }
 
-        // Valores padrão para desenvolvimento
         return [
             'http://localhost',
             'http://localhost:80',
@@ -65,7 +61,7 @@ class SecurityHeadersSubscriber implements EventSubscriberInterface
             'http://127.0.0.1',
             'http://127.0.0.1:5173',
             'http://127.0.0.1:3000',
-            '*' // Permitir todas as origens em desenvolvimento (remover em produção)
+            '*'
         ];
     }
 }
