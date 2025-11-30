@@ -58,8 +58,6 @@ export function useOmegaBulk(omega: any) {
 
     bulkPanelOpen.value = false
     selectedTicketIds.value.clear()
-    
-    console.log(`✅ Status atualizado para ${statusMeta.label} em ${selection.length} chamado(s)`)
   }
 
   function renderBulkPanel(root: HTMLElement) {

@@ -21,7 +21,6 @@ export function useVariavel(filters?: Ref<VariavelFilters | null>) {
       const data = await getVariavel(currentFilters || undefined)
       if (data) {
         variavel.value = data
-        console.log('Variável carregada:', data.length, 'registros')
       } else {
         variavel.value = []
       }
@@ -71,8 +70,6 @@ export function useVariavel(filters?: Ref<VariavelFilters | null>) {
       totalMeta += meta
       totalRealizado += real
     })
-
-    console.log('Summary variável:', { totalMeta, totalRealizado, registros: variavel.value.length })
 
     return {
       varPossivel: totalMeta,

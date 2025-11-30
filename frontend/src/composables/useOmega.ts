@@ -76,44 +76,35 @@ let initPromise: Promise<OmegaInitData | null> | null = null
 
 export function useOmega() {
   const loadInit = async (): Promise<OmegaInitData | null> => {
-    console.log('📦 useOmega.loadInit() chamado')
     
     if (initData.value) {
-      console.log('✅ Dados já carregados, retornando cache')
       return initData.value
     }
 
     if (initPromise) {
-      console.log('⏳ Aguardando promise existente...')
       return initPromise
     }
 
-    console.log('🔄 Iniciando carregamento de dados...')
     isLoading.value = true
     error.value = null
 
     initPromise = getOmegaInit()
       .then((data) => {
-        console.log('✅ Dados recebidos do getOmegaInit():', data)
         if (data) {
           initData.value = data
 
           if (Array.isArray(data.structure)) {
             structure.value = data.structure
-            console.log(`📋 Estrutura carregada: ${data.structure.length} itens`)
           }
 
           if (Array.isArray(data.statuses)) {
             statuses.value = data.statuses.length > 0 ? data.statuses : OMEGA_DEFAULT_STATUSES
-            console.log(`📊 Status carregados: ${statuses.value.length} itens`)
           } else {
             statuses.value = OMEGA_DEFAULT_STATUSES
-            console.log('📊 Usando status padrão')
           }
 
           if (Array.isArray(data.users)) {
             users.value = data.users
-            console.log(`👥 Usuários carregados: ${data.users.length} itens`)
             if (users.value.length > 0 && !currentUserId.value) {
               currentUserId.value = users.value[0]?.id || null
             }
@@ -121,15 +112,11 @@ export function useOmega() {
 
           if (Array.isArray(data.tickets)) {
             tickets.value = data.tickets
-            console.log(`🎫 Tickets carregados: ${data.tickets.length} itens`)
           }
 
           if (Array.isArray(data.mesu)) {
             mesu.value = data.mesu
-            console.log(`📈 MESU carregado: ${data.mesu.length} itens`)
           }
-        } else {
-          console.warn('⚠️ getOmegaInit() retornou null')
         }
         return data
       })
@@ -141,7 +128,6 @@ export function useOmega() {
       .finally(() => {
         isLoading.value = false
         initPromise = null
-        console.log('🏁 Carregamento finalizado')
       })
 
     return initPromise

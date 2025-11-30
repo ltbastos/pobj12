@@ -446,7 +446,6 @@ function calculateSummary(items: DetalhesItem[]) {
 const detailOpenRows = ref<Set<string>>(new Set())
 
 function handleAction(payload: { type: 'ticket' | 'opportunities', node: TreeNode }) {
-  console.log('Action:', payload.type, payload.node)
 }
 
 function toggleRow(nodeId: string) {

@@ -11,6 +11,7 @@ import OmegaSidebar from './omega/OmegaSidebar.vue'
 import OmegaToolbar from './omega/OmegaToolbar.vue'
 import OmegaTable from './omega/OmegaTable.vue'
 import OmegaBulkPanel from './omega/OmegaBulkPanel.vue'
+import OmegaDrawer from './omega/OmegaDrawer.vue'
 import '../assets/omega.css'
 
 interface Props {
@@ -60,7 +61,6 @@ function updateModalVisibility(open: boolean) {
 }
 
 watch(() => props.modelValue, (newValue) => {
-  console.log('👀 props.modelValue mudou para:', newValue)
   updateModalVisibility(newValue)
   if (typeof window !== 'undefined') {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -70,7 +70,6 @@ watch(() => props.modelValue, (newValue) => {
     }
   }
   if (newValue) {
-    console.log('✅ Modal aberto, carregando dados...')
     ensureBodyState()
     loadOmegaData()
     nextTick(() => {
@@ -153,7 +152,6 @@ function resetBodyState() {
 }
 
 async function loadOmegaData() {
-  console.log('🔄 Carregando dados do Omega...')
   
   // Mostra loading state
   const modalElement = modalRoot.value
@@ -163,9 +161,7 @@ async function loadOmegaData() {
   
   try {
     const data = await omega.loadInit()
-    console.log('✅ Dados do Omega carregados:', data)
     if (!data) {
-      console.warn('⚠️ Nenhum dado retornado do Omega')
       hideLoadingState(modalElement)
       return
     }
@@ -178,7 +174,6 @@ async function loadOmegaData() {
       }, 100)
     })
   } catch (err) {
-    console.error('❌ Erro ao carregar dados do Omega:', err)
     hideLoadingState(modalElement)
     showErrorState(modalElement)
   }
@@ -193,7 +188,6 @@ function showLoadingState(root: HTMLElement | null) {
   
   // Se estiver usando componentes Vue, não manipula o DOM diretamente
   if (isUsingVueComponents) {
-    console.log('⚠️ showLoadingState: Usando componentes Vue, não renderizando skeleton')
     return
   }
   
@@ -300,12 +294,176 @@ function handleRefresh() {
   })
 }
 
+const drawerOpen = ref(false)
+
 function handleNewTicket() {
-  const drawer = modalRoot.value?.querySelector('#omega-drawer') as HTMLElement
-  if (drawer) {
-    drawer.removeAttribute('hidden')
-    drawer.hidden = false
-    populateFormOptions(modalRoot.value!)
+  drawerOpen.value = true
+}
+
+// Função para mostrar feedback no formulário
+function showFormFeedback(root: HTMLElement, message: string, tone: 'info' | 'warning' | 'danger' | 'success' = 'info') {
+  const feedback = root.querySelector('#omega-form-feedback') as HTMLElement
+  if (!feedback) return
+  feedback.textContent = message
+  feedback.hidden = false
+  feedback.className = `omega-feedback omega-feedback--${tone}`
+}
+
+// Função para limpar feedback do formulário
+function clearFormFeedback(root: HTMLElement) {
+  const feedback = root.querySelector('#omega-form-feedback') as HTMLElement
+  if (!feedback) return
+  feedback.hidden = true
+  feedback.textContent = ''
+  feedback.className = 'omega-feedback'
+}
+
+// Função para mostrar toast
+function showOmegaToast(message: string, tone: 'success' | 'info' | 'warning' | 'danger' = 'success') {
+  if (!message) return
+  const root = modalRoot.value
+  if (!root) return
+  const container = root.querySelector('#omega-toast-stack') as HTMLElement
+  if (!container) return
+  
+  const icons: Record<string, string> = {
+    success: 'ti ti-check',
+    info: 'ti ti-info-circle',
+    warning: 'ti ti-alert-triangle',
+    danger: 'ti ti-alert-circle'
+  }
+  
+  const icon = icons[tone] || icons.info
+  const toast = document.createElement('div')
+  toast.className = `omega-toast omega-toast--${tone}`
+  toast.setAttribute('role', 'status')
+  toast.innerHTML = `<i class="${icon}" aria-hidden="true"></i><span>${escapeHTML(message)}</span>`
+  container.appendChild(toast)
+  
+  requestAnimationFrame(() => {
+    toast.setAttribute('data-visible', 'true')
+  })
+  
+  const lifetime = 3600
+  setTimeout(() => {
+    toast.setAttribute('data-visible', 'false')
+    setTimeout(() => {
+      if (toast.parentElement === container) toast.remove()
+    }, 220)
+  }, lifetime)
+  
+  while (container.children.length > 3) {
+    const first = container.firstElementChild
+    if (!first || first === toast) break
+    first.remove()
+  }
+}
+
+// Função para atualizar o subject do formulário
+function updateOmegaFormSubject(root: HTMLElement) {
+  const form = root.querySelector('#omega-form') as HTMLFormElement
+  if (!form) return
+  const subjectInput = form.querySelector('#omega-form-subject') as HTMLInputElement
+  if (!subjectInput) return
+  
+  const typeSelect = form.querySelector('#omega-form-type') as HTMLSelectElement
+  const typeValue = typeSelect?.value || ''
+  const typeLabel = typeValue ? (typeSelect?.selectedOptions?.[0]?.textContent?.trim() || '') : ''
+  const requester = omega.currentUser.value?.name || ''
+  
+  const parts: string[] = []
+  if (typeLabel) parts.push(typeLabel)
+  if (requester) parts.push(requester)
+  
+  subjectInput.value = parts.length ? parts.join(' • ') : 'Chamado Omega'
+}
+
+// Função para validar email
+function isValidEmail(value: string): boolean {
+  if (!value) return false
+  const normalized = value.toString().trim()
+  if (!normalized) return false
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)
+}
+
+// Função principal para criar novo ticket
+async function handleNewTicketSubmit(data: any) {
+  const user = omega.currentUser.value
+  if (!user) {
+    showOmegaToast('Usuário não encontrado.', 'danger')
+    return
+  }
+  
+  const requesterName = user.name?.trim() || ''
+  
+  // Constrói o subject
+  const subjectParts: string[] = []
+  if (data.type) subjectParts.push(data.type)
+  if (requesterName) subjectParts.push(requesterName)
+  const subject = subjectParts.length ? subjectParts.join(' • ') : 'Chamado Omega'
+  
+  try {
+    const now = new Date().toISOString()
+    const newTicket = {
+      subject,
+      company: requesterName,
+      requesterName,
+      productId: '',
+      product: data.type || '',
+      family: '',
+      section: '',
+      queue: data.department,
+      status: 'aberto',
+      category: data.type,
+      priority: 'media' as const,
+      opened: now,
+      updated: now,
+      dueDate: null,
+      requesterId: user.id,
+      ownerId: ['analista', 'supervisor', 'admin'].includes(user.role) ? user.id : null,
+      teamId: user.teamId || null,
+      context: {
+        diretoria: '',
+        gerencia: '',
+        agencia: '',
+        ggestao: '',
+        gerente: '',
+        familia: '',
+        secao: '',
+        prodsub: data.type || ''
+      },
+      history: [{
+        date: now,
+        actorId: user.id,
+        action: 'Abertura do chamado',
+        comment: data.observation,
+        status: 'aberto'
+      }],
+      attachments: data.attachments?.map((att: any) => att.name) || [],
+      flow: data.flow || null
+    }
+    
+    // Chama API para criar ticket
+    const { createOmegaTicket } = await import('../services/omegaService')
+    const response = await createOmegaTicket(newTicket)
+    
+    if (response.success && response.data) {
+      // Atualiza lista de tickets
+      await omega.loadInit()
+      
+      // Fecha o drawer
+      drawerOpen.value = false
+      
+      // Mostra toast de sucesso
+      showOmegaToast('Chamado registrado com sucesso.', 'success')
+      
+      // Re-renderiza dados
+      renderOmegaData()
+    } else {
+      showOmegaToast(response.error || 'Não foi possível registrar o chamado.', 'danger')
+    }
+  } catch (err) {
+    showOmegaToast('Erro ao registrar o chamado. Tente novamente.', 'danger')
   }
 }
 
@@ -315,7 +473,6 @@ function handleBulkStatus() {
 
 function handleTicketClick(ticketId: string) {
   // TODO: Implementar abertura do modal de detalhes do ticket
-  console.log('Ticket clicado:', ticketId)
 }
 
 function handleSelectAll(checked: boolean) {
@@ -352,7 +509,6 @@ function refreshTicketList(button: HTMLElement) {
       renderOmegaData()
     })
     .catch((err) => {
-      console.warn('⚠️ Falha ao atualizar chamados Omega:', err)
     })
     .finally(() => {
       setButtonLoading(button, false)
@@ -580,7 +736,6 @@ function populateFormOptions(root: HTMLElement) {
 // Funções de fullscreen movidas para useOmegaFullscreen composable
 
 function openModal() {
-  console.log('🚀 Abrindo modal Omega...')
   isOpen.value = true
   emit('update:modelValue', true)
   if (typeof window !== 'undefined') {
@@ -596,9 +751,6 @@ function openModal() {
   nextTick(() => {
     updateModalVisibility(true)
     
-    // Renderiza o conteúdo principal primeiro
-    renderMainContent()
-    
     // Aplica estado inicial da sidebar
     nextTick(() => {
       applySidebarState()
@@ -610,7 +762,7 @@ function openModal() {
         }, 100)
       } else {
         // Caso contrário, carrega os dados
-        loadOmegaData()
+    loadOmegaData()
       }
     })
   })
@@ -635,21 +787,17 @@ function registerGlobalOpener() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const globalAny = window as any
   
-  console.log('🔧 Registrando funções globais do Omega')
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   globalAny.__openOmegaFromVue = (detail?: any) => {
-    console.log('🔓 __openOmegaFromVue chamado', detail)
     if (!omega.isLoading.value) {
       openModal()
     } else {
-      console.warn('⚠️ Omega ainda está carregando.')
     }
   }
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   globalAny.openOmegaModule = (detail?: any) => {
-    console.log('🔓 openOmegaModule chamado', detail)
     openModal()
   }
   
@@ -657,23 +805,13 @@ function registerGlobalOpener() {
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   globalAny.closeOmega = () => {
-    console.log('🔒 closeOmega chamado')
     closeModal()
   }
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   globalAny.closeOmegaModule = () => {
-    console.log('🔒 closeOmegaModule chamado')
     closeModal()
   }
-  
-  console.log('✅ Funções globais registradas:', {
-    __openOmegaFromVue: typeof globalAny.__openOmegaFromVue,
-    openOmegaModule: typeof globalAny.openOmegaModule,
-    openOmega: typeof globalAny.openOmega,
-    closeOmega: typeof globalAny.closeOmega,
-    closeOmegaModule: typeof globalAny.closeOmegaModule
-  })
 }
 
 function unregisterGlobalOpener() {
@@ -697,153 +835,10 @@ function unregisterGlobalOpener() {
   }
 }
 
+// Drawer agora é um componente Vue, não precisa mais renderizar HTML estático
 function renderMainContent() {
-  // Aguarda o ref estar disponível
-  if (!mainContentRef.value) {
-    console.warn('⚠️ mainContentRef não está disponível ainda, tentando novamente...')
-    nextTick(() => {
-      setTimeout(() => {
-        renderMainContent()
-      }, 50)
-    })
-    return
-  }
-  
-  console.log('✅ Renderizando drawer do Omega')
-  
-  // Renderiza apenas o drawer (toolbar, tabela e bulk panel agora são componentes Vue)
-  const contentHtml = `
-    <div id="omega-drawer" class="omega-drawer" hidden>
-      <div class="omega-drawer__overlay" data-omega-drawer-close></div>
-      <section class="omega-drawer__panel" role="dialog" aria-modal="true" aria-labelledby="omega-drawer-title">
-        <header class="omega-drawer__header">
-          <div>
-            <h3 id="omega-drawer-title">Novo chamado</h3>
-            <p id="omega-drawer-desc">Preencha os campos abaixo para registrar o chamado com agilidade.</p>
-          </div>
-          <button class="omega-icon-btn" type="button" data-omega-drawer-close aria-label="Fechar formulário">
-            <i class="ti ti-x"></i>
-          </button>
-        </header>
-        <div id="omega-form-feedback" class="omega-feedback" role="alert" hidden></div>
-        <form id="omega-form" class="omega-form">
-          <div class="omega-field omega-field--static" aria-live="polite">
-            <span class="omega-field__label">Solicitante</span>
-            <div id="omega-form-requester" class="omega-field__static">—</div>
-          </div>
-          <div class="omega-form__grid">
-            <label class="omega-field" for="omega-form-department">
-              <span class="omega-field__label">Departamento</span>
-              <select id="omega-form-department" class="omega-select" required></select>
-            </label>
-            <label class="omega-field" for="omega-form-type">
-              <span class="omega-field__label">Tipo de chamado</span>
-              <select id="omega-form-type" class="omega-select" required></select>
-            </label>
-          </div>
-          <label class="omega-field" for="omega-form-observation">
-            <span class="omega-field__label">Observação</span>
-            <textarea id="omega-form-observation" class="omega-textarea" rows="6" placeholder="Descreva a demanda" required></textarea>
-          </label>
-          <section id="omega-form-flow" class="omega-form-flow" hidden aria-hidden="true" data-omega-flow>
-            <header class="omega-form-flow__header">
-              <h4>Fluxo de aprovações</h4>
-              <p>Esta transferência exige os de acordo dos gerentes listados abaixo.</p>
-            </header>
-            <div class="omega-form-flow__approvals">
-              <article class="omega-flow-approval">
-                <div class="omega-flow-approval__icon" aria-hidden="true"><i class="ti ti-user-check"></i></div>
-                <div class="omega-flow-approval__body">
-                  <span class="omega-flow-approval__label">Gerente da agência solicitante</span>
-                  <label class="omega-field" for="omega-flow-requester-name">
-                    <span class="omega-field__label">Nome completo</span>
-                    <input id="omega-flow-requester-name" class="omega-input" type="text" placeholder="Informe o gerente responsável"/>
-                  </label>
-                  <label class="omega-field" for="omega-flow-requester-email">
-                    <span class="omega-field__label">E-mail corporativo</span>
-                    <input id="omega-flow-requester-email" class="omega-input" type="email" placeholder="nome.sobrenome@empresa.com"/>
-                  </label>
-                </div>
-              </article>
-              <article class="omega-flow-approval">
-                <div class="omega-flow-approval__icon" aria-hidden="true"><i class="ti ti-building-bank"></i></div>
-                <div class="omega-flow-approval__body">
-                  <span class="omega-flow-approval__label">Gerente da agência cedente</span>
-                  <label class="omega-field" for="omega-flow-target-name">
-                    <span class="omega-field__label">Nome completo</span>
-                    <input id="omega-flow-target-name" class="omega-input" type="text" placeholder="Informe o gerente responsável"/>
-                  </label>
-                  <label class="omega-field" for="omega-flow-target-email">
-                    <span class="omega-field__label">E-mail corporativo</span>
-                    <input id="omega-flow-target-email" class="omega-input" type="email" placeholder="nome.sobrenome@empresa.com"/>
-                  </label>
-                </div>
-              </article>
-            </div>
-            <p class="omega-form-flow__hint">Após os dois de acordo, o chamado entra automaticamente na fila de Encarteiramento.</p>
-          </section>
-          <div class="omega-field omega-field--attachments">
-            <span class="omega-field__label" id="omega-form-file-label">Arquivos</span>
-            <input id="omega-form-file" class="sr-only" type="file" multiple aria-labelledby="omega-form-file-label"/>
-            <div class="omega-attachments">
-              <div class="omega-attachments__actions">
-                <button class="omega-btn" type="button" data-omega-add-file>
-                  <i class="ti ti-paperclip"></i>
-                  <span>Adicionar arquivo</span>
-                </button>
-              </div>
-              <ul id="omega-form-attachments" class="omega-attachments__list" aria-live="polite"></ul>
-            </div>
-          </div>
-          <input id="omega-form-product" type="hidden"/>
-          <input id="omega-form-subject" type="hidden"/>
-          <footer class="omega-form__actions">
-            <button class="omega-btn" type="button" data-omega-drawer-close>Cancelar</button>
-            <button class="omega-btn omega-btn--primary" type="submit">
-              <i class="ti ti-device-floppy"></i>
-              <span>Salvar</span>
-            </button>
-          </footer>
-        </form>
-      </section>
-    </div>
-  `
-  
-  mainContentRef.value.innerHTML = contentHtml
-  
-  // Setup dos listeners do drawer após renderizar
-  nextTick(() => {
-    const modalElement = modalRoot.value
-    if (!modalElement) return
-    
-    // Adiciona listeners para fechar o drawer
-    const drawerCloseButtons = modalElement.querySelectorAll('[data-omega-drawer-close]')
-    drawerCloseButtons.forEach((btn) => {
-      const closeHandler = () => {
-        const drawer = modalElement.querySelector('#omega-drawer') as HTMLElement
-        if (drawer) {
-          drawer.hidden = true
-          drawer.setAttribute('hidden', '')
-        }
-      }
-      btn.removeEventListener('click', closeHandler)
-      btn.addEventListener('click', closeHandler)
-    })
-    
-    // Listener para overlay do drawer
-    const drawerOverlay = modalElement.querySelector('.omega-drawer__overlay')
-    if (drawerOverlay) {
-      const overlayHandler = () => {
-        const drawer = modalElement.querySelector('#omega-drawer') as HTMLElement
-        if (drawer) {
-          drawer.hidden = true
-          drawer.setAttribute('hidden', '')
-        }
-      }
-      drawerOverlay.removeEventListener('click', overlayHandler)
-      drawerOverlay.addEventListener('click', overlayHandler)
-    }
-  })
+  // Esta função não é mais necessária, mas mantida para compatibilidade
+  // O drawer agora é gerenciado pelo componente OmegaDrawer.vue
 }
 
 onMounted(() => {
@@ -921,12 +916,17 @@ onBeforeUnmount(() => {
               />
             </div>
 
-            <!-- Drawer ainda renderizado via DOM por enquanto -->
-            <div ref="mainContentRef" class="omega-main__content-wrapper" style="display: none;"></div>
           </section>
         </div>
       </section>
     </div>
+    
+    <OmegaDrawer
+      :omega="omega"
+      :open="drawerOpen"
+      @update:open="drawerOpen = $event"
+      @submit="handleNewTicketSubmit"
+    />
     
     <OmegaFilterPanel
       :omega="omega"

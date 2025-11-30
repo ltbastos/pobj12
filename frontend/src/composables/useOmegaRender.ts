@@ -238,14 +238,12 @@ export function useOmegaRender(
   }
 
   function openTicketDetails(ticketId: string) {
-    console.log('🔍 Abrindo detalhes do ticket:', ticketId)
     // TODO: Implementar abertura do modal de detalhes
   }
 
   function renderTickets(root: HTMLElement) {
     const tbody = root.querySelector('#omega-ticket-rows')
     if (!tbody) {
-      console.warn('⚠️ Tbody #omega-ticket-rows não encontrado')
       return
     }
 
@@ -427,7 +425,6 @@ export function useOmegaRender(
       return
     }
 
-    console.log('🎨 Renderizando dados do Omega no template...')
 
     // Verifica se estamos usando componentes Vue (OmegaTable)
     const omegaTableComponent = modalElement.querySelector('.omega-table-container')
@@ -464,7 +461,6 @@ export function useOmegaRender(
       filterToggle.setAttribute('data-active', filters.hasActiveFilters() ? 'true' : 'false')
     }
 
-    console.log('✅ Renderização concluída', { isUsingVueComponents })
   }
 
   return {

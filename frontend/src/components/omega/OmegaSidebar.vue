@@ -24,13 +24,11 @@ const navItems = computed(() => {
 // Watch para garantir que o componente reaja quando os dados forem carregados
 watch(() => props.omega.currentUser.value, (user) => {
   if (user) {
-    console.log('👤 Usuário atualizado no sidebar:', user.name)
   }
 }, { immediate: true, deep: true })
 
 watch(() => props.omega.users.value, (users) => {
   if (users && users.length > 0) {
-    console.log('👥 Usuários carregados no sidebar:', users.length)
   }
 }, { immediate: true, deep: true })
 

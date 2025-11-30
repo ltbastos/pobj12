@@ -136,7 +136,6 @@ function parseHistory(historyString: string): OmegaHistoryEntry[] {
           attachments: segments[5] ? (typeof segments[5] === 'string' ? JSON.parse(segments[5]) : segments[5]) : undefined
         })
       } catch (err) {
-        console.warn('Erro ao parsear entrada de histórico:', err, segments)
         // Tenta criar entrada mesmo com erro
         entries.push({
           date: segments[0] || '',
@@ -214,9 +213,7 @@ function mapApiStatusToOmegaStatus(apiStatus: ApiStatus): OmegaStatus {
 }
 
 export async function getOmegaInit(): Promise<OmegaInitData | null> {
-  console.log('📡 Chamando API: /api/omega/init')
   const response = await apiGet<ApiInitData>('/api/omega/init')
-  console.log('📥 Resposta da API /api/omega/init:', response)
   if (response.success && response.data) {
     const apiData = response.data
     
@@ -243,7 +240,6 @@ export async function getOmegaInit(): Promise<OmegaInitData | null> {
       mesu: apiData.mesu || []
     }
   }
-  console.error('❌ Erro ao buscar dados de inicialização do Omega:', response.error)
   return null
 }
 
@@ -252,7 +248,6 @@ export async function getOmegaUsers(): Promise<OmegaUser[] | null> {
   if (response.success && response.data) {
     return response.data.map(mapApiUserToOmegaUser)
   }
-  console.error('Erro ao buscar usuários do Omega:', response.error)
   return null
 }
 
@@ -264,7 +259,6 @@ export async function getOmegaTickets(): Promise<OmegaTicket[] | null> {
     const usersList = users || []
     return response.data.map(t => mapApiTicketToOmegaTicket(t, usersList))
   }
-  console.error('Erro ao buscar tickets do Omega:', response.error)
   return null
 }
 
@@ -273,7 +267,6 @@ export async function getOmegaStatuses(): Promise<OmegaStatus[] | null> {
   if (response.success && response.data) {
     return response.data.map(mapApiStatusToOmegaStatus)
   }
-  console.error('Erro ao buscar status do Omega:', response.error)
   return null
 }
 
@@ -282,7 +275,6 @@ export async function getOmegaStructure(): Promise<OmegaStructure[] | null> {
   if (response.success && response.data) {
     return response.data
   }
-  console.error('Erro ao buscar estrutura do Omega:', response.error)
   return null
 }
 
@@ -291,7 +283,6 @@ export async function getOmegaMesu(): Promise<OmegaMesuRecord[] | null> {
   if (response.success && response.data) {
     return response.data
   }
-  console.error('Erro ao buscar MESU do Omega:', response.error)
   return null
 }
 

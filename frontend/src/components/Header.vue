@@ -67,10 +67,8 @@ const handleMenuAction = async (action: string): Promise<void> => {
   }
 
   if (action === 'logout') {
-    console.log('Logout')
   }
 
-  console.log('Menu action:', action)
   userMenuOpen.value = false
 }
 </script>
