@@ -19,8 +19,6 @@ const DETAIL_COLUMNS: ColumnMeta[] = [
   { id: 'data', label: 'Data' }
 ]
 
-// const DEFAULT_COLUMNS = ['realizado', 'meta', 'atingimento_p', 'pontos', 'peso', 'data']
-
 interface DetailView {
   id: string
   name: string
@@ -694,7 +692,6 @@ watch(() => props.modelValue, (open) => {
   flex-shrink: 0;
 }
 
-/* Estilos dos botões */
 .btn {
   --brand: #b30000;
   --brand-dark: #8f0000;

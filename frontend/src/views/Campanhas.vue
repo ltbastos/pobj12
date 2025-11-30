@@ -6,32 +6,27 @@ import { formatINT, formatPoints } from '../utils/formatUtils'
 
 const { filterState } = useGlobalFilters()
 
-// Estado da campanha
 const loading = ref(false)
 const error = ref<string | null>(null)
 const campanhas = ref<any[]>([])
 const sprintSelecionada = ref<string | null>(null)
 const sprintAtual = ref<any>(null)
 
-// Dados da campanha
 const headlineStats = ref<any[]>([])
 const kpis = ref<any[]>([])
 const rankingData = ref<any[]>([])
 const teamSimulator = ref<any>(null)
 const individualSimulator = ref<any>(null)
 
-// Estado dos simuladores
 const teamValues = ref<Record<string, Record<string, number>>>({})
 const individualValues = ref<Record<string, Record<string, Record<string, number>>>>({})
 const teamPresets = ref<Record<string, string>>({})
 const individualPresets = ref<Record<string, string>>({})
 const individualProfileSelected = ref<string | null>(null)
 
-// Resultados calculados
 const teamResult = ref<any>(null)
 const individualResult = ref<any>(null)
 
-// Dados mockados
 const mockCampanhas = [
   {
     id: 'sprint-1',

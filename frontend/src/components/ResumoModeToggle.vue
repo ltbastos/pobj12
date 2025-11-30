@@ -11,7 +11,6 @@ const emit = defineEmits<{
 
 const mode = ref<'cards' | 'legacy'>(props.modelValue || 'cards')
 
-// Sincroniza quando o prop mudar externamente
 watch(() => props.modelValue, (newValue) => {
   if (newValue && (newValue === 'cards' || newValue === 'legacy')) {
     mode.value = newValue
@@ -21,14 +20,12 @@ watch(() => props.modelValue, (newValue) => {
 const setMode = (newMode: 'cards' | 'legacy') => {
   mode.value = newMode
   emit('update:modelValue', newMode)
-  // Persiste no localStorage
   if (typeof window !== 'undefined') {
     localStorage.setItem('resumo-mode', newMode)
   }
 }
 
 onMounted(() => {
-  // Carrega do localStorage se disponível e não houver prop
   if (typeof window !== 'undefined' && !props.modelValue) {
     const saved = localStorage.getItem('resumo-mode') as 'cards' | 'legacy' | null
     if (saved && (saved === 'cards' || saved === 'legacy')) {

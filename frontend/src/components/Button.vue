@@ -26,7 +26,6 @@ const buttonRef = ref<HTMLElement | null>(null)
 const handleClick = (event: MouseEvent) => {
   if (props.disabled || props.loading) return
   
-  // Ripple effect
   const button = event.currentTarget as HTMLElement
   const circle = document.createElement('span')
   const diameter = Math.max(button.clientWidth, button.clientHeight)

@@ -6,12 +6,10 @@ import { getExecData, type ExecFilters, type ExecData } from '../services/execSe
 
 const { filterState, period } = useGlobalFilters()
 
-// Dados reais
 const execData = ref<ExecData | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-// Computed para acessar os dados
 const kpis = computed(() => execData.value?.kpis || {
   real_mens: 0,
   meta_mens: 0,
@@ -41,7 +39,6 @@ const heatmap = computed(() => execData.value?.heatmap || {
 
 const heatmapMode = ref<'secoes' | 'meta'>('secoes')
 
-// Filtros para a API
 const execFilters = computed<ExecFilters>(() => {
   const filters: ExecFilters = {}
   
@@ -73,7 +70,6 @@ const execFilters = computed<ExecFilters>(() => {
   return filters
 })
 
-// Computed
 const atingimento = computed(() => {
   if (kpis.value.meta_mens === 0) return 0
   return (kpis.value.real_mens / kpis.value.meta_mens) * 100
@@ -84,7 +80,6 @@ const defasagem = computed(() => {
 })
 
 const forecast = computed(() => {
-  // Simulação: média diária * dias totais
   const diasDecorridos = new Date().getDate()
   const diasTotais = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()
   const mediaDiaria = kpis.value.real_mens / Math.max(diasDecorridos, 1)

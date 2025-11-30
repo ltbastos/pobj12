@@ -4,7 +4,6 @@ import ResumoView from './ResumoView.vue'
 
 <template>
   <div class="home-wrapper">
-    <!-- Visão de resumo com opção de cards ou tabela clássica -->
     <ResumoView />
   </div>
 </template>

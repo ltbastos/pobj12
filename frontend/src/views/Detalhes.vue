@@ -14,7 +14,6 @@ import DetailColumnDesigner from '../components/DetailColumnDesigner.vue'
 const { filterState } = useGlobalFilters()
 const { period } = usePeriodManager()
 
-// Usa o composable que carrega os dados uma vez e filtra automaticamente
 const { detalhes: detalhesData, loading, error } = useDetalhesData(filterState, period)
 const expandedRows = ref<Set<string>>(new Set())
 const searchTerm = ref('')
@@ -22,12 +21,10 @@ const tableView = ref('diretoria')
 const activeDetailViewId = ref('default')
 const showColumnDesigner = ref(false)
 
-// Estado de ordenação
 const sortState = ref<{ id: string | null; direction: 'asc' | 'desc' | null }>({
   id: null,
   direction: null
 })
-// Todas as colunas habilitadas por padrão (na ordem correta)
 const AVAILABLE_COLUMNS: string[] = [
   'realizado',
   'meta',
@@ -57,7 +54,6 @@ function sanitizeColumns(columns: string[]): string[] {
 
 const activeColumns = ref<string[]>(sanitizeColumns(DEFAULT_COLUMNS))
 
-// Visões da tabela (chips principais)
 const TABLE_VIEWS = [
   { id: 'diretoria', label: 'Diretoria', key: 'diretoria' },
   { id: 'gerencia', label: 'Regional', key: 'gerenciaRegional' },
@@ -70,7 +66,6 @@ const TABLE_VIEWS = [
   { id: 'contrato', label: 'Contratos', key: 'contrato' }
 ]
 
-// Visões personalizadas da tabela (colunas)
 const detailViews = ref<DetailView[]>([
   {
     id: 'default',
@@ -79,12 +74,6 @@ const detailViews = ref<DetailView[]>([
   }
 ])
 
-// Usa o tipo TreeNode importado de TreeTableRow
-
-// Não precisa mais carregar da API, os dados já vêm pré-filtrados do resumo
-// Os dados são computados automaticamente via computed property
-
-// Mapeamento de níveis hierárquicos
 const LEVEL_HIERARCHY: Record<string, string[]> = {
   diretoria: ['diretoria', 'regional', 'agencia', 'gerente', 'familia', 'indicador', 'subindicador', 'contrato'],
   gerencia: ['regional', 'agencia', 'gerente', 'familia', 'indicador', 'subindicador', 'contrato'],
@@ -97,7 +86,6 @@ const LEVEL_HIERARCHY: Record<string, string[]> = {
   contrato: ['contrato']
 }
 
-// Função para obter o valor de ordenação de um node
 function getSortValue(node: TreeNode, columnId: string): number | string {
   if (columnId === '__label__') {
     return node.label || ''
@@ -132,7 +120,6 @@ function getSortValue(node: TreeNode, columnId: string): number | string {
   }
 }
 
-// Função para ordenar nodes recursivamente
 function sortNodes(nodes: TreeNode[]): TreeNode[] {
   if (!sortState.value.id || !sortState.value.direction) {
     return nodes
@@ -152,14 +139,12 @@ function sortNodes(nodes: TreeNode[]): TreeNode[] {
     return sortState.value.direction === 'asc' ? comparison : -comparison
   })
 
-  // Ordena os filhos recursivamente
   return sorted.map(node => ({
     ...node,
     children: sortNodes(node.children)
   }))
 }
 
-// Dados de contratos em formato de card (quando há busca)
 const contratosData = computed(() => {
   if (!searchTerm.value.trim() || !detalhesData.value.length) return []
 
@@ -172,7 +157,6 @@ const contratosData = computed(() => {
     item.ds_indicador?.toLowerCase().includes(term)
   )
 
-  // Agrupa por contrato
   const contratos = new Map<string, DetalhesItem[]>()
   filtered.forEach(item => {
     const key = item.id_contrato || item.registro_id || 'sem-contrato'
@@ -220,7 +204,6 @@ const contratosData = computed(() => {
     })
   })
 
-  // Aplica ordenação se houver
   if (sortState.value.id && sortState.value.direction) {
     result.sort((a, b) => {
       let aVal: number | string = 0
@@ -249,16 +232,13 @@ const contratosData = computed(() => {
   return result
 })
 
-// Agrupa dados em árvore hierárquica baseado na visão selecionada (quando não há busca)
 const treeData = computed(() => {
   if (!detalhesData.value.length || searchTerm.value.trim()) return []
 
-  // Obtém a hierarquia baseada na visão selecionada
   const hierarchy: string[] = (LEVEL_HIERARCHY[tableView.value] as string[]) || LEVEL_HIERARCHY.diretoria
 
   let result: TreeNode[] = []
 
-  // Se a visão for 'contrato', mostra todos os contratos diretamente
   if (tableView.value === 'contrato') {
     const contratos = new Map<string, DetalhesItem[]>()
     detalhesData.value.forEach(item => {
@@ -292,16 +272,13 @@ const treeData = computed(() => {
       })
     })
   } else {
-    // Agrupa começando pelo primeiro nível da hierarquia
     const hierarchyArray: string[] = hierarchy || LEVEL_HIERARCHY.diretoria
     result = buildTreeHierarchy(detalhesData.value, hierarchyArray, 0)
   }
 
-  // Aplica ordenação se houver
   return sortNodes(result)
 })
 
-// Computed para verificar se deve mostrar cards ou árvore
 const showCards = computed(() => searchTerm.value.trim().length > 0)
 
 function buildTreeHierarchy(items: DetalhesItem[], hierarchy: string[], level: number): TreeNode[] {
@@ -310,7 +287,6 @@ function buildTreeHierarchy(items: DetalhesItem[], hierarchy: string[], level: n
   const currentLevel = hierarchy[level]
   const nextLevel = hierarchy[level + 1]
 
-  // Agrupa pelo nível atual
   const groups = new Map<string, DetalhesItem[]>()
 
   items.forEach(item => {
@@ -358,7 +334,6 @@ function buildTreeHierarchy(items: DetalhesItem[], hierarchy: string[], level: n
         break
       default:
         key = 'unknown'
-        // label = 'Desconhecido'
     }
 
     if (!groups.has(key)) {
@@ -414,7 +389,6 @@ function buildTreeHierarchy(items: DetalhesItem[], hierarchy: string[], level: n
       summary: calculateSummary(groupItems)
     }
 
-    // Se for contrato, adiciona detalhes (sempre, mesmo que vazio)
     if (currentLevel === 'contrato') {
       node.detail = {
         canal_venda: firstItem.canal_venda || undefined,
@@ -436,10 +410,9 @@ function buildTreeHierarchy(items: DetalhesItem[], hierarchy: string[], level: n
 function calculateSummary(items: DetalhesItem[]) {
   const valor_realizado = items.reduce((sum, item) => sum + (item.valor_realizado || 0), 0)
   const valor_meta = items.reduce((sum, item) => sum + (item.valor_meta || item.meta_mensal || 0), 0)
-  const pontos = items.reduce((sum, item) => sum + (item.peso || 0), 0) // Assumindo que pontos = peso
+  const pontos = items.reduce((sum, item) => sum + (item.peso || 0), 0)
   const peso = items.reduce((sum, item) => sum + (item.peso || 0), 0)
 
-  // Calcular dias para meta diária (assumindo 30 dias por padrão)
   const diasTotais = 30
   const diasDecorridos = new Date().getDate()
   const diasRestantes = Math.max(1, diasTotais - diasDecorridos)
@@ -452,7 +425,6 @@ function calculateSummary(items: DetalhesItem[]) {
   const atingimento_v = valor_realizado - valor_meta
   const atingimento_p = valor_meta > 0 ? (valor_realizado / valor_meta) * 100 : 0
 
-  // Data mais recente
   const firstItem = items.length > 0 ? items[0] : null
   const data = firstItem ? (firstItem.data || firstItem.competencia || '') : ''
 
@@ -474,7 +446,6 @@ function calculateSummary(items: DetalhesItem[]) {
 const detailOpenRows = ref<Set<string>>(new Set())
 
 function handleAction(payload: { type: 'ticket' | 'opportunities', node: TreeNode }) {
-  // TODO: Implementar ações
   console.log('Action:', payload.type, payload.node)
 }
 
@@ -489,7 +460,6 @@ function toggleRow(nodeId: string) {
     }
   } else {
     expandedRows.value.add(nodeId)
-    // Se for um contrato, também abre os detalhes
     if (isContract) {
       detailOpenRows.value.add(nodeId)
     }
@@ -505,7 +475,6 @@ function findNodeById(nodes: TreeNode[], id: string): TreeNode | null {
   return null
 }
 
-// Label dinâmico da primeira coluna baseado na visão selecionada
 const firstColumnLabel = computed(() => {
   const view = TABLE_VIEWS.find(v => v.id === tableView.value)
   if (view) {
@@ -514,7 +483,6 @@ const firstColumnLabel = computed(() => {
   return 'Item'
 })
 
-// Função para obter o label de uma coluna
 function getColumnLabel(columnId: string): string {
   const columnMap: Record<string, string> = {
     realizado: 'Realizado no período (R$)',
@@ -539,7 +507,6 @@ function getSortIcon(columnId: string): string {
   return sortState.value.direction === 'asc' ? 'ti ti-arrow-up' : 'ti ti-arrow-down'
 }
 
-// Função para lidar com o clique no botão de ordenação
 function handleSort(columnId: string) {
   const prev = sortState.value
   const isString = columnId === '__label__'
@@ -587,7 +554,6 @@ function collapseAll() {
 
 function handleTableViewChange(viewId: string) {
   tableView.value = viewId
-  // Aqui você pode implementar a lógica para mudar a agregação dos dados
 }
 
 function handleDetailViewChange(viewId: string) {
@@ -607,20 +573,16 @@ function handleOpenColumnDesigner() {
 
 function handleSaveView(name: string, columns: string[]) {
   const sanitizedColumns = sanitizeColumns(columns)
-  // Verificar se já existe uma visão com o mesmo nome
   const existingView = detailViews.value.find(v => v.name.toLowerCase() === name.toLowerCase() && v.id !== 'default')
   if (existingView) {
-    // Atualizar visão existente
     existingView.columns = [...sanitizedColumns]
     activeDetailViewId.value = existingView.id
   } else {
-    // Verificar limite de 5 visões personalizadas (sem contar a padrão)
     const customViews = detailViews.value.filter(v => v.id !== 'default')
     if (customViews.length >= 5) {
       alert('Você já possui 5 visões personalizadas. Exclua uma antes de criar outra.')
       return
     }
-    // Criar nova visão
     const newView: DetailView = {
       id: `custom-${Date.now()}`,
       name,
@@ -630,7 +592,6 @@ function handleSaveView(name: string, columns: string[]) {
     activeDetailViewId.value = newView.id
   }
   activeColumns.value = [...sanitizedColumns]
-  // Salvar no localStorage
   localStorage.setItem('pobj3:detailViews', JSON.stringify(detailViews.value.filter(v => v.id !== 'default')))
   localStorage.setItem('pobj3:detailActiveView', activeDetailViewId.value)
 }
@@ -650,7 +611,6 @@ function handleDeleteView(viewId: string) {
         activeColumns.value = [...sanitized]
       }
     }
-    // Salvar no localStorage
     localStorage.setItem('pobj3:detailViews', JSON.stringify(detailViews.value.filter(v => v.id !== 'default')))
     localStorage.setItem('pobj3:detailActiveView', activeDetailViewId.value)
   }
@@ -659,7 +619,6 @@ function handleDeleteView(viewId: string) {
 function handleApplyColumns(columns: string[]) {
   const sanitizedColumns = sanitizeColumns(columns)
   activeColumns.value = [...sanitizedColumns]
-  // Atualiza a visão customizada se estiver ativa
   if (activeDetailViewId.value === '__custom__' || activeDetailViewId.value.startsWith('custom-')) {
     const customView = detailViews.value.find(v => v.id === activeDetailViewId.value)
     if (customView) {
@@ -672,7 +631,6 @@ function handleApplyColumns(columns: string[]) {
 
 
 onMounted(() => {
-  // Carrega visões salvas do localStorage
   try {
     const saved = localStorage.getItem('pobj3:detailViews')
     if (saved) {
@@ -702,8 +660,6 @@ onMounted(() => {
   } catch (e) {
     console.error('Erro ao carregar visões salvas:', e)
   }
-
-  // Não precisa mais chamar loadDetalhes() pois os dados são computados automaticamente
 })
 </script>
 
@@ -728,10 +684,8 @@ onMounted(() => {
             </div>
           </header>
 
-          <!-- Barra de filtros aplicados -->
           <AppliedFiltersBar />
 
-          <!-- Controles da tabela -->
           <div class="table-controls">
             <div class="table-controls__main">
               <div class="table-controls__chips">
@@ -742,12 +696,10 @@ onMounted(() => {
                 />
               </div>
               <div class="table-controls__search">
-                <!-- Search já está no header -->
               </div>
             </div>
           </div>
 
-          <!-- Barra de visões da tabela -->
           <DetailViewBar
             :views="detailViews"
             :active-view-id="activeDetailViewId"
@@ -785,7 +737,6 @@ onMounted(() => {
             </div>
           </div>
 
-          <!-- Skeleton Loading -->
           <template v-if="loading">
             <div class="detalhes-skeleton">
               <div class="skeleton skeleton--table-header" style="height: 40px; width: 100%; margin-bottom: 12px; border-radius: 8px;"></div>
@@ -801,7 +752,6 @@ onMounted(() => {
           </div>
           </template>
 
-          <!-- Conteúdo real -->
           <template v-else>
             <div v-if="error" class="error-state">
             <p>{{ error }}</p>
@@ -815,7 +765,6 @@ onMounted(() => {
             <p>Nenhum dado encontrado para os filtros selecionados.</p>
           </div>
 
-          <!-- Cards de contratos (quando há busca) -->
           <div v-else-if="showCards" class="contratos-grid">
             <div
               v-for="contrato in contratosData"
@@ -895,7 +844,6 @@ onMounted(() => {
             </div>
           </div>
 
-          <!-- Árvore hierárquica (quando não há busca) -->
           <div v-else class="table-wrapper">
             <table class="tree-table">
                   <thead>
@@ -1316,13 +1264,11 @@ onMounted(() => {
 .col-expand {
   width: 50px;
   text-align: left;
-  /* O padding-left será aplicado via classes lvl-* para indentação */
 }
 
 .col-label {
   min-width: 200px;
   text-align: left;
-  /* O padding-left será aplicado via classes lvl-* para indentação */
 }
 
 :deep(.tree-table .col-number) {
@@ -1331,7 +1277,6 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-/* Skeleton Loading */
 .skeleton {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
@@ -1364,8 +1309,6 @@ onMounted(() => {
   color: var(--omega-danger);
 }
 
-/* Recuos por nível - indentação para a direita conforme o nível aumenta */
-/* Recuos por nível - aplicado na tree-cell (como no app.js) */
 :deep(.tree-row.lvl-0 .tree-cell) {
   padding-left: 8px;
 }

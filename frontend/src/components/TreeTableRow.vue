@@ -66,7 +66,6 @@ const atingimentoClass = computed(() => {
   return 'text-danger'
 })
 
-// Função para renderizar o valor formatado (exibição)
 function getColumnValue(columnId: string) {
   const summary = props.node.summary
   switch (columnId) {
@@ -95,7 +94,6 @@ function getColumnValue(columnId: string) {
   }
 }
 
-// Função para obter o valor completo (tooltip)
 function getColumnTooltip(columnId: string) {
   const summary = props.node.summary
   switch (columnId) {
@@ -123,18 +121,6 @@ function getColumnTooltip(columnId: string) {
       return ''
   }
 }
-
-// const hasDetail = computed(() => {
-//   return props.node.level === 'contrato'
-// })
-
-// const showDetail = computed(() => {
-//   // Para contratos, mostra o card quando está expandido (mesmo sem filhos)
-//   if (props.node.level === 'contrato') {
-//     return props.expanded || props.detailOpen
-//   }
-//   return props.detailOpen && hasDetail.value
-// })
 
 const isCanceled = computed(() => {
   return !!props.node.detail?.dt_cancelamento

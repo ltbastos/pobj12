@@ -20,7 +20,6 @@ const { loadCalendario } = useCalendarioCache()
 const buttonRef = ref<HTMLElement | null>(null)
 const datePopover = ref<HTMLElement | null>(null)
 
-// Sincroniza com prop externa
 watch(() => props.modelValue, (newValue) => {
   if (newValue) {
     period.value = { ...newValue }
@@ -49,7 +48,6 @@ const openDatePopover = (anchor: HTMLElement): void => {
   const pop = document.createElement('div')
   pop.className = 'date-popover'
   pop.id = 'date-popover'
-  // Inicialmente posiciona fora da tela para calcular dimensões
   pop.style.position = 'fixed'
   pop.style.visibility = 'hidden'
   pop.style.top = '0'
@@ -67,13 +65,10 @@ const openDatePopover = (anchor: HTMLElement): void => {
   `
   document.body.appendChild(pop)
 
-  // Usa requestAnimationFrame para garantir que o DOM foi atualizado
   requestAnimationFrame(() => {
-    // Força o cálculo das dimensões reais
     const w = pop.offsetWidth || 340
     const h = pop.offsetHeight || 170
 
-    // Agora calcula a posição correta
     const r = anchor.getBoundingClientRect()
     const pad = 12
     const vw = window.innerWidth
@@ -85,7 +80,6 @@ const openDatePopover = (anchor: HTMLElement): void => {
     if (left < pad) left = pad
     if (left + w + pad > vw) left = Math.max(pad, vw - w - pad)
 
-    // Aplica a posição e torna visível
     pop.style.top = `${top}px`
     pop.style.left = `${left}px`
     pop.style.visibility = 'visible'
@@ -207,7 +201,6 @@ onUnmounted(() => {
 </style>
 
 <style>
-/* Estilos globais para .link-action (usado em botões criados dinamicamente) */
 .link-action {
   display: inline-flex !important;
   align-items: center;

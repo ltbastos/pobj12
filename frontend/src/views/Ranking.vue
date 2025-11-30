@@ -61,22 +61,18 @@ const loadRanking = async () => {
   }
 }
 
-// Carrega dados quando o componente é montado
 onMounted(() => {
   loadRanking()
 })
 
-// Recarrega quando os filtros mudam
 watch([filterState], () => {
   loadRanking()
 }, { deep: true })
 
-// Mapeamento de campos de chave e label por nível (como no app.js)
-// Nota: o app.js usa 'gerenciaRegional' como chave, mas nosso DTO usa 'gerencia_id'
 const RANKING_KEY_FIELDS: Record<string, string> = {
   segmento: 'segmento_id',
   diretoria: 'diretoria_id',
-  gerencia: 'gerencia_id', // No app.js é 'gerenciaRegional', mas nosso DTO usa 'gerencia_id'
+  gerencia: 'gerencia_id',
   agencia: 'agencia_id',
   gerenteGestao: 'gerente_gestao_id',
   gerente: 'gerente_id'
@@ -91,7 +87,6 @@ const RANKING_LABEL_FIELDS: Record<string, string> = {
   gerente: 'gerente_nome'
 }
 
-// Verifica se um valor é seleção padrão (Todos, Todas, etc)
 const isDefaultSelection = (val: string | null | undefined): boolean => {
   if (!val) return true
   const normalized = val.toLowerCase().trim()
