@@ -8,10 +8,9 @@ import { formatBRDate } from '../services/calendarioService'
 import type { LegacySection } from '../composables/useProdutosLegacy'
 
 const { filterState, period } = useGlobalFilters()
-useFilteredProdutos(filterState, period) // Garante sincronização dos filtros com o resumo
+useFilteredProdutos(filterState, period)
 const { produtosPorFamilia, loading, error } = useProdutosLegacy()
 
-// Estado para controlar quais linhas estão expandidas
 const expandedRows = ref<Set<string>>(new Set())
 const expandedSections = ref<Set<string>>(new Set())
 
@@ -31,73 +30,6 @@ const toggleSection = (sectionId: string) => {
   }
 }
 
-// Funções auxiliares para formatação de meses (comentadas - não estão sendo usadas)
-// const monthKeyShortLabel = (key: string): string => {
-//   if (!key) return ''
-//   const [y, m] = key.split('-')
-//   const year = Number(y)
-//   const month = Number(m)
-//   if (!Number.isFinite(year) || !Number.isFinite(month)) return key
-//   const dt = new Date(Date.UTC(year, month - 1, 1))
-//   return dt.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').toUpperCase()
-// }
-
-// const monthKeyLabel = (key: string): string => {
-//   if (!key) return '—'
-//   const [y, m] = key.split('-')
-//   const year = Number(y)
-//   const month = Number(m)
-//   if (!Number.isFinite(year) || !Number.isFinite(month)) return key
-//   const dt = new Date(Date.UTC(year, month - 1, 1))
-//   return dt.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).replace('.', '')
-// }
-
-// Gera array de meses baseado no período (comentado - não está sendo usado)
-// const monthKeys = computed(() => {
-//   const start = period.value.start
-//   const end = period.value.end
-//   if (!start || !end) return []
-//
-//   const startDate = new Date(start + 'T00:00:00Z')
-//   const endDate = new Date(end + 'T00:00:00Z')
-//   const months: string[] = []
-//
-//   const current = new Date(startDate)
-//   while (current <= endDate) {
-//     const year = current.getUTCFullYear()
-//     const month = String(current.getUTCMonth() + 1).padStart(2, '0')
-//     months.push(`${year}-${month}`)
-//
-//     current.setUTCMonth(current.getUTCMonth() + 1)
-//   }
-//
-//   return months
-// })
-
-// const monthLabels = computed(() => monthKeys.value.map(monthKeyShortLabel))
-// const monthLongLabels = computed(() => monthKeys.value.map(monthKeyLabel))
-
-// Encontra o índice do mês atual
-// const currentMonthIdx = computed(() => {
-//   const currentMonth = new Date().toISOString().slice(0, 7)
-//   return monthKeys.value.findIndex(m => m === currentMonth)
-// })
-
-// Função para obter dados de um mês específico de um item
-// const getMonthData = (item: LegacyItem, monthKey: string) => {
-//   const monthData = item.months.find(m => m.mes === monthKey)
-//   return monthData || { meta: 0, realizado: 0, atingimento: 0 }
-// }
-
-// Função para determinar classe do badge de percentual
-// const pctBadgeCls = (pct: number): string => {
-//   if (!Number.isFinite(pct)) return 'is-empty'
-//   if (pct < 50) return 'att-low'
-//   if (pct < 100) return 'att-warn'
-//   return 'att-ok'
-// }
-
-// Função para determinar se uma seção tem linhas expansíveis
 const sectionHasExpandableRows = (section: LegacySection): boolean => {
   return section.items.some(item => item.children && item.children.length > 0)
 }

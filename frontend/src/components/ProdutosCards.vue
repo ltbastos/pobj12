@@ -7,24 +7,19 @@ import { useCalendarioCache } from '../composables/useCalendarioCache'
 import { formatPoints, formatPeso, formatByMetric, formatMetricFull, formatBRL } from '../utils/formatUtils'
 import type { ProdutoCard } from '../composables/useProdutos'
 
-// Obtém filtros e período globais
 const { filterState, period } = useGlobalFilters()
 
-// Usa produtos filtrados
 const { produtosPorFamilia, loading, error } = useFilteredProdutos(filterState, period)
 
 const { getCurrentMonthBusinessSnapshot } = useBusinessDays()
 const { loadCalendario } = useCalendarioCache()
 
-// Estado para controlar qual tooltip está aberto
 const openTooltipId = ref<string | null>(null)
 
-// Carrega calendário ao montar (usa cache, então é rápido)
 onMounted(async () => {
   await loadCalendario()
 })
 
-// Fecha tooltips ao clicar fora ou pressionar ESC
 const handleClickOutside = (e: MouseEvent) => {
   const target = e.target as HTMLElement
   if (!target.closest('.prod-card')) {
@@ -48,7 +43,6 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleEscape)
 })
 
-// Função para formatar valores no tooltip
 const fmtTooltip = (m: string, v: number): string => {
   if (!Number.isFinite(v)) v = 0
   const metricLower = m?.toLowerCase() || 'valor'
@@ -57,7 +51,6 @@ const fmtTooltip = (m: string, v: number): string => {
   return formatBRL(Math.round(v))
 }
 
-// Computed para obter dados do tooltip de um item
 const getTooltipData = (item: ProdutoCard) => {
   const snapshot = getCurrentMonthBusinessSnapshot.value
   const { total: diasTotais, elapsed: diasDecorridos, remaining: diasRestantes } = snapshot
@@ -83,7 +76,6 @@ const getTooltipData = (item: ProdutoCard) => {
   }
 }
 
-// Função para posicionar o tooltip
 const positionTip = (badge: HTMLElement, tip: HTMLElement): void => {
   const card = badge.closest('.prod-card') as HTMLElement
   if (!card) return
@@ -111,12 +103,10 @@ const positionTip = (badge: HTMLElement, tip: HTMLElement): void => {
   tip.style.left = `${left}px`
 }
 
-// Função para abrir tooltip
 const openTooltip = (itemId: string, event: Event): void => {
   event.stopPropagation()
   openTooltipId.value = itemId
 
-  // Posiciona o tooltip após ele ser renderizado
   requestAnimationFrame(() => {
     const card = document.querySelector(`[data-prod-id="${itemId}"]`) as HTMLElement
     if (!card) return
@@ -130,12 +120,10 @@ const openTooltip = (itemId: string, event: Event): void => {
   })
 }
 
-// Função para fechar tooltip
 const closeTooltip = (): void => {
   openTooltipId.value = null
 }
 
-// Função para toggle (usado em click/touch)
 const toggleTooltip = (itemId: string, event: Event): void => {
   event.stopPropagation()
 

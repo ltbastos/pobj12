@@ -93,7 +93,6 @@ const isDefaultSelection = (val: string | null | undefined): boolean => {
   return normalized === 'todos' || normalized === 'todas' || normalized === ''
 }
 
-// Obtém a seleção para um nível específico
 const getRankingSelectionForLevel = (level: string): string | null => {
   const fs = filterState.value
   switch (level) {
@@ -114,10 +113,8 @@ const getRankingSelectionForLevel = (level: string): string | null => {
   }
 }
 
-// Determina o nível baseado nos filtros (ordem de mais específico para menos específico)
 const rankingLevel = computed(() => {
   const fs = filterState.value
-  // Verifica se os valores não são padrão (Todos, Todas, etc)
   const isSelected = (val: string | null | undefined) => {
     return !isDefaultSelection(val)
   }
@@ -128,7 +125,6 @@ const rankingLevel = computed(() => {
   if (isSelected(fs.gerencia)) return 'gerencia'
   if (isSelected(fs.diretoria)) return 'diretoria'
   if (isSelected(fs.segmento)) return 'segmento'
-  // Default: gerenteGestao
   return 'gerenteGestao'
 })
 
@@ -141,7 +137,6 @@ const levelNames: Record<string, string> = {
   gerenteGestao: 'Gerente de gestão'
 }
 
-// Função auxiliar para simplificar texto (remover acentos, espaços, etc)
 const simplificarTexto = (text: string): string => {
   return text.toLowerCase()
     .normalize('NFD')
@@ -150,7 +145,6 @@ const simplificarTexto = (text: string): string => {
     .trim()
 }
 
-// Função auxiliar para verificar se um item corresponde à seleção
 const matchesSelection = (filterValue: string, ...candidates: (string | null | undefined)[]): boolean => {
   if (isDefaultSelection(filterValue)) return true
   const normalizedFilter = filterValue.toLowerCase().trim()
@@ -161,31 +155,26 @@ const matchesSelection = (filterValue: string, ...candidates: (string | null | u
   })
 }
 
-// Agrupa dados por unidade para calcular pontos (similar ao aggRanking do app.js)
 const groupedRanking = computed(() => {
   const level = rankingLevel.value
   const keyField = RANKING_KEY_FIELDS[level] || 'gerente_gestao_id'
   const labelField = RANKING_LABEL_FIELDS[level] || 'gerente_gestao_nome'
 
-  // Verifica se há uma seleção no nível atual
   const selectionForLevel = getRankingSelectionForLevel(level)
   const hasSelectionForLevel = !!selectionForLevel && !isDefaultSelection(selectionForLevel)
 
-  // Se há seleção no nível atual, precisa mostrar o nível abaixo
-  // Por exemplo: se agência está selecionada, mostra gerentes de gestão dessa agência
   let targetLevel = level
   let targetKeyField = keyField
   let targetLabelField = labelField
 
   if (hasSelectionForLevel) {
-    // Determina o nível abaixo baseado na hierarquia
     const levelHierarchy: Record<string, string> = {
       segmento: 'diretoria',
       diretoria: 'gerencia',
       gerencia: 'agencia',
       agencia: 'gerenteGestao',
       gerenteGestao: 'gerente',
-      gerente: 'gerente' // Gerente é o último nível
+      gerente: 'gerente'
     }
 
     const nextLevel = levelHierarchy[level]
@@ -196,11 +185,9 @@ const groupedRanking = computed(() => {
     }
   }
 
-  // Filtra os dados se houver seleção no nível atual
   let filteredData = rankingData.value
   if (hasSelectionForLevel && selectionForLevel) {
     filteredData = rankingData.value.filter(item => {
-      // Verifica se o item corresponde à seleção do nível atual
       const itemKey = (item as unknown as Record<string, string>)[keyField]
       const itemLabel = (item as any)[labelField]
       return matchesSelection(selectionForLevel, itemKey, itemLabel)
@@ -218,7 +205,6 @@ const groupedRanking = computed(() => {
   }>()
 
   filteredData.forEach(item => {
-    // Obtém a chave e label baseado no nível alvo (pode ser o nível abaixo se houver seleção)
     const key = (item as any)[targetKeyField] || 'unknown'
     const label = (item as any)[targetLabelField] || key || '—'
 
@@ -247,18 +233,13 @@ const groupedRanking = computed(() => {
 
   return Array.from(groups.values())
     .map(g => {
-      // Se não há meta, usa o realizado diretamente normalizado
-      // Normaliza para valores próximos ao print (divide por 100000 para obter valores como 8.2, 2.8)
-      // Ou usa percentual se houver meta
       let p_mens = 0
       let p_acum = 0
 
       if (g.meta_mens > 0) {
-        // Se tem meta, calcula percentual de atingimento
         const ating_mens = g.real_mens / g.meta_mens
         p_mens = ating_mens * 100
       } else {
-        // Se não tem meta, usa o realizado normalizado (divide por 100000)
         p_mens = g.real_mens / 100000
       }
 
@@ -286,24 +267,18 @@ const formatPoints = (value: number | null | undefined): string => {
   }).format(value)
 }
 
-// Determina se deve mascarar o nome (mostrar *****)
-// Baseado na lógica do app.js: sempre mascara exceto o primeiro, o item do usuário, ou o que corresponde à seleção
 const shouldMaskName = (item: any, index: number): boolean => {
   const level = rankingLevel.value
   const selectionForLevel = getRankingSelectionForLevel(level)
   const hasSelectionForLevel = !!selectionForLevel && !isDefaultSelection(selectionForLevel)
 
-  // Não mascara o primeiro lugar
   if (index === 0) return false
 
-  // Se há seleção no nível atual, verifica se o item corresponde à seleção
   if (hasSelectionForLevel && selectionForLevel) {
-    // Não mascara se corresponde à seleção (pode ser por unidade ou label)
     const matches = matchesSelection(selectionForLevel, item.unidade, item.label)
     if (matches) return false
   }
 
-  // Mascara todos os outros
   return true
 }
 </script>
@@ -311,7 +286,6 @@ const shouldMaskName = (item: any, index: number): boolean => {
 <template>
   <div class="ranking-wrapper">
     <div class="ranking-view">
-        <!-- Skeleton Loading -->
         <template v-if="loading">
           <div class="ranking-content">
             <div class="card card--ranking">

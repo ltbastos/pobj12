@@ -156,8 +156,6 @@ const pctPontos = computed(() => {
 })
 
 const hasVariavelData = computed(() => {
-  // Mostra o card se houver dados carregados (mesmo que sejam 0)
-  // Conforme app.js: if (varRealBase != null || varTotalBase != null || ...)
   return summary.value.varPossivel != null || summary.value.varAtingido != null
 })
 
@@ -166,7 +164,7 @@ const pctVariavel = computed(() => {
   const varAtingido = summary.value.varAtingido ?? 0
   if (varPossivel === 0 || !Number.isFinite(varPossivel) || !Number.isFinite(varAtingido)) return 0
   const pct = (varAtingido / varPossivel) * 100
-  return Math.max(0, Math.min(100, pct)) // Garante que está entre 0 e 100
+  return Math.max(0, Math.min(100, pct))
 })
 </script>
 

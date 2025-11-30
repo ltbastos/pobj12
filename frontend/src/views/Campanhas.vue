@@ -205,7 +205,6 @@ const mockRankingData = [
   { rank: 10, unidade: 'Agência Epsilon', label: 'Agência Epsilon', linhas: 85, cash: 82, conquista: 95, totalPoints: 87.5, finalStatus: 'Ajustar' }
 ]
 
-// Carrega as campanhas disponíveis (mock)
 const loadCampanhas = () => {
   loading.value = true
   error.value = null
@@ -219,7 +218,6 @@ const loadCampanhas = () => {
   }, 300)
 }
 
-// Carrega os dados da sprint selecionada (mock)
 const loadSprintData = () => {
   if (!sprintSelecionada.value) return
 
@@ -241,7 +239,6 @@ const loadSprintData = () => {
     teamSimulator.value = sprint.team || null
     individualSimulator.value = sprint.individual || null
 
-    // Inicializa valores dos simuladores
     if (sprint.team) {
       const teamVals = ensureTeamValues(sprint)
       teamResult.value = computeCampaignScore(sprint.team, teamVals)
@@ -258,38 +255,32 @@ const loadSprintData = () => {
   }, 200)
 }
 
-// Perfil individual selecionado
 const currentIndividualProfile = computed(() => {
   if (!sprintAtual.value?.individual?.profiles || !individualProfileSelected.value) return null
   return sprintAtual.value.individual.profiles.find((p: any) => p.id === individualProfileSelected.value) || null
 })
 
-// Valores atuais do simulador de equipe
 const currentTeamValues = computed(() => {
   if (!sprintAtual.value?.team) return {}
   return ensureTeamValues(sprintAtual.value)
 })
 
-// Valores atuais do simulador individual
 const currentIndividualValues = computed(() => {
   if (!sprintAtual.value || !currentIndividualProfile.value) return {}
   return ensureIndividualValues(sprintAtual.value, currentIndividualProfile.value)
 })
 
-// Preset ativo do simulador de equipe
 const activeTeamPreset = computed(() => {
   if (!sprintAtual.value) return 'custom'
   return teamPresets.value[sprintAtual.value.id] || 'custom'
 })
 
-// Preset ativo do simulador individual
 const activeIndividualPreset = computed(() => {
   if (!sprintAtual.value || !currentIndividualProfile.value) return 'custom'
   const key = `${sprintAtual.value.id}:${currentIndividualProfile.value.id}`
   return individualPresets.value[key] || 'custom'
 })
 
-// Formata validade da campanha
 const formatValidity = (period: any): string => {
   if (!period) return 'Vigência não informada'
   
@@ -320,7 +311,6 @@ const noteText = computed(() => {
   return `${base}${suffix}`.trim()
 })
 
-// Formata percentual
 const formatPercent = (value: number | null | undefined): string => {
   if (value == null || isNaN(value)) return '—'
   return new Intl.NumberFormat('pt-BR', {
@@ -329,7 +319,6 @@ const formatPercent = (value: number | null | undefined): string => {
   }).format(value) + '%'
 }
 
-// Formata valor único
 const formatOne = (value: number | null | undefined): string => {
   if (value == null || isNaN(value)) return '—'
   return new Intl.NumberFormat('pt-BR', {
@@ -338,14 +327,12 @@ const formatOne = (value: number | null | undefined): string => {
   }).format(value)
 }
 
-// Função auxiliar para converter para número
 const toNumber = (value: any): number => {
   if (value === null || value === undefined || value === '') return 0
   const n = typeof value === 'string' ? parseFloat(value) : value
   return Number.isFinite(n) ? n : 0
 }
 
-// Calcula o score da campanha (baseado no app.js)
 const computeCampaignScore = (config: any, values: Record<string, number>) => {
   const indicators = config?.indicators || []
   const min = toNumber(config?.minThreshold ?? 90)
@@ -399,7 +386,6 @@ const computeCampaignScore = (config: any, values: Record<string, number>) => {
   return { rows, totalPoints, finalStatus, finalClass, progressPct, progressLabel, shortfall, hasAllMin, hasAllStretch }
 }
 
-// Garante valores iniciais para o simulador de equipe
 const ensureTeamValues = (sprint: any): Record<string, number> => {
   if (!sprint?.team) return {}
   if (!teamValues.value[sprint.id]) {
@@ -413,17 +399,14 @@ const ensureTeamValues = (sprint: any): Record<string, number> => {
   return teamValues.value[sprint.id] || {}
 }
 
-// Garante valores iniciais para o simulador individual
 const ensureIndividualValues = (sprint: any, profile: any): Record<string, number> => {
   if (!sprint || !profile) return {}
   const key = `${sprint.id}:${profile.id}`
   
-  // Garante que existe o objeto para o sprint
   if (!individualValues.value[sprint.id]) {
     individualValues.value[sprint.id] = {}
   }
   
-  // Garante que existe o objeto para o perfil
   const sprintValues = individualValues.value[sprint.id]
   if (!sprintValues) {
     return {}
@@ -441,7 +424,6 @@ const ensureIndividualValues = (sprint: any, profile: any): Record<string, numbe
   return sprintValues[profile.id] || {}
 }
 
-// Detecta qual preset corresponde aos valores atuais
 const detectPresetMatch = (values: Record<string, number>, presets: any[]): string | null => {
   if (!values || !Array.isArray(presets)) return null
   return presets.find(preset => {
@@ -450,7 +432,6 @@ const detectPresetMatch = (values: Record<string, number>, presets: any[]): stri
   })?.id || null
 }
 
-// Atualiza valores do simulador de equipe
 const updateTeamValues = (sprint: any, indicatorId: string, value: number) => {
   const values = ensureTeamValues(sprint)
   values[indicatorId] = value
@@ -459,7 +440,6 @@ const updateTeamValues = (sprint: any, indicatorId: string, value: number) => {
   teamPresets.value[sprint.id] = presetMatch || 'custom'
 }
 
-// Aplica preset no simulador de equipe
 const applyTeamPreset = (sprint: any, presetId: string) => {
   const preset = sprint.team.presets?.find((p: any) => p.id === presetId)
   if (!preset) return
@@ -471,7 +451,6 @@ const applyTeamPreset = (sprint: any, presetId: string) => {
   teamResult.value = computeCampaignScore(sprint.team, values)
 }
 
-// Atualiza valores do simulador individual
 const updateIndividualValues = (sprint: any, profile: any, indicatorId: string, value: number) => {
   const values = ensureIndividualValues(sprint, profile)
   values[indicatorId] = value
@@ -481,7 +460,6 @@ const updateIndividualValues = (sprint: any, profile: any, indicatorId: string, 
   individualPresets.value[key] = presetMatch || 'custom'
 }
 
-// Aplica preset no simulador individual
 const applyIndividualPreset = (sprint: any, profile: any, presetId: string) => {
   const preset = profile.presets?.find((p: any) => p.id === presetId)
   if (!preset) return
@@ -494,7 +472,6 @@ const applyIndividualPreset = (sprint: any, profile: any, presetId: string) => {
   individualResult.value = computeCampaignScore(profile, values)
 }
 
-// Seleciona perfil individual
 const selectIndividualProfile = (sprint: any, profileId: string) => {
   individualProfileSelected.value = profileId
   const profile = sprint.individual?.profiles?.find((p: any) => p.id === profileId)
@@ -504,27 +481,21 @@ const selectIndividualProfile = (sprint: any, profileId: string) => {
   }
 }
 
-// Carrega dados quando o componente é montado
 onMounted(() => {
   loadCampanhas()
 })
 
-// Recarrega quando a sprint muda
 watch(sprintSelecionada, () => {
   loadSprintData()
 })
 
-// Recarrega quando os filtros mudam (mock - apenas para demonstração)
 watch([filterState], () => {
-  // Em produção, aqui recarregaria os dados com os filtros aplicados
-  // Por enquanto, apenas mantém os dados mockados
 }, { deep: true })
 </script>
 
 <template>
   <div class="campanhas-wrapper">
     <div class="campanhas-view">
-        <!-- Skeleton Loading -->
         <template v-if="loading && !sprintAtual">
           <div class="campanhas-content">
             <section class="card card--campanhas">
@@ -545,7 +516,6 @@ watch([filterState], () => {
           </div>
         </template>
 
-        <!-- Conteúdo real -->
         <template v-else>
           <div v-if="error" class="error-state">
           <p>{{ error }}</p>

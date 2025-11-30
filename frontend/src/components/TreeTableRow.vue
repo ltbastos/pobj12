@@ -129,9 +129,7 @@ const isCanceled = computed(() => {
 const contractId = computed(() => {
   const id = props.node.label || ''
   if (!id) return '—'
-  // Se o ID já começa com CT-, retorna como está, senão formata
   if (id.startsWith('CT-')) return id
-  // Tenta extrair ano e número do ID
   const match = id.match(/(\d{4})-?(\d+)/)
   if (match) {
     return `${match[1]}-${match[2]}`

@@ -499,7 +499,6 @@ function getColumnLabel(columnId: string): string {
   return columnMap[columnId] || columnId
 }
 
-// Função para obter o ícone de ordenação
 function getSortIcon(columnId: string): string {
   if (sortState.value.id !== columnId || !sortState.value.direction) {
     return 'ti ti-arrows-up-down'
@@ -601,7 +600,6 @@ function handleDeleteView(viewId: string) {
   const index = detailViews.value.findIndex(v => v.id === viewId)
   if (index > -1) {
     detailViews.value.splice(index, 1)
-    // Se a visão deletada era a ativa, voltar para a padrão
     if (activeDetailViewId.value === viewId) {
       activeDetailViewId.value = 'default'
       const defaultView = detailViews.value.find(v => v.id === 'default')

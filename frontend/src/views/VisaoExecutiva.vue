@@ -104,7 +104,6 @@ const bottomRanking = computed(() => {
     .reverse()
 })
 
-// Carrega dados
 const loadData = async () => {
   loading.value = true
   error.value = null
@@ -124,7 +123,6 @@ const loadData = async () => {
   }
 }
 
-// Observa mudanças nos filtros
 watch([execFilters, period], () => {
   loadData()
 }, { deep: true })
@@ -146,7 +144,6 @@ const contexto = computed(() => {
   return `${foco} · Período: ${formatDate(period.value.start)} a ${formatDate(period.value.end)}`
 })
 
-// Funções auxiliares
 const pctBadgeClass = (p: number): string => {
   if (p < 50) return 'att-low'
   if (p < 100) return 'att-warn'
@@ -181,7 +178,6 @@ const getHeatmapValue = (unit: string, section: string): { pct: number | null; t
   return { pct: null, text: '—' }
 }
 
-// Renderizar gráfico SVG
 const renderChart = () => {
   const container = document.getElementById('exec-chart')
   if (!container || !chartData.value.series.length) return
@@ -259,7 +255,6 @@ const renderChart = () => {
     </svg>`
 }
 
-// Observa mudanças nos dados do gráfico
 watch(chartData, () => {
   renderChart()
 }, { deep: true })
