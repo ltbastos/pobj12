@@ -127,15 +127,13 @@ class OmegaTeamsController extends ControllerBase
      *         description="ID do supervisor",
          *         @OA\Schema(type="string", example="supervisor123")
      *     ),
-     *     @OA\Parameter(
-     *         name="body",
-     *         in="body",
+     *     @OA\RequestBody(
      *         required=true,
      *         description="Dados do analista",
-     *         @OA\Schema(
+     *         @OA\JsonContent(
      *             type="object",
      *             required={"analystId"},
-     *             @OA\Property(property="analystId", @OA\Schema(type="string"), description="ID do analista", example="analyst123")
+     *             @OA\Property(property="analystId", type="string", description="ID do analista", example="analyst123")
      *         )
      *     ),
      *     @OA\Response(

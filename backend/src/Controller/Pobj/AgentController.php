@@ -31,15 +31,14 @@ class AgentController extends ControllerBase
      *     description="Processa perguntas e retorna respostas do agente de IA",
      *     tags={"POBJ", "Agent"},
      *     security={{"ApiKeyAuth": {}}},
-     *     @OA\Parameter(
-     *         name="body",
-     *         in="body",
+     *     @OA\RequestBody(
      *         required=true,
      *         description="Dados da pergunta",
-     *         @OA\Schema(
-     *             type="object",             required={"question"},
-     *             @OA\Property(property="question", @OA\Schema(type="string"), example="Qual o resumo do mês atual?"),
-     *             @OA\Property(property="context",  description="Contexto adicional")
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"question"},
+     *             @OA\Property(property="question", type="string", example="Qual o resumo do mês atual?"),
+     *             @OA\Property(property="context", type="string", description="Contexto adicional")
      *         )
      *     ),
      *     @OA\Response(

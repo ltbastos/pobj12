@@ -48,10 +48,8 @@ export function getApiKey(): string | null {
     if (key) return key
   }
 
-  if (import.meta.env.DEV) {
-    const envKey = import.meta.env.VITE_API_KEY
-    if (envKey) return String(envKey).trim()
-  }
+  const envKey = import.meta.env.VITE_API_KEY
+  if (envKey) return String(envKey).trim()
 
   return null
 }

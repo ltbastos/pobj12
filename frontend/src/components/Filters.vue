@@ -55,6 +55,18 @@ const selectedIndicador = ref('')
 const selectedSubindicador = ref('')
 const selectedStatusKpi = ref('todos')
 
+const indicadoresFiltrados = computed(() => {
+  if (!selectedFamilia.value) {
+    return indicadores.value
+  }
+
+  const familiaId = String(selectedFamilia.value).trim()
+  return indicadores.value.filter(ind => {
+    const indFamiliaId = ind.id_familia ? String(ind.id_familia).trim() : ''
+    return indFamiliaId === familiaId
+  })
+})
+
 const subindicadores = computed(() => {
   if (!selectedIndicador.value) {
     return []
@@ -82,6 +94,17 @@ const handleFamiliaChange = (value: string): void => {
   if (!value) {
     selectedIndicador.value = ''
     selectedSubindicador.value = ''
+  } else {
+    // Limpa o indicador se ele não pertence à família selecionada
+    if (selectedIndicador.value) {
+      const indicadorMeta = findItemMeta(selectedIndicador.value, indicadores.value)
+      const familiaId = String(value).trim()
+      const indicadorFamiliaId = indicadorMeta?.id_familia ? String(indicadorMeta.id_familia).trim() : ''
+      if (indicadorFamiliaId !== familiaId) {
+        selectedIndicador.value = ''
+        selectedSubindicador.value = ''
+      }
+    }
   }
 }
 
@@ -98,6 +121,9 @@ const handleIndicadorChange = (value: string): void => {
         selectedFamilia.value = familiaId
       }
     }
+  } else {
+    selectedIndicador.value = ''
+    selectedSubindicador.value = ''
   }
 }
 
@@ -390,10 +416,10 @@ watch(() => period.value, (newPeriod) => {
           <SelectSearch
             id="f-familia"
             :model-value="selectedIndicador"
-            :options="[{ id: '', nome: 'Selecione...' }, ...indicadores]"
+            :options="[{ id: '', nome: 'Selecione...' }, ...indicadoresFiltrados]"
             placeholder="Selecione..."
             label="Indicadores"
-            :disabled="loading"
+            :disabled="loading || !selectedFamilia"
             @update:model-value="handleIndicadorChange"
           />
         </div>

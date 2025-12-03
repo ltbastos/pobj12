@@ -9,6 +9,12 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
+        # Firewall público para documentação e health check
+        api_public:
+            pattern: ^/api/(doc|health)
+            stateless: true
+            security: false
+
         api:
             pattern: ^/api
             stateless: true
@@ -22,7 +28,9 @@ security:
         # Rotas públicas (sem autenticação)
         - { path: ^/api/auth/login, roles: IS_AUTHENTICATED_ANONYMOUSLY }
         - { path: ^/api/auth/register, roles: IS_AUTHENTICATED_ANONYMOUSLY }
-        - { path: ^/health, roles: IS_AUTHENTICATED_ANONYMOUSLY }
+        - { path: ^/api/health, roles: IS_AUTHENTICATED_ANONYMOUSLY }
+        - { path: ^/api/doc, roles: IS_AUTHENTICATED_ANONYMOUSLY }  # Swagger UI
+        - { path: ^/api/doc.json, roles: IS_AUTHENTICATED_ANONYMOUSLY }  # Swagger JSON
         
         # Rotas protegidas
         - { path: ^/api, roles: ROLE_API }

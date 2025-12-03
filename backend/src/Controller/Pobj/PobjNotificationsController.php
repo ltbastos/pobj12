@@ -26,20 +26,19 @@ class PobjNotificationsController extends ControllerBase
      *     description="Cria uma nova notificação relacionada a um chamado/ticket do POBJ",
      *     tags={"POBJ", "Notificações"},
      *     security={{"ApiKeyAuth": {}}},
-     *     @OA\Parameter(
-     *         name="body",
-     *         in="body",
+     *     @OA\RequestBody(
      *         required=true,
      *         description="Dados da notificação",
-     *         @OA\Schema(
-     *             type="object",             required={"ticketId"},
-     *             @OA\Property(property="ticketId", @OA\Schema(type="string"), description="ID do ticket/chamado", example="TKT-12345"),
-     *             @OA\Property(property="ticketSubject",  description="Assunto do ticket", example="Atualização de status"),
-     *             @OA\Property(property="date",  format="date-time", description="Data do evento (ISO 8601)", example="2024-12-03T22:00:00Z"),
-     *             @OA\Property(property="actorId",  description="ID do usuário que realizou a ação", example="user123"),
-     *             @OA\Property(property="action",  description="Tipo de ação realizada", example="Atualização"),
-     *             @OA\Property(property="comment",  description="Comentário adicional", example="Status alterado para em andamento"),
-     *             @OA\Property(property="status",  description="Status do ticket", example="aberto", enum={"aberto", "em_andamento", "resolvido", "fechado"})
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"ticketId"},
+     *             @OA\Property(property="ticketId", type="string", description="ID do ticket/chamado", example="TKT-12345"),
+     *             @OA\Property(property="ticketSubject", type="string", description="Assunto do ticket", example="Atualização de status"),
+     *             @OA\Property(property="date", type="string", format="date-time", description="Data do evento (ISO 8601)", example="2024-12-03T22:00:00Z"),
+     *             @OA\Property(property="actorId", type="string", description="ID do usuário que realizou a ação", example="user123"),
+     *             @OA\Property(property="action", type="string", description="Tipo de ação realizada", example="Atualização"),
+     *             @OA\Property(property="comment", type="string", description="Comentário adicional", example="Status alterado para em andamento"),
+     *             @OA\Property(property="status", type="string", description="Status do ticket", example="aberto", enum={"aberto", "em_andamento", "resolvido", "fechado"})
      *         )
      *     ),
      *     @OA\Response(

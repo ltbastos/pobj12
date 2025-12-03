@@ -27,6 +27,12 @@ class ApiKeyAuthenticator extends AbstractGuardAuthenticator
 
     public function supports(Request $request): bool
     {
+        // Não requer autenticação para rotas de documentação
+        $path = $request->getPathInfo();
+        if (preg_match('#^/api/doc#', $path)) {
+            return false;
+        }
+        
         // Suporta apenas se houver header X-API-Key
         return $request->headers->has('X-API-Key');
     }

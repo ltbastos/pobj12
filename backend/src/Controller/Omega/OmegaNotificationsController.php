@@ -14,7 +14,6 @@ use Symfony\Component\Routing\Annotation\Route;
  */
 class OmegaNotificationsController extends ControllerBase
 {
-
     /**
      * Cria uma nova notificação no Omega
      * 
@@ -26,62 +25,111 @@ class OmegaNotificationsController extends ControllerBase
      *     description="Cria uma nova notificação relacionada a um chamado/ticket do Omega",
      *     tags={"Omega", "Notificações"},
      *     security={{"ApiKeyAuth": {}}},
-     *     @OA\Parameter(
-     *         name="body",
-     *         in="body",
+     *
+     *     @OA\RequestBody(
      *         required=true,
      *         description="Dados da notificação",
-     *         @OA\Schema(
+     *         @OA\JsonContent(
      *             type="object",
      *             required={"ticketId"},
-     *             @OA\Property(property="ticketId", @OA\Schema(type="string"), description="ID do ticket/chamado", example="TKT-12345"),
-     *             @OA\Property(property="ticketSubject", type="string", description="Assunto do ticket", example="Atualização de status"),
-     *             @OA\Property(property="date", type="string", format="date-time", description="Data do evento (ISO 8601)", example="2024-12-03T22:00:00Z"),
-     *             @OA\Property(property="actorId", type="string", description="ID do usuário que realizou a ação", example="user123"),
-     *             @OA\Property(property="action", type="string", description="Tipo de ação realizada", example="Atualização"),
-     *             @OA\Property(property="comment", type="string", description="Comentário adicional", example="Status alterado para em andamento"),
-     *             @OA\Property(property="status", type="string", description="Status do ticket", example="aberto", enum={"aberto", "em_andamento", "resolvido", "fechado"}),
-     *             @OA\Property(property="type", type="string", description="Tipo de notificação", example="status_update", enum={"status_update", "comment", "assignment"})
+     *
+     *             @OA\Property(
+     *                 property="ticketId",
+     *                 type="string",
+     *                 description="ID do ticket/chamado",
+     *                 example="TKT-12345"
+     *             ),
+     *             @OA\Property(
+     *                 property="ticketSubject",
+     *                 type="string",
+     *                 description="Assunto do ticket",
+     *                 example="Atualização de status"
+     *             ),
+     *             @OA\Property(
+     *                 property="date",
+     *                 type="string",
+     *                 format="date-time",
+     *                 description="Data do evento (ISO 8601)",
+     *                 example="2024-12-03T22:00:00Z"
+     *             ),
+     *             @OA\Property(
+     *                 property="actorId",
+     *                 type="string",
+     *                 description="ID do usuário que realizou a ação",
+     *                 example="user123"
+     *             ),
+     *             @OA\Property(
+     *                 property="action",
+     *                 type="string",
+     *                 description="Tipo de ação realizada",
+     *                 example="Atualização"
+     *             ),
+     *             @OA\Property(
+     *                 property="comment",
+     *                 type="string",
+     *                 description="Comentário adicional",
+     *                 example="Status alterado para em andamento"
+     *             ),
+     *             @OA\Property(
+     *                 property="status",
+     *                 type="string",
+     *                 description="Status do ticket",
+     *                 example="aberto",
+     *                 enum={"aberto", "em_andamento", "resolvido", "fechado"}
+     *             ),
+     *             @OA\Property(
+     *                 property="type",
+     *                 type="string",
+     *                 description="Tipo da notificação",
+     *                 example="status_update",
+     *                 enum={"status_update", "comment", "assignment"}
+     *             )
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Notificação criada com sucesso",
-     *         @OA\Schema(
-     *             
-     *             @OA\Property(property="success",  example=true),
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(
      *                 property="data",
-     *                 
-     *                 @OA\Property(property="id",  example="ntf-1234567890"),
-     *                 @OA\Property(property="ticketId",  example="TKT-12345"),
-     *                 @OA\Property(property="ticketSubject",  example="Atualização de status"),
-     *                 @OA\Property(property="date",  format="date-time", example="2024-12-03T22:00:00Z"),
-     *                 @OA\Property(property="actorId",  example="user123"),
-     *                 @OA\Property(property="action",  example="Atualização"),
-     *                 @OA\Property(property="comment",  example="Status alterado"),
-     *                 @OA\Property(property="status",  example="aberto"),
-     *                 @OA\Property(property="type",  example="status_update"),
-     *                 @OA\Property(property="read",  example=false)
+     *                 type="object",
+     *                 @OA\Property(property="id", type="string", example="ntf-1234567890"),
+     *                 @OA\Property(property="ticketId", type="string", example="TKT-12345"),
+     *                 @OA\Property(property="ticketSubject", type="string", example="Atualização de status"),
+     *                 @OA\Property(property="date", type="string", format="date-time", example="2024-12-03T22:00:00Z"),
+     *                 @OA\Property(property="actorId", type="string", example="user123"),
+     *                 @OA\Property(property="action", type="string", example="Atualização"),
+     *                 @OA\Property(property="comment", type="string", example="Status alterado"),
+     *                 @OA\Property(property="status", type="string", example="aberto"),
+     *                 @OA\Property(property="type", type="string", example="status_update"),
+     *                 @OA\Property(property="read", type="boolean", example=false)
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(
      *         response=400,
      *         description="Dados inválidos",
-     *         @OA\Schema(
-     *             
-     *             @OA\Property(property="success",  example=false),
-     *             @OA\Property(property="data", 
-     *                 @OA\Property(property="error",  example="Dados inválidos"),
-     *                 @OA\Property(property="code",  example="BAD_REQUEST")
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean", example=false),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
+     *                 @OA\Property(property="error", type="string", example="Dados inválidos"),
+     *                 @OA\Property(property="code", type="string", example="BAD_REQUEST")
      *             )
      *         )
      *     ),
+     *
      *     @OA\Response(response=401, description="Não autorizado"),
      *     @OA\Response(response=429, description="Rate limit excedido")
      * )
      */
+
     public function create(Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true);

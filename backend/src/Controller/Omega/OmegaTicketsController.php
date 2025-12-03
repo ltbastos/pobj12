@@ -17,12 +17,12 @@ class OmegaTicketsController extends ControllerBase
     {
         $this->omegaTicketsUseCase = $omegaTicketsUseCase;
     }
-
+    
     /**
      * Lista todos os tickets ou cria um novo ticket
-     * 
+     *
      * @Route("/api/omega/tickets", name="api_omega_tickets", methods={"GET", "POST"})
-     * 
+     *
      * @OA\Get(
      *     path="/api/omega/tickets",
      *     summary="Lista de tickets",
@@ -32,42 +32,38 @@ class OmegaTicketsController extends ControllerBase
      *     @OA\Response(
      *         response=200,
      *         description="Lista de tickets retornada com sucesso",
-     *         @OA\Schema(
-     *             
-     *             @OA\Property(property="success",  example=true),
-     *             @OA\Property(property="data",  @OA\Items(type="object"))
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(property="data", type="array", @OA\Items(type="object"))
      *         )
      *     ),
      *     @OA\Response(response=401, description="Não autorizado"),
      *     @OA\Response(response=429, description="Rate limit excedido")
      * )
-     * 
+     *
      * @OA\Post(
      *     path="/api/omega/tickets",
      *     summary="Criar ticket",
      *     description="Cria um novo ticket no sistema Omega",
      *     tags={"Omega", "Tickets"},
      *     security={{"ApiKeyAuth": {}}},
-     *     @OA\Parameter(
-     *         name="body",
-     *         in="body",
+     *     @OA\RequestBody(
      *         required=true,
-     *         description="Dados do ticket",
-     *         @OA\Schema(
-     *             type="object",             required={"subject"},
-     *             @OA\Property(property="subject", @OA\Schema(type="string"), example="Novo chamado"),
-     *             @OA\Property(property="queue",  example="POBJ"),
-     *             @OA\Property(property="status",  example="aberto"),
-     *             @OA\Property(property="priority",  example="normal"),
-     *             @OA\Property(property="owner",  example="user123")
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"subject"},
+     *             @OA\Property(property="subject", type="string", example="Novo chamado"),
+     *             @OA\Property(property="queue", type="string", example="POBJ"),
+     *             @OA\Property(property="status", type="string", example="aberto"),
+     *             @OA\Property(property="priority", type="string", example="normal"),
+     *             @OA\Property(property="owner", type="string", example="user123")
      *         )
      *     ),
      *     @OA\Response(
-     *         response=200,
+     *         response=201,
      *         description="Ticket criado com sucesso",
-     *         @OA\Schema(
-     *             
-     *             @OA\Property(property="success",  example=true),
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(property="data", type="object")
      *         )
      *     ),
@@ -76,15 +72,22 @@ class OmegaTicketsController extends ControllerBase
      *     @OA\Response(response=429, description="Rate limit excedido")
      * )
      */
+
     public function handle(Request $request): JsonResponse
     {
         if ($request->getMethod() === 'POST') {
             return $this->create($request);
         }
         
-        $result = $this->omegaTicketsUseCase->getAllTickets();
+        $tickets = $this->omegaTicketsUseCase->getAllTickets();
         
-        return $this->success($result);
+        // Converte entidades para arrays para evitar problemas de serialização
+        // e garantir que o eager loading funcione corretamente
+        $ticketsArray = array_map(function($ticket) {
+            return $this->omegaTicketsUseCase->ticketToArray($ticket);
+        }, $tickets);
+        
+        return $this->success($ticketsArray);
     }
 
     /**
@@ -103,18 +106,17 @@ class OmegaTicketsController extends ControllerBase
      *         in="path",
      *         required=true,
      *         description="ID do ticket",
-         *         @OA\Schema(type="string", example="TKT-12345")
+     *         @OA\Schema(type="string", example="TKT-12345")
      *     ),
-     *     @OA\Parameter(
-     *         name="body",
-     *         in="body",
+     *     @OA\RequestBody(
      *         required=true,
      *         description="Dados para atualização",
-     *         @OA\Schema(
-     *             type="object",             @OA\Property(property="subject", @OA\Schema(type="string"), example="Assunto atualizado"),
-     *             @OA\Property(property="status",  example="em_andamento"),
-     *             @OA\Property(property="priority",  example="alta"),
-     *             @OA\Property(property="owner",  example="user456")
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="subject", type="string", example="Assunto atualizado"),
+     *             @OA\Property(property="status", type="string", example="em_andamento"),
+     *             @OA\Property(property="priority", type="string", example="alta"),
+     *             @OA\Property(property="owner", type="string", example="user456")
      *         )
      *     ),
      *     @OA\Response(

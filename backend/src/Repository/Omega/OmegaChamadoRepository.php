@@ -15,10 +15,19 @@ class OmegaChamadoRepository extends ServiceEntityRepository
 
     /**
      * Lista todos os chamados ordenados por data de atualização
+     * Otimizado com eager loading para evitar N+1 queries
      */
     public function findAllOrderedByUpdated(): array
     {
         return $this->createQueryBuilder('c')
+                    ->leftJoin('c.status', 's')
+                    ->addSelect('s')
+                    ->leftJoin('c.requester', 'r')
+                    ->addSelect('r')
+                    ->leftJoin('c.owner', 'o')
+                    ->addSelect('o')
+                    ->leftJoin('c.team', 't')
+                    ->addSelect('t')
                     ->orderBy('c.updated', 'DESC')
                     ->addOrderBy('c.opened', 'DESC')
                     ->getQuery()
