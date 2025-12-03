@@ -26,5 +26,18 @@ services:
         resource: '../src/Controller/'
         tags: ['controller.service_arguments']
 
+    # Exception Subscriber - captura todas as exceções
+    # O logger será injetado automaticamente via LoggerInterface
+    App\EventSubscriber\ExceptionSubscriber:
+        arguments:
+            $environment: '%kernel.environment%'
+        tags:
+            - { name: kernel.event_subscriber }
+
+    # Request ID Subscriber - gera ID único para cada requisição
+    App\EventSubscriber\RequestIdSubscriber:
+        tags:
+            - { name: kernel.event_subscriber }
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

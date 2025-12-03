@@ -2,6 +2,9 @@
 
 namespace App\Controller;
 
+use App\Exception\BadRequestException;
+use App\Exception\NotFoundException;
+use App\Exception\ValidationException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
 abstract class ControllerBase
@@ -29,12 +32,40 @@ abstract class ControllerBase
         ], 200);
     }
 
+    /**
+     * @deprecated Use exceptions customizadas em vez deste método
+     * Este método mantém compatibilidade com código existente
+     */
     protected function error(string $message, int $status = 400): JsonResponse
     {
         return $this->json([
             'success' => false,
             'error' => $message
         ], $status);
+    }
+
+    /**
+     * Lança exceção de validação
+     */
+    protected function throwValidationError(string $message, array $validationErrors = []): void
+    {
+        throw new ValidationException($message, $validationErrors);
+    }
+
+    /**
+     * Lança exceção de recurso não encontrado
+     */
+    protected function throwNotFound(string $message = 'Recurso não encontrado', string $resource = null): void
+    {
+        throw new NotFoundException($message, $resource);
+    }
+
+    /**
+     * Lança exceção de requisição inválida
+     */
+    protected function throwBadRequest(string $message = 'Requisição inválida', array $details = []): void
+    {
+        throw new BadRequestException($message, $details);
     }
 }
 
