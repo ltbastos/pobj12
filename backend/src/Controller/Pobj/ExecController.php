@@ -18,7 +18,6 @@ class ExecController extends ControllerBase
     {
         $this->execUseCase = $execUseCase;
     }
-
     /**
      * Retorna dados executivos/consolidados
      * 
@@ -30,60 +29,61 @@ class ExecController extends ControllerBase
      *     description="Retorna dados consolidados e visão executiva do POBJ",
      *     tags={"POBJ", "Executivo"},
      *     security={{"ApiKeyAuth": {}}},
+     *
      *     @OA\Parameter(
      *         name="dataInicio",
      *         in="query",
      *         description="Data de início (YYYY-MM-DD)",
      *         required=false,
-     *         
-     *         format="date"
+     *         @OA\Schema(type="string", format="date")
      *     ),
      *     @OA\Parameter(
      *         name="dataFim",
      *         in="query",
      *         description="Data de fim (YYYY-MM-DD)",
      *         required=false,
-     *         
-     *         format="date"
+     *         @OA\Schema(type="string", format="date")
      *     ),
      *     @OA\Parameter(
      *         name="segmentoId",
      *         in="query",
      *         description="ID do segmento",
      *         required=false,
-     *         @OA\Schema(type="type="string"
-     ")*     ),
+     *         @OA\Schema(type="string")
+     *     ),
      *     @OA\Parameter(
      *         name="diretoriaId",
      *         in="query",
      *         description="ID da diretoria",
      *         required=false,
-     *         @OA\Schema(type="type="string"
-     ")*     ),
+     *         @OA\Schema(type="string")
+     *     ),
      *     @OA\Parameter(
      *         name="regionalId",
      *         in="query",
      *         description="ID da regional",
      *         required=false,
-     *         @OA\Schema(type="type="string"
-     ")*     ),
+     *         @OA\Schema(type="string")
+     *     ),
      *     @OA\Parameter(
      *         name="agenciaId",
      *         in="query",
      *         description="ID da agência",
      *         required=false,
-     *         @OA\Schema(type="type="string"
-     ")*     ),
+     *         @OA\Schema(type="string")
+     *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Dados executivos retornados com sucesso",
-     *         @OA\Schema(
-     *             
-     *             @OA\Property(property="success",  example=true),
-     *             @OA\Property(property="data", 
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="object",
      *                 @OA\Property(property="summary", type="object"),
-     *                 @OA\Property(property="metrics",  @OA\Items(type="object")),
-     *                 @OA\Property(property="trends",  @OA\Items(type="object"))
+     *                 @OA\Property(property="metrics", type="array", @OA\Items(type="object")),
+     *                 @OA\Property(property="trends", type="array", @OA\Items(type="object"))
      *             )
      *         )
      *     ),
@@ -91,6 +91,7 @@ class ExecController extends ControllerBase
      *     @OA\Response(response=429, description="Rate limit excedido")
      * )
      */
+
     public function handle(Request $request): JsonResponse
     {
         $filters = new FilterDTO($request->query->all());

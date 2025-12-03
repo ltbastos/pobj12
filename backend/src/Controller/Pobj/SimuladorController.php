@@ -35,45 +35,43 @@ class SimuladorController extends ControllerBase
      *         in="query",
      *         description="Data de início (YYYY-MM-DD)",
      *         required=false,
-     *         
-     *         format="date"
+     *         @OA\Schema(type="string", format="date")
      *     ),
      *     @OA\Parameter(
      *         name="dataFim",
      *         in="query",
      *         description="Data de fim (YYYY-MM-DD)",
      *         required=false,
-     *         
-     *         format="date"
+     *         @OA\Schema(type="string", format="date")
      *     ),
      *     @OA\Parameter(
      *         name="segmentoId",
      *         in="query",
      *         description="ID do segmento",
      *         required=false,
-     *         @OA\Schema(type="type="string"
-     ")*     ),
+     *         @OA\Schema(type="string")
+     *     ),
      *     @OA\Parameter(
      *         name="diretoriaId",
      *         in="query",
      *         description="ID da diretoria",
      *         required=false,
-     *         @OA\Schema(type="type="string"
-     ")*     ),
+     *         @OA\Schema(type="string")
+     *     ),
      *     @OA\Parameter(
      *         name="regionalId",
      *         in="query",
      *         description="ID da regional",
      *         required=false,
-     *         @OA\Schema(type="type="string"
-     ")*     ),
+     *         @OA\Schema(type="string")
+     *     ),
      *     @OA\Parameter(
      *         name="agenciaId",
      *         in="query",
      *         description="ID da agência",
      *         required=false,
-     *         @OA\Schema(type="type="string"
-     ")*     ),
+     *         @OA\Schema(type="string")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Dados do simulador retornados com sucesso",

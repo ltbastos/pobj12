@@ -30,46 +30,45 @@ class RankingController extends ControllerBase
      *     description="Retorna ranking ordenado por pontuação",
      *     tags={"POBJ", "Ranking"},
      *     security={{"ApiKeyAuth": {}}},
+     *
      *     @OA\Parameter(
      *         name="dataInicio",
      *         in="query",
      *         description="Data de início (YYYY-MM-DD)",
      *         required=false,
-     *         
-     *         format="date"
+     *         @OA\Schema(type="string", format="date")
      *     ),
      *     @OA\Parameter(
      *         name="dataFim",
      *         in="query",
      *         description="Data de fim (YYYY-MM-DD)",
      *         required=false,
-     *         
-     *         format="date"
+     *         @OA\Schema(type="string", format="date")
      *     ),
      *     @OA\Parameter(
      *         name="page",
      *         in="query",
      *         description="Número da página",
      *         required=false,
-     *         type="object",         example=1
+     *         @OA\Schema(type="integer", example=1)
      *     ),
      *     @OA\Parameter(
      *         name="limit",
      *         in="query",
      *         description="Itens por página",
      *         required=false,
-     *         type="object",         example=20
+     *         @OA\Schema(type="integer", example=20)
      *     ),
+     *
      *     @OA\Response(
      *         response=200,
      *         description="Ranking retornado com sucesso",
-     *         @OA\Schema(
-     *             
-     *             @OA\Property(property="success",  example=true),
+     *         @OA\JsonContent(
+     *             @OA\Property(property="success", type="boolean", example=true),
      *             @OA\Property(
      *                 property="data",
-     *                 
-     *                 @OA\Property(property="data",  @OA\Items(type="object")),
+     *                 type="object",
+     *                 @OA\Property(property="data", type="array", @OA\Items(type="object")),
      *                 @OA\Property(property="pagination", type="object")
      *             )
      *         )
