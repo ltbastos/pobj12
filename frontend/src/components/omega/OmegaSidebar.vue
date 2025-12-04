@@ -64,7 +64,7 @@ function getIconName(iconClass: string): string {
       @click="toggleCollapse"
     >
       <span class="sr-only">Alternar menu</span>
-      <Icon :name="collapsed ? 'chevron-right' : 'chevron-left'" :size="18" aria-hidden="true" />
+      <Icon :name="collapsed ? 'chevron-right' : 'chevron-left'" :size="20" aria-hidden="true" />
     </button>
 
     <section class="omega-profile" aria-label="Perfil selecionado">
@@ -111,29 +111,44 @@ function getIconName(iconClass: string): string {
 
 .omega-sidebar__toggle {
   position: absolute;
-  top: 20px;
-  right: -16px;
-  width: 32px;
-  height: 32px;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid rgba(148, 163, 184, 0.3);
   background: #fff;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  z-index: 10;
+  z-index: 20;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  color: var(--text, #0f1424);
 }
 
 .omega-sidebar__toggle:hover {
-  background: var(--brand-xlight, rgba(204, 9, 47, 0.08));
-  border-color: var(--brand, #cc092f);
-  color: var(--brand, #cc092f);
+  background: var(--brad-color-primary, #cc092f);
+  border-color: var(--brad-color-primary, #cc092f);
+  color: #fff;
+  box-shadow: 0 4px 8px rgba(204, 9, 47, 0.2);
+  transform: translateY(-1px);
+}
+
+.omega-sidebar__toggle:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(204, 9, 47, 0.15);
+}
+
+.omega-sidebar__toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(204, 9, 47, 0.15), 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .omega-sidebar[data-collapsed="true"] .omega-sidebar__toggle {
-  right: 0;
+  right: 12px;
+  top: 12px;
 }
 
 .omega-profile {
