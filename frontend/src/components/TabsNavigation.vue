@@ -2,6 +2,7 @@
 import { computed, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import Icon from './Icon.vue'
+import PeriodoHeader from './PeriodoHeader.vue'
 import type { ViewType, TabConfig } from '../types'
 
 const router = useRouter()
@@ -52,7 +53,7 @@ const handleTabClick = (viewId: ViewType): void => {
     </button>
     <div class="tabs__aside">
       <small class="muted">
-        <span id="lbl-atualizacao"></span>
+        <PeriodoHeader />
       </small>
     </div>
   </section>

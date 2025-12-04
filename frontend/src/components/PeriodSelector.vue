@@ -44,6 +44,12 @@ const closeDatePopover = (): void => {
 }
 
 const openDatePopover = (anchor: HTMLElement): void => {
+  // Se o popover já estiver aberto, fecha
+  if (datePopover.value && document.body.contains(datePopover.value)) {
+    closeDatePopover()
+    return
+  }
+
   closeDatePopover()
 
   const pop = document.createElement('div')
@@ -90,7 +96,16 @@ const openDatePopover = (anchor: HTMLElement): void => {
     setTimeout(() => {
       const outside = (ev: MouseEvent): void => {
         const target = ev.target as HTMLElement
-        if (target === pop || pop.contains(target) || target === anchor || anchor.contains(target)) return
+        // Não fecha se o clique foi dentro do popover, no anchor, ou em elementos relacionados ao date picker
+        if (
+          target === pop || 
+          pop.contains(target) || 
+          target === anchor || 
+          anchor.contains(target) ||
+          target.closest('.date-popover') ||
+          target.type === 'date' ||
+          target.tagName === 'INPUT'
+        ) return
         closeDatePopover()
       }
 
@@ -98,9 +113,11 @@ const openDatePopover = (anchor: HTMLElement): void => {
         if (ev.key === 'Escape') closeDatePopover()
       }
 
-      document.addEventListener('mousedown', outside, { once: true })
+      // Usa click em vez de mousedown para evitar conflitos com date picker nativo
+      // capture: false garante que eventos dentro do popover sejam processados primeiro
+      document.addEventListener('click', outside, { once: true, capture: false })
       document.addEventListener('keydown', esc, { once: true })
-    }, 0)
+    }, 100)
   })
 
   pop.querySelector('#btn-cancelar')?.addEventListener('click', closeDatePopover)
