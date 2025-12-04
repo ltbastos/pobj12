@@ -107,7 +107,7 @@ watch(() => props.filters.filters.value, () => {
             type="button"
             @click="handleClearFilters"
           >
-            <i class="ti ti-x"></i>
+            <Icon name="x" :size="18" />
             <span>Limpar filtros</span>
           </button>
           <button
@@ -141,7 +141,7 @@ watch(() => props.filters.filters.value, () => {
         type="button"
         @click="handleNewTicket"
       >
-        <Icon name="plus" :size="18" />
+        <Icon name="plus" :size="18" color="white" />
         <span>Registrar chamado</span>
       </button>
     </div>
@@ -237,13 +237,22 @@ watch(() => props.filters.filters.value, () => {
 
 .omega-btn--primary {
   background: var(--brad-color-primary, #cc092f);
-  color: #fff;
+  color: #fff !important;
   border-color: var(--brad-color-primary, #cc092f);
+}
+
+.omega-btn--primary span {
+  color: #fff !important;
 }
 
 .omega-btn--primary:hover:not(:disabled) {
   background: var(--brad-color-primary-dark, #a00725);
   border-color: var(--brad-color-primary-dark, #a00725);
+  color: #fff !important;
+}
+
+.omega-btn--primary:hover:not(:disabled) span {
+  color: #fff !important;
 }
 
 .omega-btn:disabled {

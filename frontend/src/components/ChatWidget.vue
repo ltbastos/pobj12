@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
 import { sendMessage } from '../services/agentService'
+import Icon from './Icon.vue'
 
 interface Message {
   role: 'user' | 'bot'
@@ -108,12 +109,7 @@ onMounted(() => {
       aria-label="Abrir chat de dúvidas"
       @click="toggleChat"
     >
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path
-          fill="currentColor"
-          d="M4 4h16a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H8.4l-3.6 3a1 1 0 0 1-1.6-.8V6a2 2 0 0 1 2-2zm2 4v2h12V8H6zm0 4v2h9v-2H6z"
-        />
-      </svg>
+      <Icon name="message" :size="26" color="white" />
     </button>
     
     <section
@@ -133,7 +129,7 @@ onMounted(() => {
           aria-label="Fechar chat"
           @click="closeChat"
         >
-          <i class="ti ti-x"></i>
+          <Icon name="x" :size="18" color="white" />
         </button>
       </header>
 
@@ -212,11 +208,6 @@ onMounted(() => {
   box-shadow: 0 0 0 3px rgba(36, 107, 253, 0.18), 0 12px 28px rgba(17, 23, 41, 0.18);
 }
 
-.chatw__btn svg {
-  width: 26px;
-  height: 26px;
-}
-
 .chatw__panel {
   position: absolute;
   right: 0;
@@ -261,8 +252,7 @@ onMounted(() => {
 
 .chatw__close {
   border: 0;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: #b30000;
   border-radius: 8px;
   width: 30px;
   height: 28px;
@@ -270,7 +260,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  color: #fff;
   transition: box-shadow 0.15s ease;
 }
 

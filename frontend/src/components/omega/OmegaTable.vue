@@ -237,8 +237,8 @@ watch(() => props.omega.currentView.value, () => {
                     type="button"
                     @click="$emit('new-ticket')"
                   >
-                    <Icon name="plus" :size="18" />
-                    <span>Registrar novo chamado</span>
+                    <Icon name="plus" :size="18" color="white" />
+                    <span class="omega-btn--primary-text">Registrar novo chamado</span>
                   </button>
                 </div>
               </td>
@@ -584,6 +584,42 @@ watch(() => props.omega.currentView.value, () => {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
+}
+
+.omega-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-family: var(--brad-font-family, inherit);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.omega-btn--primary {
+  background: var(--brad-color-primary, #cc092f);
+  color: #fff !important;
+  border-color: var(--brad-color-primary, #cc092f);
+}
+
+.omega-btn--primary span,
+.omega-btn--primary-text {
+  color: #fff !important;
+}
+
+.omega-btn--primary:hover:not(:disabled) {
+  background: var(--brad-color-primary-dark, #a00725);
+  border-color: var(--brad-color-primary-dark, #a00725);
+  color: #fff !important;
+}
+
+.omega-btn--primary:hover:not(:disabled) span,
+.omega-btn--primary:hover:not(:disabled) .omega-btn--primary-text {
+  color: #fff !important;
 }
 </style>
 

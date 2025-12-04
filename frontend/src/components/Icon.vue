@@ -65,7 +65,8 @@ import {
   IconCircle,
   IconFilter,
   IconRefresh,
-  IconLoader2
+  IconLoader2,
+  IconDownload
 } from '@tabler/icons-vue'
 
 interface Props {
@@ -148,7 +149,8 @@ const iconMap: Record<string, any> = {
   'filter': IconFilter,
   'refresh': IconRefresh,
   'loader-2': IconLoader2,
-  'circle': IconCircle
+  'circle': IconCircle,
+  'download': IconDownload
 }
 
 const iconSize = computed(() => {

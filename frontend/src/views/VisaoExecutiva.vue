@@ -9,12 +9,14 @@ import ExecKPIs from '../components/exec/ExecKPIs.vue'
 import ExecRankings from '../components/exec/ExecRankings.vue'
 import ExecStatus from '../components/exec/ExecStatus.vue'
 import ExecHeatmap from '../components/exec/ExecHeatmap.vue'
+import Icon from '../components/Icon.vue'
 
 const { filterState, period } = useGlobalFilters()
 
 const execData = ref<ExecData | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
+const isGeneratingPDF = ref(false)
 
 const kpis = computed(() => execData.value?.kpis || {
   real_mens: 0,
@@ -132,28 +134,17 @@ const contexto = computed(() => {
 const { exportToPDF } = usePDFExport()
 
 const downloadPDF = async () => {
-  const button = document.querySelector('.btn-download-pdf') as HTMLElement
+  if (isGeneratingPDF.value) return
+  
+  isGeneratingPDF.value = true
   
   try {
-    if (button) {
-      button.style.opacity = '0.6'
-      button.style.pointerEvents = 'none'
-    }
-
     await exportToPDF('view-exec')
-
-    if (button) {
-      button.style.opacity = '1'
-      button.style.pointerEvents = 'auto'
-    }
   } catch (error) {
     console.error('Erro ao gerar PDF:', error)
     alert('Erro ao gerar PDF. Tente novamente.')
-    
-    if (button) {
-      button.style.opacity = '1'
-      button.style.pointerEvents = 'auto'
-    }
+  } finally {
+    isGeneratingPDF.value = false
   }
 }
 </script>
@@ -186,13 +177,19 @@ const downloadPDF = async () => {
             <div id="exec-context" class="exec-context">
               <strong>{{ contexto }}</strong>
             </div>
-            <button class="btn-download-pdf" @click="downloadPDF" title="Baixar como PDF">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-              <span>Baixar PDF</span>
+            <button 
+              class="btn-download-pdf" 
+              @click="downloadPDF" 
+              :disabled="isGeneratingPDF"
+              title="Baixar como PDF"
+            >
+              <Icon 
+                :name="isGeneratingPDF ? 'loader-2' : 'download'" 
+                :size="20" 
+                color="white"
+                :class="{ 'spinning': isGeneratingPDF }"
+              />
+              <span>{{ isGeneratingPDF ? 'Gerando PDF...' : 'Baixar PDF' }}</span>
             </button>
           </div>
 
@@ -300,7 +297,7 @@ const downloadPDF = async () => {
   gap: 8px;
   padding: 10px 18px;
   background: var(--brand);
-  color: white;
+  color: white !important;
   border: none;
   border-radius: var(--radius);
   font-size: 14px;
@@ -309,6 +306,10 @@ const downloadPDF = async () => {
   transition: all 0.2s ease;
   box-shadow: var(--shadow);
   white-space: nowrap;
+}
+
+.btn-download-pdf span {
+  color: white !important;
 }
 
 .btn-download-pdf:hover {
@@ -321,8 +322,33 @@ const downloadPDF = async () => {
   transform: translateY(0);
 }
 
-.btn-download-pdf svg {
-  flex-shrink: 0;
+.btn-download-pdf:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+  color: white !important;
+}
+
+.btn-download-pdf:disabled span {
+  color: white !important;
+}
+
+.btn-download-pdf:disabled:hover {
+  transform: none;
+  box-shadow: var(--shadow);
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 768px) {
