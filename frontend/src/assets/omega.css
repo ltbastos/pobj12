@@ -20,7 +20,12 @@
 body.omega-standalone{
   margin:0;
   min-height:100vh;
-  background:var(--brad-color-gray-light, #ebebeb);
+  background-color:var(--brad-color-gray-light, #ebebeb);
+  background-image:url("../bg.svg");
+  background-repeat:repeat;
+  background-size:320px 320px;
+  background-position:center center;
+  background-attachment:fixed;
   font-family:var(--brad-font-family, "Bradesco", "BradescoSans", system-ui, sans-serif);
   color:var(--brad-color-neutral-100, #000);
   overflow-x:hidden;
@@ -49,6 +54,11 @@ body.omega-standalone .omega-modal__panel{
   box-shadow:0 24px 60px rgba(15,20,36,.16);
   max-height:none;
   overflow:visible;
+  background-color:var(--brad-color-neutral-0, #fff);
+  background-image:url("../bg.svg");
+  background-repeat:repeat;
+  background-size:320px 320px;
+  background-position:center center;
 }
 
 @media (max-width: 768px){
@@ -102,7 +112,11 @@ body.has-omega-open{ overflow:hidden; }
   width:min(1440px, 98vw);
   max-height:min(98vh, 1040px);
   height:80vh;
-  background:var(--brad-color-neutral-0, #fff);
+  background-color:var(--brad-color-neutral-0, #fff);
+  background-image:url("../bg.svg");
+  background-repeat:repeat;
+  background-size:320px 320px;
+  background-position:center center;
   border-radius:26px;
   box-shadow:0 28px 88px rgba(0,0,0,.2);
   overflow:hidden;
@@ -286,7 +300,11 @@ body.has-omega-open{ overflow:hidden; }
   align-items:stretch;
   min-height:0;
   overflow:visible;
-  background:#f3f5fb;
+  background-color:#f3f5fb;
+  background-image:url("../bg.svg");
+  background-repeat:repeat;
+  background-size:320px 320px;
+  background-position:center center;
 }
 .omega-body[data-sidebar-collapsed="true"]{ grid-template-columns:108px minmax(0, 1fr); }
 
@@ -622,16 +640,13 @@ body.has-omega-open{ overflow:hidden; }
   align-items:center; 
   gap:10px; 
   border-radius:14px; 
-  border:1px solid rgba(148,163,184,.25); 
   background:#f8fafc; 
   padding:4px 10px; 
   box-shadow:none;
   transition:all 0.25s ease;
 }
 .omega-search:focus-within{
-  border-color:var(--brad-color-primary, #cc092f);
   background:#fff;
-  box-shadow:0 0 0 3px rgba(204,9,47,0.1);
 }
 .omega-search i{ 
   color:var(--brad-color-gray-dark, #999); 
@@ -879,11 +894,11 @@ body.has-omega-open{ overflow:hidden; }
   overflow-x:auto;
   overflow-y:visible;
   background:#fff;
-  box-shadow:0 20px 46px rgba(15,20,36,.12);
-  transition:box-shadow 0.3s ease;
+  box-shadow:none;
+  transition:none;
 }
 .omega-table-wrapper:hover{
-  box-shadow:0 24px 52px rgba(15,20,36,.16);
+  box-shadow:none;
 }
 
 .omega-table[data-priority-visible="false"] th[data-priority-column],

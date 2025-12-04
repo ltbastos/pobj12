@@ -186,8 +186,8 @@ watch(() => props.filters.filters.value, () => {
 
 .omega-search input:focus {
   outline: none;
-  border-color: var(--brad-color-primary, #cc092f);
-  box-shadow: 0 0 0 3px var(--brad-color-primary-xlight, rgba(204, 9, 47, 0.12));
+  border: 2px solid var(--brad-color-primary, #cc092f);
+  box-shadow: none;
 }
 
 .omega-toolbar__actions {

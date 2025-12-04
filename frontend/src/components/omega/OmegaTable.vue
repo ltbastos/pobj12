@@ -362,6 +362,7 @@ watch(() => props.omega.currentView.value, () => {
   border-radius: 12px;
   border: 1px solid rgba(148, 163, 184, 0.2);
   background: #fff;
+  box-shadow: none;
 }
 
 .omega-table {
