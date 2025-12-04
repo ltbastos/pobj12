@@ -18,10 +18,12 @@
   "dependencies": {
     "@tabler/icons-vue": "^3.35.0",
     "@tabler/icons-webfont": "^3.35.0",
+    "@tailwindcss/vite": "^4.1.17",
     "@vueuse/core": "^14.1.0",
     "@vueuse/motion": "^3.0.3",
     "html2pdf.js": "^0.12.1",
     "motion": "^12.23.24",
+    "tailwindcss": "^4.1.17",
     "vue": "^3.5.22",
     "vue-router": "^4.6.3"
   },
