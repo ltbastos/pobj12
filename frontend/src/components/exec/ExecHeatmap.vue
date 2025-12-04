@@ -43,7 +43,6 @@ const getAtingimentoValue = (unit: string, section: string): { pct: number | nul
     return { pct, text: `${Math.round(pct)}%` }
   }
   
-  // Sempre mostra o valor real, mesmo sem meta
   return { pct: null, text: formatBRL(bucket.real || 0) }
 }
 
@@ -56,12 +55,11 @@ const getAtingimentoMensal = (unit: string, section: string, mes: string): { pct
     return { pct, text: `${Math.round(pct)}%` }
   }
   
-  // Sempre mostra o valor real, mesmo sem meta
   return { pct: null, text: formatBRL(bucket.real || 0) }
 }
 
 const getVariacaoValue = (unit: string, section: string, monthIndex: number): { delta: number | null; text: string; class: string } => {
-  // Primeiro mês não tem mês anterior para comparar
+  
   if (monthIndex === 0) {
     return { delta: null, text: '—', class: 'hm-empty' }
   }
@@ -76,7 +74,6 @@ const getVariacaoValue = (unit: string, section: string, monthIndex: number): { 
   const currentData = getDataMensal(unit, section, currentMonth.key)
   const prevData = getDataMensal(unit, section, prevMonth.key)
 
-  // Se não há dados, não pode calcular variação
   if (!currentData || !prevData) {
     return { delta: null, text: '—', class: 'hm-empty' }
   }
@@ -84,7 +81,6 @@ const getVariacaoValue = (unit: string, section: string, monthIndex: number): { 
   const currentMeta = currentData.meta
   const prevMeta = prevData.meta
 
-  // Se não há meta anterior, não pode calcular variação
   if (prevMeta === 0) {
     if (currentMeta === 0) {
       return { delta: 0, text: '0.0%', class: 'hm-ok' }
@@ -92,7 +88,6 @@ const getVariacaoValue = (unit: string, section: string, monthIndex: number): { 
     return { delta: null, text: '—', class: 'hm-empty' }
   }
 
-  // Calcula a variação percentual da meta
   const delta = ((currentMeta - prevMeta) / prevMeta) * 100
 
   let className = 'hm-ok'
@@ -150,7 +145,7 @@ const getCellTitle = (unit: string, section: string, monthIndex?: number, monthK
     }
     return title
   } else if (monthKey) {
-    // Modo atingimento mensal
+    
     const month = props.heatmap.months.find(m => m.key === monthKey)
     const data = getDataMensal(unit, section, monthKey)
     const atingimento = getAtingimentoMensal(unit, section, monthKey)
@@ -166,7 +161,7 @@ const getCellTitle = (unit: string, section: string, monthIndex?: number, monthK
     }
     return title
   } else {
-    // Modo atingimento agregado
+    
     const data = getData(unit, section)
     const atingimento = getAtingimentoValue(unit, section)
     let title = `${unitLabel} × ${sectionLabel}\n\n`
@@ -253,7 +248,7 @@ const hasMonthlyData = computed(() => {
     </div>
 
     <div v-else id="exec-heatmap" class="exec-heatmap">
-      <!-- Cabeçalho -->
+      
       <div 
         class="hm-row hm-head" 
         :style="`--hm-cols: ${heatmapMode === 'variacao' ? sections.length * heatmap.months.length : (heatmapMode === 'atingimento' && heatmap.months.length > 0 && hasMonthlyData ? sections.length * heatmap.months.length : sections.length)}; --hm-first: 200px; --hm-cell: ${heatmapMode === 'variacao' || (heatmapMode === 'atingimento' && heatmap.months.length > 0 && hasMonthlyData) ? '100px' : '140px'}`"
@@ -304,7 +299,7 @@ const hasMonthlyData = computed(() => {
         </template>
       </div>
       
-      <!-- Linhas de dados -->
+      
       <div 
         v-for="unit in heatmap.units" 
         :key="unit.value"

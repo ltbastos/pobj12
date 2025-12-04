@@ -210,7 +210,7 @@ const sectionHasExpandableRows = (section: LegacySection): boolean => {
                   </td>
                 </tr>
 
-                <!-- Linhas filhas (subindicadores) -->
+                
                 <template v-if="item.children && item.children.length > 0">
                   <tr
                     v-for="child in item.children"

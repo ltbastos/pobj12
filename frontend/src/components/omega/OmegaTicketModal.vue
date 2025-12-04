@@ -24,18 +24,14 @@ const selectedTicket = computed(() => {
 
 const currentUser = computed(() => props.omega.currentUser.value)
 
-// Verifica se o usuário pode responder (status finais não permitem réplica)
 const canReply = computed(() => {
   if (!selectedTicket.value || !currentUser.value) return false
-  // Se for usuário, verifica se o status permite réplica
   if (currentUser.value.role === 'usuario') {
     return props.omega.canUserReply(selectedTicket.value)
   }
-  // Analistas, supervisores e admins sempre podem responder
   return true
 })
 
-// Estado do formulário de atualização
 const updateComment = ref('')
 const isSubmitting = ref(false)
 const updateError = ref<string | null>(null)
@@ -70,10 +66,8 @@ const statusMeta = computed(() => {
   return status || { label: selectedTicket.value.status || '—', tone: 'neutral' }
 })
 
-// Função para converter ícone do formato "ti ti-*" para nome do componente Icon
 function getIconName(iconClass: string): string {
   if (!iconClass) return 'circle'
-  // Remove "ti ti-" do início
   return iconClass.replace(/^ti ti-/, '')
 }
 
@@ -123,7 +117,6 @@ const timeline = computed(() => {
       return dateA - dateB
     })
   }
-  // Se history é string, tenta parsear como JSON
   if (history && typeof history === 'string') {
     const trimmed = history.trim()
     if (trimmed.startsWith('[')) {
@@ -137,14 +130,12 @@ const timeline = computed(() => {
           })
         }
       } catch {
-        // Ignora erro de parse
       }
     }
   }
   return []
 })
 
-// Previne fechamento ao clicar dentro do modal
 function handlePanelClick(e: MouseEvent) {
   e.stopPropagation()
 }
@@ -183,7 +174,6 @@ function getActorInitial(actorId: string | null | undefined): string {
   return name.charAt(0).toUpperCase()
 }
 
-// Submete atualização do ticket
 async function handleUpdateSubmit(event: Event) {
   event.preventDefault()
   if (!selectedTicket.value || !currentUser.value || !canReply.value) return
@@ -207,15 +197,12 @@ async function handleUpdateSubmit(event: Event) {
       attachments: []
     }
 
-    // Cria uma cópia do histórico atual
     const currentHistory = Array.isArray(selectedTicket.value.history) 
       ? [...selectedTicket.value.history] 
       : []
     
-    // Adiciona a nova entrada
     currentHistory.push(historyEntry)
 
-    // Atualiza no backend
     const updatedTicket = await props.omega.updateTicket(selectedTicket.value.id, {
       updated: now,
       history: currentHistory
@@ -225,23 +212,18 @@ async function handleUpdateSubmit(event: Event) {
       throw new Error('Falha ao atualizar ticket')
     }
 
-    // Recarrega os tickets para ter a versão atualizada do backend
     await props.omega.loadTickets()
 
-    // Cria notificações
     try {
       await createOmegaNotification(selectedTicket.value, historyEntry)
       
-      // Se for assunto POBJ, também cria notificação no POBJ
       if (selectedTicket.value.queue?.toLowerCase() === 'pobj') {
         await createPobjNotification(selectedTicket.value, historyEntry)
       }
     } catch (notifErr) {
-      // Não bloqueia a atualização se a notificação falhar
       console.warn('Erro ao criar notificação:', notifErr)
     }
 
-    // Limpa o formulário
     updateComment.value = ''
     updateError.value = null
   } catch (err) {
@@ -390,7 +372,6 @@ async function handleUpdateSubmit(event: Event) {
             </div>
           </section>
 
-          <!-- Formulário de atualização (comentário/réplica) -->
           <section 
             v-if="canReply" 
             class="omega-ticket-update" 
@@ -429,7 +410,6 @@ async function handleUpdateSubmit(event: Event) {
             </form>
           </section>
 
-          <!-- Mensagem quando não pode responder -->
           <section 
             v-else-if="currentUser?.role === 'usuario' && selectedTicket" 
             class="omega-ticket-update omega-ticket-update--blocked"

@@ -18,12 +18,11 @@ export function useOmegaBulk(omega: any) {
     if (!select) return
 
     const statuses = omega.statuses.value
-    // Limpa opções existentes
+    
     while (select.firstChild) {
       select.removeChild(select.firstChild)
     }
     
-    // Adiciona novas opções
     statuses.forEach((status: any) => {
       const option = document.createElement('option')
       option.value = status.id
@@ -51,16 +50,13 @@ export function useOmegaBulk(omega: any) {
     const now = new Date().toISOString()
     const statusMeta = omega.statuses.value.find((s: any) => s.id === status) || { label: status }
 
-    // Atualiza tickets selecionados
     for (const id of selection) {
       const ticket = omega.tickets.value.find((item: any) => item.id === id)
       if (!ticket) continue
 
-      // Atualiza status do ticket
       ticket.status = status
       ticket.updated = now
 
-      // Adiciona ao histórico
       if (Array.isArray(ticket.history)) {
         ticket.history.push({
           date: now,
@@ -72,7 +68,6 @@ export function useOmegaBulk(omega: any) {
         })
       }
 
-      // Cria notificação no Omega
       await createOmegaNotification(ticket, {
         date: now,
         actorId: currentUser.id,
@@ -81,7 +76,6 @@ export function useOmegaBulk(omega: any) {
         status
       })
 
-      // Se o chamado for assunto POBJ, também cria notificação no POBJ
       if (ticket.queue === 'pobj' || ticket.queue?.toLowerCase() === 'pobj') {
         await createPobjNotification(ticket, {
           date: now,
@@ -92,7 +86,6 @@ export function useOmegaBulk(omega: any) {
         })
       }
 
-      // Atualiza no backend
       try {
         await omega.updateTicket(id, { status, updated: now })
       } catch (err) {
@@ -103,7 +96,6 @@ export function useOmegaBulk(omega: any) {
     bulkPanelOpen.value = false
     selectedTicketIds.value.clear()
   }
-
 
   function renderBulkPanel(root: HTMLElement) {
     const panel = root.querySelector('#omega-bulk-panel')
@@ -130,10 +122,8 @@ export function useOmegaBulk(omega: any) {
     }
   }
 
-  // setupBulkControls removido - agora gerenciado pelo componente OmegaBulkPanel.vue
   function setupBulkControls(root: HTMLElement, onRender: () => void) {
-    // Função mantida para compatibilidade, mas não faz nada
-    // Os controles são gerenciados pelo componente Vue
+    
   }
 
   return {
@@ -147,4 +137,3 @@ export function useOmegaBulk(omega: any) {
     setupBulkControls
   }
 }
-

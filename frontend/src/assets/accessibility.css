@@ -1,8 +1,3 @@
-/* =========================================================
-   Acessibilidade - Foco, Contraste e Navegação
-   ========================================================= */
-
-/* Skip Links - Navegação rápida para leitores de tela */
 .skip-link {
   position: absolute;
   top: -40px;
@@ -22,14 +17,12 @@
   outline-offset: 2px;
 }
 
-/* Foco visível melhorado - WCAG 2.1 AA */
 *:focus-visible {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
   border-radius: 2px;
 }
 
-/* Foco para elementos interativos */
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
@@ -43,17 +36,14 @@ textarea:focus-visible,
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
 }
 
-/* Remover outline padrão apenas quando não é foco por teclado */
 *:focus:not(:focus-visible) {
   outline: none;
 }
 
-/* Contraste melhorado para textos */
 .text-low-contrast {
-  color: #4b5563; /* Contraste mínimo 4.5:1 em fundo branco */
+  color: #4b5563;
 }
 
-/* Indicadores de estado acessíveis */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -66,7 +56,6 @@ textarea:focus-visible,
   border-width: 0;
 }
 
-/* Estados de loading acessíveis */
 [aria-busy="true"] {
   position: relative;
 }
@@ -85,28 +74,10 @@ textarea:focus-visible,
   animation: spin 0.6s linear infinite;
 }
 
-/* Landmarks visíveis para debug (remover em produção) */
-/* 
-nav[role="navigation"]::before,
-main[role="main"]::before,
-aside[role="complementary"]::before {
-  content: attr(role);
-  position: absolute;
-  top: 0;
-  left: 0;
-  background: rgba(255, 0, 0, 0.1);
-  padding: 2px 4px;
-  font-size: 10px;
-  z-index: 9999;
-}
-*/
-
-/* Melhorias para leitores de tela */
 [aria-hidden="true"] {
   display: none !important;
 }
 
-/* Exceção: ícones decorativos devem ser visíveis visualmente mesmo com aria-hidden */
 .tab-icon i[aria-hidden="true"],
 .tab-icon svg[aria-hidden="true"],
 svg[aria-hidden="true"],
@@ -116,14 +87,12 @@ i.ti[aria-hidden="true"] {
   visibility: visible !important;
 }
 
-/* Exceção: logos decorativos devem ser visíveis visualmente mesmo com aria-hidden */
 .logo__mark[aria-hidden="true"],
 .footer__logo-mark[aria-hidden="true"] {
   display: block !important;
   visibility: visible !important;
 }
 
-/* Indicadores de erro acessíveis */
 [aria-invalid="true"] {
   border-color: #ef4444;
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
@@ -133,7 +102,6 @@ i.ti[aria-hidden="true"] {
   outline-color: #ef4444;
 }
 
-/* Estados desabilitados acessíveis */
 [aria-disabled="true"],
 :disabled {
   opacity: 0.6;
@@ -141,27 +109,25 @@ i.ti[aria-hidden="true"] {
   pointer-events: none;
 }
 
-/* Navegação por teclado melhorada */
 .keyboard-navigation *:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
 
-/* Contraste mínimo para links - WCAG 2.1 AA */
 a {
-  color: #2563eb; /* Contraste 4.5:1+ em fundo branco */
+  color: #2563eb;
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
 
 a:hover {
-  color: #1d4ed8; /* Contraste 4.5:1+ */
+  color: #1d4ed8;
   text-decoration-thickness: 2px;
 }
 
 a:visited {
-  color: #7c3aed; /* Contraste 4.5:1+ */
+  color: #7c3aed;
 }
 
 a:focus-visible {
@@ -170,12 +136,11 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
-/* Melhorias para formulários */
 label {
   display: block;
   font-weight: 600;
   margin-bottom: 4px;
-  color: #1f2937; /* Contraste 7:1+ em fundo branco */
+  color: #1f2937;
   font-size: 14px;
 }
 
@@ -194,10 +159,10 @@ input[type="search"],
 input[type="number"],
 select,
 textarea {
-  min-height: 44px; /* Tamanho mínimo para toque acessível */
+  min-height: 44px;
 }
 
-/* Indicadores de campo obrigatório */
+
 [aria-required="true"]::after,
 .required::after {
   content: ' *';
@@ -205,13 +170,11 @@ textarea {
   font-weight: bold;
 }
 
-/* Mensagens de erro acessíveis */
 [role="alert"] {
   color: #ef4444;
   font-weight: 500;
 }
 
-/* Melhorias para modais */
 [role="dialog"] {
   outline: none;
 }
@@ -221,7 +184,6 @@ textarea {
   outline-offset: 2px;
 }
 
-/* Reduzir animações para usuários que preferem menos movimento */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -233,7 +195,6 @@ textarea {
   }
 }
 
-/* Alto contraste para usuários que preferem */
 @media (prefers-contrast: high) {
   * {
     border-color: currentColor !important;
@@ -247,7 +208,6 @@ textarea {
   }
 }
 
-/* Modo escuro acessível (se implementado) */
 @media (prefers-color-scheme: dark) {
   :focus-visible {
     outline-color: #60a5fa;

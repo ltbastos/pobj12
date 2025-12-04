@@ -10,7 +10,6 @@ const rankingData = ref<RankingItem[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-// Função auxiliar para sanitizar valores de filtro
 const sanitizeFilterValue = (value?: string): string | undefined => {
   if (!value) return undefined
   const trimmed = value.trim()
@@ -47,10 +46,8 @@ const rankingFilters = computed<RankingFilters>(() => {
   return filters
 })
 
-// Determina o nível automaticamente baseado nos filtros aplicados
-// Hierarquia: gerente > gerenteGestao > agencia > regional > diretoria > segmento
 const selectedLevel = computed<string>(() => {
-  // Verifica na ordem da hierarquia (do mais específico para o menos específico)
+  
   if (filterState.value.gerente && filterState.value.gerente.toLowerCase() !== 'todos') {
     return 'gerente'
   }
@@ -69,11 +66,10 @@ const selectedLevel = computed<string>(() => {
   if (filterState.value.segmento && filterState.value.segmento.toLowerCase() !== 'todos') {
     return 'segmento'
   }
-  // Padrão: gerenteGestao quando nenhum filtro está aplicado
+  
   return 'gerenteGestao'
 })
 
-// Label do nível atual para exibição
 const levelLabel = computed<string>(() => {
   const labels: Record<string, string> = {
     'segmento': 'Segmento',
@@ -110,12 +106,10 @@ onMounted(() => {
   loadRanking()
 })
 
-// Observa mudanças nos filtros e no trigger
 watch([filterState, filterTrigger], () => {
   loadRanking()
 }, { deep: true })
 
-// Os dados já vêm processados do backend (agrupados e com displayLabel)
 const groupedRanking = computed(() => {
   return rankingData.value
 })
@@ -168,7 +162,7 @@ const formatPoints = (value: number | null | undefined): string => {
         </div>
         </template>
 
-        <!-- Conteúdo real -->
+        
         <template v-else>
           <div v-if="error" class="error-state">
           <p>{{ error }}</p>

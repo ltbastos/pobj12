@@ -1,5 +1,4 @@
 <script setup lang="ts">
-
 export type DetailView = {
   id: string
   name: string

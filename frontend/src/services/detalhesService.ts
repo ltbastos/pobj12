@@ -30,4 +30,3 @@ export async function getDetalhes(filters?: DetalhesFilters): Promise<DetalhesIt
   console.error('Erro ao buscar detalhes:', response.error)
   return null
 }
-

@@ -31,4 +31,3 @@ export async function getResumo(filters?: ResumoFilters): Promise<ResumoPayload 
   console.error('Erro ao buscar resumo:', response.error)
   return null
 }
-

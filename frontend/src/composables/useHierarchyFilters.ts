@@ -2,7 +2,6 @@ import { ref, computed, type Ref } from 'vue'
 import type { InitData } from '../services/initService'
 import type { FilterOption, HierarchySelection } from '../types'
 
-// Tipo que aceita InitData com arrays mutáveis ou readonly
 type InitDataReadonly = {
   readonly segmentos: readonly any[]
   readonly diretorias: readonly any[]
@@ -69,13 +68,12 @@ export function useHierarchyFilters(estruturaData: Ref<InitDataCompatible | null
   const state = {
     segmento: ref(''),
     diretoria: ref(''),
-    gerencia: ref(''), // "gerencia" equivale a "regional" no JSON
+    gerencia: ref(''), 
     agencia: ref(''),
     ggestao: ref(''),
     gerente: ref('')
   }
 
-  // Normaliza tudo uma vez
   const normalized = computed(() => {
     if (!estruturaData.value) return null
     return {
@@ -88,7 +86,6 @@ export function useHierarchyFilters(estruturaData: Ref<InitDataCompatible | null
     }
   })
 
-  // Maps O(1)
   const maps = computed(() => {
     if (!normalized.value) return null
     const idx = (arr: any[]) => Object.fromEntries((arr ?? []).map(i => [normalizeId(i.id), i]))
@@ -102,22 +99,20 @@ export function useHierarchyFilters(estruturaData: Ref<InitDataCompatible | null
     }
   })
 
-  // Parent lookup (qual campo no CHILD aponta para o PAI)
   const parentKeyByChild: Record<keyof HierarchySelection, string | null> = {
     segmento: null,
-    diretoria: 'id_segmento', // diretoria -> segmento
-    gerencia: 'id_diretoria', // regional -> diretoria
-    agencia: 'id_regional',    // agencia -> regional (gerencia)
-    ggestao: 'id_agencia',     // ggestao -> agencia
-    gerente: 'id_gestor'       // gerente -> ggestao (id_gestor)
+    diretoria: 'id_segmento', 
+    gerencia: 'id_diretoria', 
+    agencia: 'id_regional',    
+    ggestao: 'id_agencia',     
+    gerente: 'id_gestor'       
   }
 
-  // Parent field name (qual é o campo pai no state)
   const parentFieldByChild: Record<keyof HierarchySelection, keyof HierarchySelection | null> = {
     segmento: null,
     diretoria: 'segmento',
-    gerencia: 'diretoria', // regional -> diretoria
-    agencia: 'gerencia',   // agencia -> gerencia (regional)
+    gerencia: 'diretoria', 
+    agencia: 'gerencia',   
     ggestao: 'agencia',
     gerente: 'ggestao'
   }
@@ -130,24 +125,19 @@ export function useHierarchyFilters(estruturaData: Ref<InitDataCompatible | null
     const childMeta = maps.value?.[childField]?.[normalizeId(childValue)]
     if (!childMeta) return
 
-    // O childMeta tem, por exemplo, childMeta['id_regional'] -> id do parent
     const parentId = normalizeId((childMeta as any)[parentKey] ?? '')
     if (!parentId) return
 
-    // parent está indexado por id
     const parentMeta = maps.value?.[parentField]?.[parentId]
     if (!parentMeta) return
 
-    // seta o parent no state (usa o id da lista normalizada)
     state[parentField].value = parentMeta.id
 
     console.debug('[hierarchy] autoFillParent:', { childField, childValue, parentField, parentId })
 
-    // sobe recursivamente
     autoFillParent(parentField, parentMeta.id)
   }
 
-  // limpa filhos a partir do field (ordem explícita)
   const stateOrder: (keyof HierarchySelection)[] = ['segmento', 'diretoria', 'gerencia', 'agencia', 'ggestao', 'gerente']
 
   function clearChildrenFrom(field: keyof HierarchySelection) {
@@ -161,12 +151,10 @@ export function useHierarchyFilters(estruturaData: Ref<InitDataCompatible | null
   function onChange(field: keyof HierarchySelection, value: string) {
     state[field].value = normalizeId(value)
     clearChildrenFrom(field)
-    // tenta preencher pais se possível
+    
     autoFillParent(field, state[field].value)
   }
 
-  // Mantém todas as opções visíveis, sem filtrar
-  // A hierarquia é atualizada dinamicamente quando um item é selecionado
   const segmentos = computed(() => normalized.value?.segmentos ?? [])
   const diretorias = computed(() => normalized.value?.diretorias ?? [])
   const regionais = computed(() => normalized.value?.regionais ?? [])

@@ -42,9 +42,6 @@ function buildFiltersFromState(state?: FilterState, period?: Period): ResumoFilt
     const indicador = sanitizeValue(state.indicador)
     const subindicador = sanitizeValue(state.subindicador)
     
-    // Mapeia status do frontend para o formato do backend
-    // Frontend: 'atingidos' | 'nao' | 'todos'
-    // Backend: '01' (Atingido) | '02' (Não Atingido) | '03' ou undefined (Todos)
     let status: string | undefined = undefined
     if (state.status && state.status !== 'todos') {
       if (state.status === 'atingidos') {
@@ -94,7 +91,7 @@ function filtersEqual(f1: ResumoFilters, f2: ResumoFilters): boolean {
 }
 
 async function fetchResumo(filters: ResumoFilters): Promise<void> {
-  // Evita requisições duplicadas simultâneas
+  
   if (resumoLoading.value) {
     return
   }
@@ -104,7 +101,7 @@ async function fetchResumo(filters: ResumoFilters): Promise<void> {
   resumoError.value = null
 
   try {
-    // Sempre busca dados frescos do servidor
+    
     const data = await getResumo(filters)
     if (data) {
       resumoPayload.value = data
@@ -127,15 +124,12 @@ export function useResumoData(
     watcherRegistered = true
     const { filterTrigger, filterState: globalFilterState, period: globalPeriod } = useGlobalFilters()
     
-    // Observa o filterTrigger para forçar busca quando o botão Filtrar é clicado
-    // Este é o watcher principal que dispara a busca
     watch(
       filterTrigger,
       async () => {
-        // Aguarda o próximo tick para garantir que as atualizações reativas foram aplicadas
+        
         await nextTick()
-        // Sempre busca dados frescos do servidor
-        // Usa os valores globais para garantir que está lendo o estado mais recente
+        
         const filters = buildFiltersFromState(globalFilterState.value, globalPeriod.value)
         fetchResumo(filters)
       },
@@ -160,4 +154,3 @@ export function useResumoData(
     buildFilters: () => buildFiltersFromState(filterState.value, period.value)
   }
 }
-

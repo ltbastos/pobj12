@@ -21,8 +21,6 @@ onMounted(async () => {
   await loadCalendario()
 })
 
-
-// Usa composable para gerenciar eventos
 const useClickOutside = (callback: () => void) => {
   const handleClick = (e: MouseEvent) => {
     const target = e.target as HTMLElement
@@ -193,7 +191,7 @@ const getMetricLabel = (metric: string): string => {
 
 <template>
   <div id="grid-familias">
-    <!-- Skeleton Loading -->
+    
     <template v-if="loading">
       <div class="produtos-skeleton">
         <div class="skeleton skeleton--section-title" style="height: 28px; width: 200px; margin-bottom: 16px; border-radius: 6px;"></div>
@@ -212,7 +210,7 @@ const getMetricLabel = (metric: string): string => {
       </div>
     </template>
 
-    <!-- Conteúdo real -->
+    
     <template v-else>
       <div v-if="error" class="error-state">
         <p>{{ error }}</p>
@@ -330,7 +328,7 @@ const getMetricLabel = (metric: string): string => {
               Atualizado em {{ item.ultimaAtualizacao || 'N/A' }}
             </div>
 
-            <!-- Tooltip com informações de projeção e metas -->
+            
             <div
               v-if="openTooltipId === item.id"
               class="kpi-tip is-open"
@@ -382,7 +380,7 @@ const getMetricLabel = (metric: string): string => {
 </template>
 
 <style scoped>
-/* Skeleton Loading */
+
 .skeleton {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
@@ -419,7 +417,7 @@ const getMetricLabel = (metric: string): string => {
 </style>
 
 <style>
-/* Garantir que os estilos dos cards sejam aplicados mesmo se as variáveis CSS não estiverem carregadas */
+
 .prod-card {
   position: relative;
   overflow: visible;
@@ -437,7 +435,7 @@ const getMetricLabel = (metric: string): string => {
   transform: translateY(0);
 }
 
-/* Animação suave de entrada - elementos começam visíveis */
+
 @media (prefers-reduced-motion: no-preference) {
   .prod-card {
     animation: slideInUp 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
@@ -475,7 +473,7 @@ const getMetricLabel = (metric: string): string => {
   transition-duration: 0.1s;
 }
 
-/* Microinteração: pulse no hover do badge */
+
 .badge:hover {
   animation: badge-pulse-hover 0.4s ease-out;
 }
@@ -675,7 +673,7 @@ const getMetricLabel = (metric: string): string => {
   animation: fillProgress 1s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
 }
 
-/* Animação suave da barra de progresso */
+
 .prod-card__var-track:hover .prod-card__var-fill {
   filter: brightness(1.1);
   transition: filter 0.2s ease;

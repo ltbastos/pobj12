@@ -6,7 +6,6 @@ export function usePDFExport() {
     let element: HTMLElement | null = null
     
     if (typeof elementRef === 'string') {
-      // Fallback para compatibilidade com código legado
       element = document.querySelector(`#${elementRef}`) as HTMLElement
     } else if (elementRef instanceof HTMLElement) {
       element = elementRef
@@ -21,7 +20,6 @@ export function usePDFExport() {
 
     const defaultFilename = filename || `visao-executiva-${new Date().toISOString().split('T')[0]}.pdf`
 
-    // Configurações do PDF
     const opt = {
       margin: [10, 10, 10, 10] as [number, number, number, number],
       filename: defaultFilename,
@@ -52,4 +50,3 @@ export function usePDFExport() {
     exportToPDF
   }
 }
-

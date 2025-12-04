@@ -89,5 +89,3 @@ export function useAccumulatedView(period: { value: Period }, updatePeriod: (per
     options: ACCUMULATED_VIEW_OPTIONS
   }
 }
-
-

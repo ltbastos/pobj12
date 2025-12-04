@@ -27,4 +27,3 @@ export async function getVariavel(filters?: VariavelFilters): Promise<Variavel[]
   console.error('Erro ao buscar variável:', response.error)
   return null
 }
-

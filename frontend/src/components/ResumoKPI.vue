@@ -192,7 +192,7 @@ const pctVariavel = computed(() => {
   transform: translateY(0);
 }
 
-/* Animação suave de entrada - elementos começam visíveis */
+
 @media (prefers-reduced-motion: no-preference) {
   .kpi-pill {
     animation: slideInUp 0.5s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;

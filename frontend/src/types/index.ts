@@ -21,25 +21,15 @@ export type HierarchySelection = {
 }
 
 export type InitData = {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   segmentos: any[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   diretorias: any[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   regionais: any[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   agencias: any[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   gerentes_gestao: any[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   gerentes: any[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   familias: any[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   indicadores: any[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   subindicadores: any[]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   status_indicadores: any[]
 }
 
@@ -77,7 +67,6 @@ export type CalendarioItem = {
   ehDiaUtil: number
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type ApiResponse<T = any> = {
   success: boolean
   data?: T
@@ -219,7 +208,6 @@ export type RankingItem = {
   pontos?: number
   realizado_mensal?: number
   meta_mensal?: number
-  // Campos processados pelo backend
   unidade?: string
   label?: string
   displayLabel?: string
@@ -292,4 +280,3 @@ export type TabConfig = {
   ariaLabel: string
   path?: string
 }
-

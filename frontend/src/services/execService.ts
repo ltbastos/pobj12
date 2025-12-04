@@ -98,4 +98,3 @@ export async function getExecData(filters?: ExecFilters): Promise<ExecData | nul
   console.error('Erro ao buscar dados executivos:', response.error)
   return null
 }
-

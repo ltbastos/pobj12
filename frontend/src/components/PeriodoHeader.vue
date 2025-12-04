@@ -44,7 +44,7 @@ const popoverOpen = ref(false)
 const anchor = ref<HTMLElement | null>(null)
 
 const openPopover = (e: Event) => {
-  // Toggle: se já estiver aberto, fecha
+  
   if (popoverOpen.value) {
     popoverOpen.value = false
     return

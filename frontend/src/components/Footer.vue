@@ -1,5 +1,4 @@
-<script setup lang="ts">
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <footer class="footer" role="contentinfo" aria-label="Rodapé">
@@ -73,5 +72,4 @@
   }
 }
 </style>
-
 

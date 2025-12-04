@@ -71,7 +71,6 @@ const selectOption = (option: FilterOption): void => {
   searchTerm.value = ''
 }
 
-
 const handleKeydown = (event: KeyboardEvent): void => {
   if (event.key === 'Escape') {
     isOpen.value = false
@@ -115,7 +114,6 @@ const focusPreviousOption = (): void => {
   items[prevIndex]?.focus()
 }
 
-// Usa composable para gerenciar click outside
 const useClickOutside = (callback: () => void) => {
   const handleClick = (event: MouseEvent) => {
     if (wrapperRef.value && !wrapperRef.value.contains(event.target as Node)) {

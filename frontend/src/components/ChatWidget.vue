@@ -49,12 +49,10 @@ const handleSubmit = async (e: Event) => {
   const question = inputText.value.trim()
   if (!question || isSending.value) return
 
-  // Adiciona mensagem do usuário
   addMessage('user', question)
   inputText.value = ''
   isSending.value = true
 
-  // Adiciona indicador de digitação
   const typingIndex = messages.value.length
   addMessage('bot', '', true)
 
@@ -62,7 +60,7 @@ const handleSubmit = async (e: Event) => {
     const response = await sendMessage({ question })
     
     if (response && response.answer) {
-      // Remove indicador de digitação e adiciona resposta
+      
       messages.value[typingIndex] = { role: 'bot', text: response.answer }
     } else {
       messages.value[typingIndex] = {
@@ -82,12 +80,10 @@ const handleSubmit = async (e: Event) => {
   }
 }
 
-// Mensagem de boas-vindas
 onMounted(() => {
   addMessage('bot', 'Olá! Posso ajudar com dúvidas sobre o POBJ e campanhas. O que você quer saber?')
 })
 
-// Fecha o chat ao pressionar Escape usando composable
 const handleEscape = (e: KeyboardEvent) => {
   if (e.key === 'Escape' && isOpen.value) {
     closeChat()
@@ -179,7 +175,7 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-/* ===== Chat flutuante (widget) ===== */
+
 .chatw {
   position: fixed;
   right: 16px;

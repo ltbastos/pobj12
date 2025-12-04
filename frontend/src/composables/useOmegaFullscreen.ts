@@ -14,7 +14,7 @@ export function useOmegaFullscreen(modalRef?: Ref<HTMLElement | null>) {
     const btn = root.querySelector('[data-omega-fullscreen-toggle]') as HTMLElement
     if (!btn) {
       console.warn('⚠️ Botão de fullscreen não encontrado')
-      // Tenta encontrar pelo ID também
+      
       const btnById = root.querySelector('#omega-fullscreen') as HTMLElement
       if (btnById) {
       }
@@ -35,13 +35,12 @@ export function useOmegaFullscreen(modalRef?: Ref<HTMLElement | null>) {
   }
 
   function bindOmegaFullscreenControls(root: HTMLElement) {
-    // Remove listener anterior se existir
+    
     if (fullscreenKeydownHandler) {
       document.removeEventListener('keydown', fullscreenKeydownHandler)
       fullscreenKeydownHandler = null
     }
 
-    // Tenta encontrar o botão pelo atributo data ou pelo ID
     const fsBtn = root.querySelector('[data-omega-fullscreen-toggle]') as HTMLElement ||
                   root.querySelector('#omega-fullscreen') as HTMLElement
 
@@ -63,13 +62,13 @@ export function useOmegaFullscreen(modalRef?: Ref<HTMLElement | null>) {
     }
 
     fullscreenKeydownHandler = (ev: KeyboardEvent) => {
-      // Só reage se o popup estiver visível
+      
       if (!root || root.hidden) return
       if ((ev.key || '').toLowerCase() === 'f') {
         setOmegaFullscreen()
         ev.preventDefault()
       }
-      // ESC sai do fullscreen antes de fechar o modal
+      
       if (ev.key === 'Escape' && root.classList.contains('omega-modal--fullscreen')) {
         setOmegaFullscreen(false)
         ev.stopPropagation()
@@ -97,4 +96,3 @@ export function useOmegaFullscreen(modalRef?: Ref<HTMLElement | null>) {
     cleanup
   }
 }
-

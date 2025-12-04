@@ -12,7 +12,6 @@ import type {
   OmegaRole
 } from '../types/omega'
 
-// Tipos para dados brutos da API
 type ApiUser = {
   id: string
   nome: string
@@ -76,13 +75,12 @@ type ApiInitData = {
 }
 
 function mapApiUserToOmegaUser(apiUser: ApiUser): OmegaUser {
-  // Determina o role principal (prioridade: admin > supervisor > analista > usuario)
+  
   let role: OmegaRole = 'usuario'
   if (apiUser.admin) role = 'admin'
   else if (apiUser.supervisor) role = 'supervisor'
   else if (apiUser.analista) role = 'analista'
 
-  // Constrói objeto de roles
   const roles: Record<OmegaRole, boolean> = {
     usuario: apiUser.usuario || false,
     analista: apiUser.analista || false,
@@ -90,7 +88,6 @@ function mapApiUserToOmegaUser(apiUser: ApiUser): OmegaUser {
     admin: apiUser.admin || false
   }
 
-  // Constrói array de filas baseado nos booleanos
   const queues: string[] = []
   if (apiUser.encarteiramento) queues.push('encarteiramento')
   if (apiUser.meta) queues.push('Metas')
@@ -104,14 +101,14 @@ function mapApiUserToOmegaUser(apiUser: ApiUser): OmegaUser {
     name: apiUser.nome,
     role,
     roles,
-    matrixAccess: false, // Não vem da API, usar padrão
+    matrixAccess: false, 
     avatar: null,
     position: apiUser.cargo,
-    junction: '', // Não vem da API
+    junction: '', 
     functional: apiUser.funcional,
     queues,
     defaultQueue: queues.length > 0 ? queues[0] || null : null,
-    teamId: null // Não vem da API diretamente
+    teamId: null 
   }
 }
 
@@ -136,7 +133,7 @@ function parseHistory(historyString: string): OmegaHistoryEntry[] {
           attachments: segments[5] ? (typeof segments[5] === 'string' ? JSON.parse(segments[5]) : segments[5]) : undefined
         })
       } catch (err) {
-        // Tenta criar entrada mesmo com erro
+        
         entries.push({
           date: segments[0] || '',
           actorId: segments[1] || '',
@@ -152,11 +149,10 @@ function parseHistory(historyString: string): OmegaHistoryEntry[] {
 }
 
 function mapApiTicketToOmegaTicket(apiTicket: ApiTicket, users: OmegaUser[]): OmegaTicket {
-  // Encontra o nome do solicitante
+  
   const requester = users.find(u => u.id === apiTicket.requester_id)
   const requesterName = requester?.name || 'Desconhecido'
 
-  // Mapeia contexto
   const context: OmegaTicketContext = {
     diretoria: apiTicket.diretoria || '',
     gerencia: apiTicket.gerencia || '',
@@ -168,7 +164,6 @@ function mapApiTicketToOmegaTicket(apiTicket: ApiTicket, users: OmegaUser[]): Om
     prodsub: apiTicket.product_id || ''
   }
 
-  // Processa anexos
   const attachments: string[] = []
   if (apiTicket.attachment) {
     attachments.push(apiTicket.attachment)
@@ -217,17 +212,14 @@ export async function getOmegaInit(): Promise<OmegaInitData | null> {
   if (response.success && response.data) {
     const apiData = response.data
     
-    // Mapeia usuários
     const users: OmegaUser[] = apiData.users
       ? apiData.users.map(mapApiUserToOmegaUser)
       : []
 
-    // Mapeia status
     const statuses: OmegaStatus[] = apiData.statuses
       ? apiData.statuses.map(mapApiStatusToOmegaStatus)
       : []
 
-    // Mapeia tickets (precisa dos usuários para buscar nomes)
     const tickets: OmegaTicket[] = apiData.tickets
       ? apiData.tickets.map(t => mapApiTicketToOmegaTicket(t, users))
       : []
@@ -254,7 +246,7 @@ export async function getOmegaUsers(): Promise<OmegaUser[] | null> {
 export async function getOmegaTickets(): Promise<OmegaTicket[] | null> {
   const response = await apiGet<ApiTicket[]>('/api/omega/tickets')
   if (response.success && response.data) {
-    // Precisa buscar usuários para mapear nomes
+    
     const users = await getOmegaUsers()
     const usersList = users || []
     return response.data.map(t => mapApiTicketToOmegaTicket(t, usersList))
@@ -298,4 +290,3 @@ export async function updateOmegaTicket(
 ): Promise<ApiResponse<OmegaTicket>> {
   return apiPost<OmegaTicket>(`/api/omega/tickets/${ticketId}`, updates)
 }
-

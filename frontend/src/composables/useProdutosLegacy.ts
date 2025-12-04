@@ -22,7 +22,7 @@ export interface LegacyItem {
   metrica: string
   peso: number
   pontosMeta: number
-  pontosBackend?: number // Pontos vindos do backend
+  pontosBackend?: number 
   meta: number
   realizado: number
   monthMeta: number
@@ -85,7 +85,6 @@ export function useProdutosLegacy() {
           mesesMap.set(m.mes, { meta: m.meta, realizado: m.realizado })
         })
         
-        // Adiciona meses do produto atual
         produto.meses.forEach(m => {
           const existing = mesesMap.get(m.mes) || { meta: 0, realizado: 0 }
           mesesMap.set(m.mes, {
@@ -263,4 +262,3 @@ export function useProdutosLegacy() {
     loadProdutos: resumo.loadResumo
   }
 }
-

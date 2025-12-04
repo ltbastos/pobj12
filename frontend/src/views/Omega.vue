@@ -30,12 +30,11 @@ const sidebarCollapsed = ref(false)
 const searchQuery = ref('')
 
 async function loadOmegaData() {
-  // Verifica se estamos usando componentes Vue (OmegaTable)
+  
   const pageElement = pageRoot.value
   const container = pageElement?.querySelector('.omega-table-container')
   const isUsingVueComponents = !!container
   
-  // Mostra loading state apenas se não estiver usando componentes Vue
   if (pageElement && !isUsingVueComponents) {
     showLoadingState(pageElement)
   }
@@ -49,14 +48,13 @@ async function loadOmegaData() {
       return
     }
     
-    // Aguarda o conteúdo ser renderizado
     nextTick(() => {
       setTimeout(() => {
         if (!isUsingVueComponents) {
           hideLoadingState(pageElement)
           renderOmegaData()
         } else {
-          // Se estiver usando componentes Vue, apenas limpa qualquer skeleton que possa ter sido inserido
+          
           isLoading.value = false
         }
       }, 100)
@@ -74,11 +72,9 @@ const isLoading = ref(false)
 function showLoadingState(root: HTMLElement | null) {
   if (!root) return
   
-  // Verifica se estamos usando componentes Vue (OmegaTable)
   const container = root.querySelector('.omega-table-container')
   if (container) {
-    // Não manipula o DOM se estiver usando componentes Vue
-    // O componente Vue gerencia o estado de loading
+    
     return
   }
   
@@ -107,12 +103,10 @@ function showErrorState(root: HTMLElement | null) {
 }
 
 function renderOmegaData() {
-  // Verifica se estamos usando componentes Vue (OmegaTable)
+  
   const container = pageRoot.value?.querySelector('.omega-table-container')
   const isUsingVueComponents = !!container
   
-  // Se estiver usando componentes Vue, não chama renderOmegaData
-  // pois o Vue já gerencia a renderização
   if (!isUsingVueComponents && pageRoot.value) {
     render.renderOmegaData()
   }
@@ -120,11 +114,11 @@ function renderOmegaData() {
 }
 
 function applySidebarState() {
-  // Sidebar state is now handled by the component itself
+  
 }
 
 function handleNavClick(viewId: string) {
-  // Se for o gerenciador de analistas, abre o modal
+  
   if (viewId === 'team-edit-analyst') {
     teamManagerOpen.value = true
     return
@@ -167,7 +161,6 @@ function handleNewTicket(initialData?: { department?: string; type?: string; obs
   drawerOpen.value = true
 }
 
-// Função para construir observação a partir dos detalhes do nó
 function buildObservationFromDetail(detail: any): string {
   if (!detail || !detail.node) return ''
   
@@ -208,7 +201,6 @@ function buildObservationFromDetail(detail: any): string {
   return parts.join('\n')
 }
 
-// Sistema de toast reativo
 type Toast = {
   id: string
   message: string
@@ -231,7 +223,6 @@ function showOmegaToast(message: string, tone: 'success' | 'info' | 'warning' | 
   
   toasts.value.push(toast)
   
-  // Limita a 3 toasts
   if (toasts.value.length > 3) {
     toasts.value.shift()
   }
@@ -252,7 +243,6 @@ function showOmegaToast(message: string, tone: 'success' | 'info' | 'warning' | 
   }, lifetime)
 }
 
-// Função para escapar HTML (mantida para compatibilidade)
 function escapeHTML(value: string): string {
   if (!value) return ''
   const div = document.createElement('div')
@@ -260,7 +250,6 @@ function escapeHTML(value: string): string {
   return div.textContent || ''
 }
 
-// Função principal para criar novo ticket
 async function handleNewTicketSubmit(data: any) {
   const user = omega.currentUser.value
   if (!user) {
@@ -270,7 +259,6 @@ async function handleNewTicketSubmit(data: any) {
   
   const requesterName = user.name?.trim() || ''
   
-  // Constrói o subject
   const subjectParts: string[] = []
   if (data.type) subjectParts.push(data.type)
   if (requesterName) subjectParts.push(requesterName)
@@ -279,11 +267,9 @@ async function handleNewTicketSubmit(data: any) {
   try {
     const now = new Date().toISOString()
     
-    // Se o departamento for "Matriz", o chamado vai para a fila (sem ownerId)
-    // Qualquer analista da Matriz pode pegar e atribuir depois
     const isMatriz = data.department === 'Matriz'
     const ownerId = isMatriz 
-      ? null  // Chamados da Matriz vão para a fila sem dono
+      ? null  
       : (['analista', 'supervisor', 'admin'].includes(user.role) ? user.id : null)
     
     const newTicket = {
@@ -294,7 +280,7 @@ async function handleNewTicketSubmit(data: any) {
       product: data.type || '',
       family: '',
       section: '',
-      queue: data.department || 'Matriz',  // Garante que sempre seja Matriz
+      queue: data.department || 'Matriz',  
       status: 'aberto',
       category: data.type,
       priority: 'media' as const,
@@ -325,21 +311,17 @@ async function handleNewTicketSubmit(data: any) {
       flow: data.flow || null
     }
     
-    // Chama API para criar ticket
     const { createOmegaTicket } = await import('../services/omegaService')
     const response = await createOmegaTicket(newTicket)
     
     if (response.success && response.data) {
-      // Atualiza lista de tickets
+      
       await omega.loadInit()
       
-      // Fecha o drawer
       drawerOpen.value = false
       
-      // Mostra toast de sucesso
       showOmegaToast('Chamado registrado com sucesso.', 'success')
       
-      // Re-renderiza dados
       renderOmegaData()
     } else {
       showOmegaToast(response.error || 'Não foi possível registrar o chamado.', 'danger')
@@ -382,9 +364,6 @@ function handleFilterClear() {
   renderOmegaData()
 }
 
-// Observa mudanças nos dados e re-renderiza
-// Nota: Quando usando componentes Vue (OmegaTable), não precisamos chamar renderOmegaData
-// pois o Vue já gerencia a reatividade automaticamente
 watch(() => omega.tickets.value, () => {
   nextTick(() => {
     const container = pageRoot.value?.querySelector('.omega-table-container')
@@ -425,11 +404,9 @@ watch(() => omega.currentView.value, () => {
   })
 })
 
-// Verifica se há parâmetros na URL para abrir drawer com dados iniciais
 onMounted(() => {
   loadOmegaData()
   
-  // Verifica se há parâmetros na query string
   const params = new URLSearchParams(window.location.search)
   const openDrawer = params.get('openDrawer') === 'true' || params.get('intent') === 'new-ticket'
   const department = params.get('queue') || params.get('preferredQueue') || 'POBJ'
@@ -446,7 +423,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  // Cleanup se necessário
+  
 })
 </script>
 

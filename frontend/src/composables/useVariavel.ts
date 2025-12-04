@@ -86,4 +86,3 @@ export function useVariavel(filters?: Ref<VariavelFilters | null>) {
     loadVariavel
   }
 }
-

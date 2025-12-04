@@ -8,7 +8,7 @@ export function useOmegaRender(
     if (!userSelect) return
 
     const currentUsers = omega.users.value
-    // Limpa opções existentes
+    
     while (userSelect.firstChild) {
       userSelect.removeChild(userSelect.firstChild)
     }
@@ -23,7 +23,6 @@ export function useOmegaRender(
       userSelect.appendChild(option)
     })
 
-    // Usa onchange em vez de addEventListener
     userSelect.onchange = (e) => {
       const target = e.target as HTMLSelectElement
       omega.setCurrentUserId(target.value)
@@ -62,7 +61,6 @@ export function useOmegaRender(
 
     const navItems = omega.getNavItemsForRole(currentUser.role)
 
-    // Limpa navegação existente
     while (navElement.firstChild) {
       navElement.removeChild(navElement.firstChild)
     }
@@ -73,7 +71,6 @@ export function useOmegaRender(
       navItem.type = 'button'
       navItem.setAttribute('data-omega-view', item.id)
       
-      // Cria elementos em vez de innerHTML
       const icon = document.createElement('i')
       icon.className = item.icon
       const span = document.createElement('span')
@@ -85,11 +82,10 @@ export function useOmegaRender(
         navItem.classList.add('omega-nav__item--active')
       }
 
-      // Usa onclick em vez de addEventListener
       navItem.onclick = () => {
         omega.setCurrentView(item.id as any)
         renderTickets(root)
-        // Atualiza estado ativo
+        
         navElement.querySelectorAll('.omega-nav__item').forEach((el) => {
           el.classList.remove('omega-nav__item--active')
         })
@@ -104,16 +100,13 @@ export function useOmegaRender(
     const structure = omega.structure.value
     if (!structure || structure.length === 0) return
 
-    // Popula select de departamento (apenas o do filtro)
     const departmentSelect = root.querySelector('#omega-filter-department') as HTMLSelectElement
     if (departmentSelect) {
       const currentValue = departmentSelect.value
 
-      // Remove listeners antigos para evitar duplicação
       const newSelect = departmentSelect.cloneNode(true) as HTMLSelectElement
       departmentSelect.parentNode?.replaceChild(newSelect, departmentSelect)
 
-      // Agrupa por departamento (usando Map para evitar duplicatas)
       const departments = new Map<string, string>()
       structure.forEach((item: any) => {
         if (item.departamento && !departments.has(item.departamento)) {
@@ -121,7 +114,6 @@ export function useOmegaRender(
         }
       })
 
-      // Limpa e adiciona opção padrão
       while (newSelect.firstChild) {
         newSelect.removeChild(newSelect.firstChild)
       }
@@ -140,20 +132,16 @@ export function useOmegaRender(
         newSelect.appendChild(option)
       })
 
-      // Usa onchange em vez de addEventListener
       newSelect.onchange = () => {
         renderTypeSelect(root, newSelect.value)
       }
     }
 
-    // Popula select de tipo de chamado
     const deptSelect = root.querySelector('#omega-filter-department') as HTMLSelectElement
     renderTypeSelect(root, deptSelect?.value || '')
 
-    // Renderiza status como checkboxes
     renderStatusOptions(root)
 
-    // Popula select de prioridade
     renderPrioritySelect(root)
   }
 
@@ -166,24 +154,22 @@ export function useOmegaRender(
 
     const currentValue = typeSelect.value
 
-    // Filtra tipos baseado no departamento selecionado
     const types = new Set<string>()
     structure.forEach((item: any) => {
       if (item.tipo) {
-        // Se há departamento selecionado, filtra por ele
+        
         if (departmentId) {
           const itemDeptId = item.departamento_id || item.departamento
           if (itemDeptId === departmentId) {
             types.add(item.tipo)
           }
         } else {
-          // Se não há departamento selecionado, mostra todos os tipos
+          
           types.add(item.tipo)
         }
       }
     })
 
-    // Limpa e adiciona opção padrão
     while (typeSelect.firstChild) {
       typeSelect.removeChild(typeSelect.firstChild)
     }
@@ -212,7 +198,6 @@ export function useOmegaRender(
 
     const selectedStatuses = filters.filters.value.statuses || []
 
-    // Limpa opções existentes
     while (statusHost.firstChild) {
       statusHost.removeChild(statusHost.firstChild)
     }
@@ -234,7 +219,6 @@ export function useOmegaRender(
       option.appendChild(checkbox)
       option.appendChild(span)
 
-      // Usa onchange em vez de addEventListener
       checkbox.onchange = () => {
         option.setAttribute('data-checked', checkbox.checked ? 'true' : 'false')
       }
@@ -256,7 +240,6 @@ export function useOmegaRender(
       { value: 'critica', label: 'Crítica' }
     ]
 
-    // Limpa opções existentes
     while (prioritySelect.firstChild) {
       prioritySelect.removeChild(prioritySelect.firstChild)
     }
@@ -273,7 +256,7 @@ export function useOmegaRender(
   }
 
   function openTicketDetails(ticketId: string) {
-    // TODO: Implementar abertura do modal de detalhes
+    
   }
 
   function renderTickets(root: HTMLElement) {
@@ -282,10 +265,9 @@ export function useOmegaRender(
       return
     }
     
-    // Verifica se estamos usando componentes Vue (OmegaTable)
     const container = root.querySelector('.omega-table-container')
     if (container) {
-      // Não manipula o DOM se estiver usando componentes Vue
+      
       return
     }
 
@@ -294,12 +276,11 @@ export function useOmegaRender(
     const currentUser = omega.currentUser.value
 
     if (!tickets || tickets.length === 0) {
-      // Limpa tbody
+      
       while (tbody.firstChild) {
         tbody.removeChild(tbody.firstChild)
       }
       
-      // Cria linha de estado vazio usando createElement
       const row = document.createElement('tr')
       const cell = document.createElement('td')
       cell.colSpan = 12
@@ -330,7 +311,6 @@ export function useOmegaRender(
       btn.appendChild(btnIcon)
       btn.appendChild(btnSpan)
       
-      // Usa onclick em vez de addEventListener
       btn.onclick = () => {
         const drawer = root.querySelector('#omega-drawer')
         if (drawer) {
@@ -349,35 +329,31 @@ export function useOmegaRender(
       return
     }
 
-    // Filtra tickets baseado na view atual (ANTES de aplicar filtros)
-    // Cada usuário vê apenas sua própria fila
     let filteredTickets = tickets
     const currentView = omega.currentView.value
 
     if (currentView === 'my' && currentUser) {
-      // Usuário vê apenas seus próprios chamados
+      
       filteredTickets = tickets.filter((t: any) => t.requesterId === currentUser.id)
     } else if (currentView === 'assigned' && currentUser) {
-      // Analista/supervisor vê apenas chamados atribuídos a ele
+      
       filteredTickets = tickets.filter((t: any) => t.ownerId === currentUser.id)
     } else if (currentView === 'queue' && currentUser) {
-      // Filtra por filas do usuário - cada um vê apenas suas próprias filas
+      
       if (currentUser.queues && currentUser.queues.length > 0) {
         filteredTickets = tickets.filter((t: any) =>
           currentUser.queues.includes(t.queue)
         )
       } else {
-        // Se não tem filas definidas, não mostra nada (exceto admin)
+        
         if (currentUser.role !== 'admin') {
           filteredTickets = []
         }
       }
     }
 
-    // Aplica filtros avançados (DEPOIS de filtrar por view)
     filteredTickets = filters.applyFilters(filteredTickets)
 
-    // Limpa tbody
     while (tbody.firstChild) {
       tbody.removeChild(tbody.firstChild)
     }
@@ -393,7 +369,6 @@ export function useOmegaRender(
       const status = statuses.find((s: any) => s.id === ticket.status) || statuses[0] || { id: 'unknown', label: 'Desconhecido', tone: 'neutral' as const }
       const priorityMeta = omega.getPriorityMeta(ticket.priority)
       
-      // Determina se deve mostrar prioridade e atendente baseado no role
       const canSelect = currentUser && ['analista', 'supervisor', 'admin'].includes(currentUser.role)
       const showPriority = currentUser && ['analista', 'supervisor', 'admin'].includes(currentUser.role)
       const showOwner = currentUser && ['analista', 'supervisor', 'admin'].includes(currentUser.role)
@@ -406,7 +381,6 @@ export function useOmegaRender(
 
       const isSelected = bulk.selectedTicketIds.value.has(ticket.id)
 
-      // Monta HTML da linha baseado nas permissões
       const selectCell = canSelect ? `
         <td class="col-select">
           <input type="checkbox" data-omega-select value="${ticket.id}" ${isSelected ? 'checked' : ''} aria-label="Selecionar chamado ${ticket.id}"/>
@@ -451,7 +425,6 @@ export function useOmegaRender(
         </td>
       `
 
-      // Adiciona listener para checkbox de seleção
       const checkbox = row.querySelector('input[data-omega-select]') as HTMLInputElement
       if (checkbox) {
         checkbox.addEventListener('click', (e) => {
@@ -465,12 +438,11 @@ export function useOmegaRender(
         })
       }
 
-      // Adiciona listener para abrir detalhes do ticket
       row.addEventListener('click', (e) => {
         if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).closest('input')) {
           return
         }
-        // Adiciona efeito de ripple
+        
         const ripple = document.createElement('span')
         const rect = row.getBoundingClientRect()
         const x = (e as MouseEvent).clientX - rect.left
@@ -486,7 +458,6 @@ export function useOmegaRender(
         }, 300)
       })
 
-      // Adiciona hover effect
       row.addEventListener('mouseenter', () => {
         row.style.transform = 'translateX(4px)'
       })
@@ -496,20 +467,17 @@ export function useOmegaRender(
 
       tbody.appendChild(row)
 
-      // Anima entrada
       setTimeout(() => {
         row.style.opacity = '1'
         row.style.transform = 'translateY(0)'
       }, 10)
     })
 
-    // Atualiza resumo
     const summary = root.querySelector('#omega-summary')
     if (summary) {
       summary.textContent = `${filteredTickets.length} chamado${filteredTickets.length !== 1 ? 's' : ''} encontrado${filteredTickets.length !== 1 ? 's' : ''}`
     }
 
-    // Mostra footer da tabela
     const tableFooter = root.querySelector('.omega-table-footer')
     if (tableFooter) {
       tableFooter.removeAttribute('hidden')
@@ -522,7 +490,7 @@ export function useOmegaRender(
   }
 
   function renderOmegaData(rootRef?: HTMLElement | null) {
-    // Usa ref se fornecido, senão tenta encontrar no DOM (compatibilidade)
+    
     let rootElement: HTMLElement | null = rootRef || null
     
     if (!rootElement) {
@@ -536,36 +504,27 @@ export function useOmegaRender(
       return
     }
 
-    // Verifica se estamos usando componentes Vue (OmegaTable)
     const omegaTableComponent = rootElement.querySelector('.omega-table-container')
     const isUsingVueComponents = !!omegaTableComponent
 
-    // Renderiza usuários no select (ainda necessário para o header)
     renderUsers(rootElement)
 
-    // Renderiza tickets na tabela APENAS se não estiver usando componentes Vue
     if (!isUsingVueComponents) {
       renderTickets(rootElement)
     }
 
-    // Renderiza perfil do usuário atual
     renderProfile(rootElement)
 
-    // Renderiza navegação
     renderNavigation(rootElement)
 
-    // Renderiza estrutura (departamentos e tipos) nos selects
     renderStructure(rootElement)
 
-    // Renderiza select de prioridade
     renderPrioritySelect(rootElement)
 
-    // Renderiza painel bulk APENAS se não estiver usando componentes Vue
     if (!isUsingVueComponents) {
       bulk.renderBulkPanel(rootElement)
     }
 
-    // Atualiza estado do botão de filtros (se existir no DOM)
     const filterToggle = rootElement.querySelector('#omega-filters-toggle')
     if (filterToggle) {
       filterToggle.setAttribute('data-active', filters.hasActiveFilters() ? 'true' : 'false')
@@ -586,4 +545,3 @@ export function useOmegaRender(
     openTicketDetails
   }
 }
-

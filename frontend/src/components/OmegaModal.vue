@@ -49,7 +49,6 @@ const searchQuery = ref('')
 
 const addedBodyClasses = ['has-omega-open']
 
-// Estado compartilhado globalmente para permitir acesso externo
 if (typeof window !== 'undefined') {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const globalAny = window as any
@@ -84,12 +83,10 @@ watch(() => props.modelValue, (newValue) => {
   }
 }, { immediate: true })
 
-// Observa mudanças nos dados e re-renderiza
-// Nota: Não precisa re-renderizar tickets/users quando usando componentes Vue (eles são reativos)
 watch(() => omega.tickets.value, () => {
   if (isOpen.value) {
     nextTick(() => {
-      // Apenas renderiza partes que não são componentes Vue
+      
       renderOmegaData()
     })
   }
@@ -98,7 +95,7 @@ watch(() => omega.tickets.value, () => {
 watch(() => omega.users.value, () => {
   if (isOpen.value) {
     nextTick(() => {
-      // Apenas renderiza partes que não são componentes Vue
+      
       renderOmegaData()
     })
   }
@@ -107,7 +104,7 @@ watch(() => omega.users.value, () => {
 watch(() => omega.currentUserId.value, () => {
   if (isOpen.value) {
     nextTick(() => {
-      // Apenas renderiza partes que não são componentes Vue
+      
       renderOmegaData()
     })
   }
@@ -115,15 +112,13 @@ watch(() => omega.currentUserId.value, () => {
 
 watch(() => omega.currentView.value, () => {
   if (isOpen.value) {
-    // Não precisa chamar renderOmegaData() aqui porque OmegaTable é reativo
-    // Apenas renderiza partes que não são componentes Vue
+    
     nextTick(() => {
       renderOmegaData()
     })
   }
 })
 
-// Watch o estado global também
 if (typeof window !== 'undefined') {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const globalAny = window as any
@@ -155,7 +150,6 @@ function resetBodyState() {
 
 async function loadOmegaData() {
   
-  // Mostra loading state
   const modalElement = modalRoot.value
   if (modalElement) {
     showLoadingState(modalElement)
@@ -168,7 +162,6 @@ async function loadOmegaData() {
       return
     }
     
-    // Aguarda o conteúdo ser renderizado
     nextTick(() => {
       setTimeout(() => {
         hideLoadingState(modalElement)
@@ -186,11 +179,9 @@ const isLoading = ref(false)
 function showLoadingState(root: HTMLElement | null) {
   if (!root) return
   
-  // Verifica se estamos usando componentes Vue (OmegaTable)
   const omegaTableComponent = root.querySelector('.omega-table-container')
   const isUsingVueComponents = !!omegaTableComponent
   
-  // Se estiver usando componentes Vue, não manipula o DOM diretamente
   if (isUsingVueComponents) {
     return
   }
@@ -230,19 +221,18 @@ function setSidebarCollapsed(collapsed: boolean) {
 }
 
 function applySidebarState() {
-  // Sidebar state is now handled by the component itself
+  
 }
 
 function handleNavClick(viewId: string) {
-  // Se for o gerenciador de analistas, abre o modal
+  
   if (viewId === 'team-edit-analyst') {
     teamManagerOpen.value = true
     return
   }
   
   omega.setCurrentView(viewId as any)
-  // Não precisa chamar renderOmegaData() porque OmegaTable é reativo
-  // Apenas renderiza partes que não são componentes Vue (sidebar, etc)
+  
   nextTick(() => {
     renderOmegaData()
   })
@@ -279,7 +269,6 @@ function handleNewTicket(initialData?: { department?: string; type?: string; obs
   drawerOpen.value = true
 }
 
-// Função para construir observação a partir dos detalhes do nó
 function buildObservationFromDetail(detail: any): string {
   if (!detail || !detail.node) return ''
   
@@ -320,7 +309,6 @@ function buildObservationFromDetail(detail: any): string {
   return parts.join('\n')
 }
 
-// Função exposta globalmente para abrir o modal com dados iniciais
 function openOmegaWithData(detail: { department?: string; type?: string; observation?: string; openDrawer?: boolean }) {
   openModal()
   if (detail.openDrawer) {
@@ -334,7 +322,6 @@ function openOmegaWithData(detail: { department?: string; type?: string; observa
   }
 }
 
-// Função para mostrar feedback no formulário
 function showFormFeedback(root: HTMLElement, message: string, tone: 'info' | 'warning' | 'danger' | 'success' = 'info') {
   const feedback = root.querySelector('#omega-form-feedback') as HTMLElement
   if (!feedback) return
@@ -343,7 +330,6 @@ function showFormFeedback(root: HTMLElement, message: string, tone: 'info' | 'wa
   feedback.className = `omega-feedback omega-feedback--${tone}`
 }
 
-// Função para limpar feedback do formulário
 function clearFormFeedback(root: HTMLElement) {
   const feedback = root.querySelector('#omega-form-feedback') as HTMLElement
   if (!feedback) return
@@ -352,7 +338,6 @@ function clearFormFeedback(root: HTMLElement) {
   feedback.className = 'omega-feedback'
 }
 
-// Sistema de toast reativo
 type Toast = {
   id: string
   message: string
@@ -375,7 +360,6 @@ function showOmegaToast(message: string, tone: 'success' | 'info' | 'warning' | 
   
   toasts.value.push(toast)
   
-  // Limita a 3 toasts
   if (toasts.value.length > 3) {
     toasts.value.shift()
   }
@@ -396,7 +380,6 @@ function showOmegaToast(message: string, tone: 'success' | 'info' | 'warning' | 
   }, lifetime)
 }
 
-// Função para atualizar o subject do formulário
 function updateOmegaFormSubject(root: HTMLElement) {
   const form = root.querySelector('#omega-form') as HTMLFormElement
   if (!form) return
@@ -415,7 +398,6 @@ function updateOmegaFormSubject(root: HTMLElement) {
   subjectInput.value = parts.length ? parts.join(' • ') : 'Chamado Omega'
 }
 
-// Função para validar email
 function isValidEmail(value: string): boolean {
   if (!value) return false
   const normalized = value.toString().trim()
@@ -423,7 +405,6 @@ function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)
 }
 
-// Função principal para criar novo ticket
 async function handleNewTicketSubmit(data: any) {
   const user = omega.currentUser.value
   if (!user) {
@@ -433,7 +414,6 @@ async function handleNewTicketSubmit(data: any) {
   
   const requesterName = user.name?.trim() || ''
   
-  // Constrói o subject
   const subjectParts: string[] = []
   if (data.type) subjectParts.push(data.type)
   if (requesterName) subjectParts.push(requesterName)
@@ -442,11 +422,9 @@ async function handleNewTicketSubmit(data: any) {
   try {
     const now = new Date().toISOString()
     
-    // Se o departamento for "Matriz", o chamado vai para a fila (sem ownerId)
-    // Qualquer analista da Matriz pode pegar e atribuir depois
     const isMatriz = data.department === 'Matriz'
     const ownerId = isMatriz 
-      ? null  // Chamados da Matriz vão para a fila sem dono
+      ? null  
       : (['analista', 'supervisor', 'admin'].includes(user.role) ? user.id : null)
     
     const newTicket = {
@@ -457,7 +435,7 @@ async function handleNewTicketSubmit(data: any) {
       product: data.type || '',
       family: '',
       section: '',
-      queue: data.department || 'Matriz',  // Garante que sempre seja Matriz
+      queue: data.department || 'Matriz',  
       status: 'aberto',
       category: data.type,
       priority: 'media' as const,
@@ -488,21 +466,17 @@ async function handleNewTicketSubmit(data: any) {
       flow: data.flow || null
     }
     
-    // Chama API para criar ticket
     const { createOmegaTicket } = await import('../services/omegaService')
     const response = await createOmegaTicket(newTicket)
     
     if (response.success && response.data) {
-      // Atualiza lista de tickets
+      
       await omega.loadInit()
       
-      // Fecha o drawer
       drawerOpen.value = false
       
-      // Mostra toast de sucesso
       showOmegaToast('Chamado registrado com sucesso.', 'success')
       
-      // Re-renderiza dados
       renderOmegaData()
     } else {
       showOmegaToast(response.error || 'Não foi possível registrar o chamado.', 'danger')
@@ -523,7 +497,7 @@ function handleTicketClick(ticketId: string) {
 
 function handleSelectAll(checked: boolean) {
   if (checked) {
-    // Seleciona todos os tickets da página atual
+    
     const tickets = omega.tickets.value
     tickets.forEach((ticket) => {
       bulk.selectedTicketIds.value.add(ticket.id)
@@ -539,16 +513,12 @@ function handleBulkApply(status: string) {
 }
 
 function handleFullscreenToggle() {
-  // Fullscreen is handled by the header component
+  
 }
 
-// Funções de renderização movidas para useOmegaRender composable
-
-// Função para atualizar lista (igual ao código antigo)
 function refreshTicketList(button: HTMLElement) {
   setButtonLoading(button, true)
   
-  // Recarrega dados frescos do servidor
   omega.loadInit()
     .then(() => {
       renderOmegaData()
@@ -581,22 +551,17 @@ function setButtonLoading(button: HTMLElement, loading: boolean) {
   }
 }
 
-// Funções de filtros movidas para useOmegaFilters composable
-// setupFilterControls removido - agora gerenciado pelos componentes Vue
-
 function handleFilterApply() {
-  renderOmegaData() // Re-renderiza após aplicar filtros
+  renderOmegaData() 
 }
 
 function handleFilterClear() {
-  renderOmegaData() // Re-renderiza após limpar filtros
+  renderOmegaData() 
 }
 
-// Função para obter departamentos disponíveis para o usuário
 function getAvailableDepartmentsForUser(user: any): string[] {
   if (!user) return []
   
-  // Obtém departamentos únicos da estrutura
   const departments = new Map<string, string>()
   omega.structure.value.forEach((item) => {
     if (item.departamento && !departments.has(item.departamento)) {
@@ -606,19 +571,15 @@ function getAvailableDepartmentsForUser(user: any): string[] {
   
   const allDepartments = Array.from(departments.keys())
   
-  // Se for admin, retorna todos
   if (user.role === 'admin') return allDepartments
   
-  // Se for usuário comum, filtra Matriz se não tiver acesso
   if (user.role === 'usuario') {
     return user.matrixAccess ? allDepartments : allDepartments.filter((d) => d !== 'Matriz')
   }
   
-  // Para outros roles, retorna todos por enquanto
   return allDepartments
 }
 
-// Função para obter tipos de chamado por departamento
 function getTicketTypesForDepartment(department: string): string[] {
   if (!department) return []
   
@@ -632,23 +593,12 @@ function getTicketTypesForDepartment(department: string): string[] {
   return Array.from(types).sort()
 }
 
-// Função para sincronizar opções de tipo baseado no departamento
-// Removida - agora gerenciada pelo componente OmegaDrawer.vue
-
-// Função para escapar HTML (mantida para compatibilidade)
 function escapeHTML(value: string): string {
   if (!value) return ''
   const div = document.createElement('div')
   div.textContent = value
   return div.textContent || ''
 }
-
-// Função para popular opções do formulário de novo ticket
-// Removida - agora gerenciada pelo componente OmegaDrawer.vue
-
-// Funções de bulk movidas para useOmegaBulk composable
-
-// Funções de fullscreen movidas para useOmegaFullscreen composable
 
 function openModal() {
   isOpen.value = true
@@ -662,21 +612,18 @@ function openModal() {
   }
   ensureBodyState()
   
-  // Força a atualização da visibilidade primeiro
   nextTick(() => {
     updateModalVisibility(true)
     
-    // Aplica estado inicial da sidebar
     nextTick(() => {
       applySidebarState()
       
-      // Se os dados já estão carregados, renderiza imediatamente
       if (omega.initData.value && omega.tickets.value.length > 0) {
         setTimeout(() => {
           renderOmegaData()
         }, 100)
       } else {
-        // Caso contrário, carrega os dados
+        
     loadOmegaData()
       }
     })
@@ -701,7 +648,6 @@ function registerGlobalOpener() {
   if (typeof window === 'undefined') return
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const globalAny = window as any
-  
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   globalAny.__openOmegaFromVue = (detail?: any) => {
@@ -769,10 +715,8 @@ function unregisterGlobalOpener() {
   }
 }
 
-// Drawer agora é um componente Vue, não precisa mais renderizar HTML estático
 function renderMainContent() {
-  // Esta função não é mais necessária, mas mantida para compatibilidade
-  // O drawer agora é gerenciado pelo componente OmegaDrawer.vue
+  
 }
 
 onMounted(() => {
@@ -916,7 +860,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* Garante que o modal sempre seja um overlay fixo, mesmo com omega-standalone */
+
 :deep(#omega-modal) {
   position: fixed !important;
   inset: 0 !important;
@@ -933,12 +877,12 @@ onBeforeUnmount(() => {
   pointer-events: none !important;
 }
 
-/* Garante que o overlay seja visível */
+
 :deep(#omega-modal .omega-modal__overlay) {
   display: block !important;
 }
 
-/* Estilos para o modo tela cheia */
+
 :deep(#omega-modal.omega-modal--fullscreen) {
   position: fixed !important;
   top: 0 !important;

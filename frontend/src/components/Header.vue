@@ -22,8 +22,6 @@ const toggleSubmenu = (submenu: string): void => {
   submenuOpen.value = submenuOpen.value === submenu ? null : submenu
 }
 
-
-// Usa composable para gerenciar eventos
 const useClickOutside = (callback: () => void) => {
   const handleClick = (event: MouseEvent) => {
     if (userboxRef.value && !userboxRef.value.contains(event.target as Node)) {
@@ -68,7 +66,6 @@ useEscape(() => {
 
 const handleMenuAction = async (action: string): Promise<void> => {
   if (action === 'omega') {
-    // Abre o Omega em nova aba
     const omegaUrl = `${window.location.origin}${window.location.pathname.replace(/\/[^/]*$/, '')}/omega`
     window.open(omegaUrl, '_blank')
     userMenuOpen.value = false

@@ -37,10 +37,9 @@ const currentUserId = computed(() => {
   return userId || ''
 })
 
-// Watch para garantir que o componente reaja quando os usuários forem carregados
 watch(() => props.omega.users.value, (users) => {
   if (users && users.length > 0 && !currentUserId.value) {
-    // Se não há usuário selecionado e há usuários disponíveis, seleciona o primeiro
+    
     const firstUserId = users[0]?.id
     if (firstUserId) {
       props.omega.setCurrentUserId(firstUserId)
@@ -142,7 +141,7 @@ function toggleNotifications() {
 <style scoped>
 .omega-header {
   position: sticky;
-  top: 66px; /* Altura do header principal */
+  top: 66px; 
   z-index: 1000;
   display: flex;
   align-items: center;

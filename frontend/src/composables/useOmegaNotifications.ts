@@ -2,10 +2,6 @@ import type { OmegaTicket, OmegaHistoryEntry } from '../types/omega'
 import { apiPost } from '../services/api'
 import type { ApiResponse } from '../types'
 
-/**
- * Funções para criar notificações no Omega e no POBJ
- */
-
 export async function createOmegaNotification(
   ticket: OmegaTicket,
   entry: OmegaHistoryEntry
@@ -32,7 +28,6 @@ export async function createPobjNotification(
   ticket: OmegaTicket,
   entry: OmegaHistoryEntry
 ): Promise<ApiResponse<any>> {
-  // Só cria notificação no POBJ se o chamado for assunto POBJ
   if (ticket.queue?.toLowerCase() !== 'pobj') {
     return { success: true, data: null }
   }
@@ -53,4 +48,3 @@ export async function createPobjNotification(
     return { success: false, error: 'Erro ao criar notificação' }
   }
 }
-

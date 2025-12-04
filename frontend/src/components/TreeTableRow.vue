@@ -181,11 +181,9 @@ const isCanceled = computed(() => {
     </td>
   </tr>
   
-  <!-- Card de detalhes do contrato -->
   <tr v-if="node.level === 'contrato' && expanded" class="tree-row tree-detail-row">
     <td :colspan="activeColumns.length + 2" class="tree-detail-cell">
       <div class="contract-detail-card">
-        <!-- Ações do card -->
         <div class="contract-detail-card__actions">
           <button
             type="button"
@@ -199,7 +197,6 @@ const isCanceled = computed(() => {
           </button>
         </div>
 
-        <!-- Aviso de cancelamento -->
         <div v-if="isCanceled" class="contract-detail-card__warning">
           <div class="contract-detail-card__warning-content">
             <Icon name="alert-triangle" class="contract-detail-card__warning-icon" :size="20" />
@@ -212,7 +209,6 @@ const isCanceled = computed(() => {
           </div>
         </div>
 
-        <!-- Tabela de detalhes -->
         <div class="contract-detail-card__table-wrapper">
           <table class="contract-detail-card__table">
             <thead>
@@ -479,7 +475,7 @@ const isCanceled = computed(() => {
   border-bottom: none;
 }
 
-/* Cores condicionais para Atingimento */
+
 .cell-content {
   display: inline-block;
 }

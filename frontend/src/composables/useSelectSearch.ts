@@ -66,8 +66,6 @@ export function initSelectSearch(select: HTMLSelectElement): void {
   panel.appendChild(list)
   wrapper.appendChild(panel)
 
-  // input e list já foram criados acima
-
   const hidePanel = (): void => {
     panel.hidden = true
     wrapper.classList.remove('is-open')
@@ -93,7 +91,6 @@ export function initSelectSearch(select: HTMLSelectElement): void {
 
   selectSearchDataMap.set(select, data)
 
-  // Usa eventos delegados para melhor performance
   input.oninput = () => updateSelectSearchResults(select)
   input.onfocus = () => updateSelectSearchResults(select)
   input.onkeydown = (ev) => {
@@ -200,7 +197,7 @@ function updateSelectSearchResults(select: HTMLSelectElement, opts: { limit?: nu
       }
       return
     }
-    // Limpa lista e adiciona mensagem vazia
+    
     if (list) {
       while (list.firstChild) {
         list.removeChild(list.firstChild)
@@ -214,13 +211,11 @@ function updateSelectSearchResults(select: HTMLSelectElement, opts: { limit?: nu
     return
   }
 
-  // Limpa lista
   if (list) {
     while (list.firstChild) {
       list.removeChild(list.firstChild)
     }
     
-    // Adiciona itens
     finalList.forEach((opt) => {
       const button = document.createElement('button')
       button.type = 'button'
@@ -289,4 +284,3 @@ export function useSelectSearch() {
     initAllSelectSearch
   }
 }
-

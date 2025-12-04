@@ -222,4 +222,3 @@ export type OmegaState = {
   }>
   notificationPanelOpen: boolean
 }
-

@@ -50,7 +50,6 @@ const heatmap = computed(() => execData.value?.heatmap || {
   months: []
 })
 
-
 const execFilters = computed<ExecFilters>(() => {
   const filters: ExecFilters = {}
   
@@ -81,7 +80,6 @@ const execFilters = computed<ExecFilters>(() => {
   
   return filters
 })
-
 
 const topRanking = computed(() => {
   return [...ranking.value]
@@ -157,7 +155,7 @@ const downloadPDF = async () => {
 <template>
   <div class="exec-wrapper">
     <div id="view-exec" class="exec-view">
-        <!-- Skeleton Loading -->
+        
         <template v-if="loading">
           <div class="skeleton skeleton--context" style="height: 24px; width: 200px; margin-bottom: 24px; border-radius: 6px;"></div>
           <div class="exec-kpis">
@@ -175,9 +173,9 @@ const downloadPDF = async () => {
           </div>
         </template>
 
-        <!-- Conteúdo real -->
+        
         <template v-else>
-          <!-- Contexto e Botão PDF -->
+          
           <div class="exec-header">
             <div id="exec-context" class="exec-context">
               <strong>{{ contexto }}</strong>
@@ -198,19 +196,19 @@ const downloadPDF = async () => {
             </button>
           </div>
 
-          <!-- KPIs -->
+          
           <ExecKPIs :kpis="kpis" />
 
-          <!-- Gráfico -->
+          
           <ExecChart :chart-data="chartData" />
 
-          <!-- Rankings e Status -->
+          
           <div class="exec-panels">
             <ExecRankings :top-ranking="topRanking" :bottom-ranking="bottomRanking" />
             <ExecStatus :status="status" />
           </div>
 
-          <!-- Heatmap -->
+          
           <ExecHeatmap :heatmap="heatmap" />
         </template>
       </div>
@@ -270,7 +268,7 @@ const downloadPDF = async () => {
   gap: 18px;
 }
 
-/* Skeleton Loading */
+
 .skeleton {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;

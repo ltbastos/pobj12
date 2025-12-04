@@ -59,4 +59,3 @@ export async function getProdutosMensais(filters?: ProdutoFilters): Promise<Prod
   console.error('Erro ao buscar produtos mensais:', response.error)
   return null
 }
-

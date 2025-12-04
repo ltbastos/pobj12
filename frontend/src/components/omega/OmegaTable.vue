@@ -31,34 +31,30 @@ const filteredTickets = computed(() => {
   const currentUser = props.omega.currentUser.value
   const currentView = props.omega.currentView.value
 
-  // Se não há tickets, retorna array vazio
   if (!tickets || tickets.length === 0) {
     return []
   }
 
-  // Filtra por view - cada usuário vê apenas sua própria fila
   if (currentView === 'my' && currentUser) {
-    // Usuário vê apenas seus próprios chamados
+    
     tickets = tickets.filter((t) => t.requesterId === currentUser.id)
   } else if (currentView === 'assigned' && currentUser) {
-    // Analista/supervisor vê apenas chamados atribuídos a ele
+    
     tickets = tickets.filter((t) => t.ownerId === currentUser.id)
   } else if (currentView === 'queue' && currentUser) {
-    // Filtra por filas do usuário - cada um vê apenas suas próprias filas
+    
     if (currentUser.queues && currentUser.queues.length > 0) {
       tickets = tickets.filter((t) => currentUser.queues?.includes(t.queue || ''))
     } else {
-      // Se não tem filas definidas, não mostra nada (exceto admin)
+      
       if (currentUser.role !== 'admin') {
         tickets = []
       }
     }
   }
 
-  // Aplica filtros
   tickets = props.filters.applyFilters(tickets)
 
-  // Aplica busca
   if (props.searchQuery) {
     const query = props.searchQuery.toLowerCase().trim()
     tickets = tickets.filter((ticket) => {
@@ -99,22 +95,22 @@ const canSelect = computed(() => {
 const showPriority = computed(() => {
   const user = props.omega.currentUser.value
   if (!user) return false
-  // Usuário não vê coluna de prioridade, apenas analista, supervisor e admin
+  
   return ['analista', 'supervisor', 'admin'].includes(user.role)
 })
 
 const showOwner = computed(() => {
   const user = props.omega.currentUser.value
   if (!user) return false
-  // Usuário não vê coluna de atendente, apenas analista, supervisor e admin
+  
   return ['analista', 'supervisor', 'admin'].includes(user.role)
 })
 
 const totalColumns = computed(() => {
-  let count = 10 // ID, Prévia, Departamento, Tipo, Usuário, Produto, Fila, Abertura, Atualização, Status
+  let count = 10 
   if (canSelect.value) count++
   if (showPriority.value) count++
-  if (showOwner.value) count++ // Coluna de atendente
+  if (showOwner.value) count++ 
   return count
 })
 
@@ -141,10 +137,9 @@ function formatDate(dateString: string): string {
   }
 }
 
-// Função para converter ícone do formato "ti ti-*" para nome do componente Icon
 function getIconName(iconClass: string): string {
   if (!iconClass) return 'circle'
-  // Remove "ti ti-" do início
+  
   return iconClass.replace(/^ti ti-/, '')
 }
 
@@ -170,7 +165,6 @@ function goToPage(page: number) {
   }
 }
 
-// Reset página quando filtros ou busca mudarem
 watch([() => props.filters.filters.value, () => props.searchQuery], () => {
   currentPage.value = 1
 }, { deep: true })
@@ -178,7 +172,6 @@ watch([() => props.filters.filters.value, () => props.searchQuery], () => {
 watch(() => props.omega.currentView.value, () => {
   currentPage.value = 1
 })
-
 </script>
 
 <template>

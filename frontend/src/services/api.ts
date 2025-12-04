@@ -17,10 +17,6 @@ function buildUrl(path: string, params?: Record<string, any>) {
   return url.toString()
 }
 
-/**
- * Cria headers padrão para requisições API
- * Inclui API Key se disponível
- */
 function buildHeaders(customHeaders?: Record<string, string>): Record<string, string> {
   const headers: Record<string, string> = {
     ...customHeaders
@@ -98,9 +94,6 @@ export async function apiPost<T>(
   }
 }
 
-/**
- * Requisição PUT genérica
- */
 export async function apiPut<T>(
   path: string,
   body?: Record<string, any>,
@@ -135,9 +128,6 @@ export async function apiPut<T>(
   }
 }
 
-/**
- * Requisição DELETE genérica
- */
 export async function apiDelete<T>(
   path: string,
   params?: Record<string, any>

@@ -22,4 +22,3 @@ export enum ApiRoutes {
 export function getApiRoute(route: ApiRoutes): string {
   return route
 }
-

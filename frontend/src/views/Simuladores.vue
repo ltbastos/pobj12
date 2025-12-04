@@ -229,7 +229,7 @@ const formatDeltaDisplay = (value: number): string => {
           </header>
 
           <div id="sim-whatif" class="sim-whatif">
-            <!-- Skeleton Loading -->
+            
             <template v-if="loading">
               <div class="sim-whatif__skeleton">
                 <div class="sim-whatif__form">
@@ -898,7 +898,7 @@ const formatDeltaDisplay = (value: number): string => {
   font-style: italic;
 }
 
-/* Skeleton Loading */
+
 .skeleton {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;

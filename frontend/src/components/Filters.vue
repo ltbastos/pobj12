@@ -12,7 +12,6 @@ import SelectSearch from './SelectSearch.vue'
 import SelectInput from './SelectInput.vue'
 import type { FilterOption } from '../types'
  
-
 const route = useRoute()
 const isSimuladoresPage = computed(() => route.name === 'Simuladores')
 
@@ -95,7 +94,7 @@ const handleFamiliaChange = (value: string): void => {
     selectedIndicador.value = ''
     selectedSubindicador.value = ''
   } else {
-    // Limpa o indicador se ele não pertence à família selecionada
+    
     if (selectedIndicador.value) {
       const indicadorMeta = findItemMeta(selectedIndicador.value, indicadores.value)
       const familiaId = String(value).trim()

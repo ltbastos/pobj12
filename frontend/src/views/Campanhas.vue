@@ -1,5 +1,4 @@
 <script setup lang="ts">
- 
 import { ref, computed, onMounted, watch } from 'vue'
 import { useGlobalFilters } from '../composables/useGlobalFilters'
 import { formatINT, formatPoints } from '../utils/formatUtils'
@@ -528,7 +527,7 @@ watch([filterState], () => {
 
         <div v-else class="campanhas-content">
           <section class="card card--campanhas">
-            <!-- Header com seletor de sprint -->
+            
             <header class="card__header camp-header">
               <div class="title-subtitle">
                 <h3>Campanhas</h3>
@@ -552,7 +551,7 @@ watch([filterState], () => {
               </div>
             </header>
 
-            <!-- Hero section com informações da campanha -->
+            
             <div v-if="sprintAtual" class="camp-hero">
               <div class="camp-hero__info">
                 <p id="camp-cycle">{{ cycleLabel }}</p>
@@ -575,7 +574,7 @@ watch([filterState], () => {
               </div>
             </div>
 
-            <!-- KPIs -->
+            
             <div v-if="sprintAtual && kpis.length > 0" class="camp-kpi-grid" id="camp-kpis">
               <div 
                 v-for="(kpi, index) in kpis" 
@@ -601,10 +600,10 @@ watch([filterState], () => {
               </div>
             </div>
 
-            <!-- Simuladores -->
+            
             <div v-if="sprintAtual && (teamSimulator || individualSimulator)" class="card card--camp-sims">
               <div class="sim-grid">
-                <!-- Simulador de Equipe -->
+                
                 <div v-if="teamSimulator" id="sim-equipe" class="sim-card">
                   <div class="sim-card__head">
                     <div class="sim-card__title">
@@ -704,7 +703,7 @@ watch([filterState], () => {
                   </div>
                 </div>
 
-                <!-- Simulador Individual -->
+                
                 <div v-if="individualSimulator" id="sim-individual" class="sim-card">
                   <div class="sim-card__head">
                     <div class="sim-card__title">
@@ -820,7 +819,7 @@ watch([filterState], () => {
               </div>
             </div>
 
-            <!-- Ranking da Campanha -->
+            
             <div v-if="sprintAtual && rankingData.length > 0" class="card card--camp-ranking">
               <div class="card__header">
                 <div class="title-subtitle">
@@ -919,7 +918,7 @@ watch([filterState], () => {
   margin-top: 24px;
 }
 
-/* Skeleton Loading */
+
 .skeleton {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
@@ -1048,7 +1047,7 @@ watch([filterState], () => {
   font-size: 13px;
 }
 
-/* Hero Section */
+
 .camp-hero {
   display: flex;
   flex-wrap: wrap;
@@ -1141,7 +1140,7 @@ watch([filterState], () => {
   font-weight: 600;
 }
 
-/* KPIs */
+
 .camp-kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -1178,7 +1177,7 @@ watch([filterState], () => {
   font-weight: 600;
 }
 
-/* Simuladores */
+
 .card--camp-sims {
   display: flex;
   flex-direction: column;
@@ -1497,7 +1496,7 @@ watch([filterState], () => {
   color: #b91c1c;
 }
 
-/* Ranking */
+
 .card--camp-ranking {
   display: flex;
   flex-direction: column;

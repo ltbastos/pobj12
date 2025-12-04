@@ -1,9 +1,3 @@
-/* =========================================================
-   Tema Bradesco - Variáveis CSS
-   Baseado no site oficial: https://banco.bradesco/html/classic/index.shtm
-   ========================================================= */
-
-/* Fontes Bradesco - Arquivos locais */
 @font-face {
   font-family: "Bradesco";
   src: url("/fonts/BradescoSans-Regular.woff") format("woff");
@@ -47,29 +41,25 @@
 :root {
   --brad-current-theme: "brad-theme-classic";
 
-  /* Cores Neutras */
   --brad-color-neutral-0: #fff;
   --brad-color-neutral-100: #000;
 
-  /* Cores Primárias */
   --brad-color-primary: #cc092f;
   --brad-color-primary-light: #d63a59;
   --brad-color-primary-dark: #9d0b21;
   --brad-color-primary-xlight: #fce7ec;
   --brad-color-on-bg-primary: #fff;
 
-  /* Cores Secundárias */
+  
   --brad-color-secondary: #cc092f;
   --brad-color-secondary-light: #d63a59;
   --brad-color-secondary-dark: #9d0b21;
   --brad-color-secondary-xlight: #fce7ec;
   --brad-color-on-bg-secondary: #fff;
 
-  /* Gradientes */
   --brad-color-primary-gradient: linear-gradient(90deg, #cc092f 40%, #b81570 90%);
   --brad-color-secondary-gradient: linear-gradient(270deg, #cc092f 40%, #b81570 90%);
 
-  /* Cores de Suporte */
   --brad-color-gray-light: #ebebeb;
   --brad-color-gray: #c7c7c7;
   --brad-color-gray-dark: #999;
@@ -78,11 +68,9 @@
   --brad-color-extended-blue: #3b69ff;
   --brad-color-error: #e1173f;
 
-  /* Swiper */
   --swiper-theme-color: #007aff;
   --swiper-navigation-size: 44px;
 
-  /* Variáveis de compatibilidade com o sistema existente */
   --brand: var(--brad-color-primary);
   --brand-dark: var(--brad-color-primary-dark);
   --brand-light: var(--brad-color-primary-light);
@@ -95,7 +83,6 @@
   --stroke: var(--brad-color-gray-light);
   --info: var(--brad-color-accent);
 
-  /* Tipografia */
   --brad-font-family: "Bradesco", "BradescoSans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   --brad-font-size-base: 16px;
   --brad-font-weight-normal: 400;
@@ -105,7 +92,6 @@
   --brad-line-height-base: 1.5;
 }
 
-/* Estilos base com fonte Bradesco */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -141,7 +127,6 @@ body {
   font-family: var(--brad-font-family);
 }
 
-/* Tipografia - Headings */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--brad-font-family);
   font-weight: var(--brad-font-weight-bold);
@@ -180,7 +165,6 @@ h6 {
   font-weight: var(--brad-font-weight-semibold);
 }
 
-/* Tipografia - Texto */
 p {
   font-family: var(--brad-font-family);
   font-size: var(--brad-font-size-base);
@@ -190,7 +174,6 @@ p {
   margin: 0;
 }
 
-/* Links */
 a {
   font-family: var(--brad-font-family);
   color: var(--brad-color-primary);
@@ -208,7 +191,6 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
-/* Botões */
 button {
   font-family: var(--brad-font-family);
   font-size: var(--brad-font-size-base);
@@ -224,7 +206,6 @@ button:focus-visible {
   outline-offset: 2px;
 }
 
-/* Inputs */
 input, textarea, select {
   font-family: var(--brad-font-family);
   font-size: var(--brad-font-size-base);

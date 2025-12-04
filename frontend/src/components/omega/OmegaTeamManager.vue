@@ -28,7 +28,6 @@ const availableAnalysts = ref<OmegaUser[]>([])
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 
-// Carrega analistas do time do supervisor
 async function loadTeamAnalysts() {
   if (!currentUser.value || !isSupervisor.value) return
 
@@ -36,7 +35,7 @@ async function loadTeamAnalysts() {
   error.value = null
 
   try {
-    // Busca analistas que pertencem ao time do supervisor
+    
     const response = await apiGet<OmegaUser[]>(`/api/omega/teams/${currentUser.value.id}/analysts`)
     if (response.success && response.data) {
       teamAnalysts.value = response.data
@@ -49,15 +48,14 @@ async function loadTeamAnalysts() {
   }
 }
 
-// Carrega analistas disponíveis para adicionar ao time
 async function loadAvailableAnalysts() {
   if (!currentUser.value || !isSupervisor.value) return
 
   try {
-    // Busca todos os analistas que podem ser adicionados ao time
+    
     const response = await apiGet<OmegaUser[]>('/api/omega/analysts/available')
     if (response.success && response.data) {
-      // Filtra para não mostrar os que já estão no time
+      
       const teamIds = new Set(teamAnalysts.value.map(a => a.id))
       availableAnalysts.value = response.data.filter(a => !teamIds.has(a.id))
     }
@@ -66,7 +64,6 @@ async function loadAvailableAnalysts() {
   }
 }
 
-// Adiciona analista ao time
 async function addAnalyst(analystId: string) {
   if (!currentUser.value || !isSupervisor.value) return
 
@@ -92,7 +89,6 @@ async function addAnalyst(analystId: string) {
   }
 }
 
-// Remove analista do time
 async function removeAnalyst(analystId: string) {
   if (!currentUser.value || !isSupervisor.value) return
 
@@ -127,7 +123,6 @@ onMounted(() => {
   }
 })
 
-// Recarrega quando o modal abrir
 watch(() => props.open, (isOpen) => {
   if (isOpen && isSupervisor.value) {
     loadTeamAnalysts()

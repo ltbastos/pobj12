@@ -18,7 +18,6 @@ export async function getRanking(filters?: RankingFilters, nivel?: string): Prom
     if (filters.dataFim) params.dataFim = filters.dataFim
   }
   
-  // Adiciona o nível de agrupamento
   if (nivel) {
     params.nivel = nivel
   }

@@ -51,4 +51,3 @@ export async function getSimuladorProducts(filters?: SimuladorFilters): Promise<
   console.error('Erro ao buscar produtos para simulador:', response.error)
   return null
 }
-

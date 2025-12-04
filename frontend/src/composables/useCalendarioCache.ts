@@ -7,13 +7,13 @@ let loadPromise: Promise<CalendarioItem[] | null> | null = null
 
 export function useCalendarioCache() {
   const loadCalendario = async (): Promise<CalendarioItem[] | null> => {
-    // Já existe requisição em andamento, aguarda ela
+    
     if (loadPromise) {
       return loadPromise
     }
 
     isLoading.value = true
-    // Sempre busca dados frescos do servidor
+    
     loadPromise = getCalendario()
       .then((data) => {
         if (data) {
@@ -35,5 +35,3 @@ export function useCalendarioCache() {
     loadCalendario
   }
 }
-
-

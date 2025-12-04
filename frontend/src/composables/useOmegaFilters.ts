@@ -55,33 +55,27 @@ export function useOmegaFilters() {
     let filtered = [...tickets]
     const f = filters.value
 
-    // Filtro por ID
     if (f.id) {
       const idTerm = f.id.toLowerCase().trim()
       filtered = filtered.filter(t => t.id.toLowerCase().includes(idTerm))
     }
 
-    // Filtro por departamento
     if (f.departments.length) {
       filtered = filtered.filter(t => f.departments.includes(t.queue || ''))
     }
 
-    // Filtro por tipo
     if (f.type) {
       filtered = filtered.filter(t => t.category === f.type)
     }
 
-    // Filtro por prioridade
     if (f.priority) {
       filtered = filtered.filter(t => t.priority === f.priority)
     }
 
-    // Filtro por status
     if (f.statuses.length) {
       filtered = filtered.filter(t => f.statuses.includes(t.status))
     }
 
-    // Filtro por solicitante
     if (f.requester) {
       const requesterTerm = f.requester.toLowerCase().trim()
       filtered = filtered.filter(t => {
@@ -90,7 +84,6 @@ export function useOmegaFilters() {
       })
     }
 
-    // Filtro por data de abertura
     if (f.openedFrom || f.openedTo) {
       filtered = filtered.filter(t => {
         if (!t.opened) return false
@@ -107,7 +100,6 @@ export function useOmegaFilters() {
       })
     }
 
-    // Ordena por data de atualização (mais recente primeiro)
     filtered.sort((a, b) => {
       const aTime = new Date(a.updated || a.opened || 0).getTime()
       const bTime = new Date(b.updated || b.opened || 0).getTime()
@@ -179,7 +171,6 @@ export function useOmegaFilters() {
     const toInput = form.querySelector('#omega-filter-to') as HTMLInputElement
     if (toInput) toInput.value = filters.value.openedTo || ''
 
-    // Sincroniza checkboxes de status
     const statusHost = form.querySelector('#omega-filter-status')
     if (statusHost) {
       statusHost.querySelectorAll('.omega-filter-status__option').forEach((option) => {
@@ -208,4 +199,3 @@ export function useOmegaFilters() {
     toggleFilterPanel
   }
 }
-

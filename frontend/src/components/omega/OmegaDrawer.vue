@@ -51,7 +51,6 @@ const observation = ref('')
 const attachments = ref<Attachment[]>([])
 const feedback = ref({ message: '', tone: 'info' as 'info' | 'warning' | 'danger' | 'success', visible: false })
 
-// Fluxo de aprovação (para transferências)
 const showFlow = ref(false)
 const flowRequesterName = ref('')
 const flowRequesterEmail = ref('')
@@ -61,13 +60,11 @@ const flowTargetEmail = ref('')
 const currentUser = computed(() => props.omega.currentUser.value)
 const requesterName = computed(() => currentUser.value?.name || '—')
 
-// Opções de departamento - por enquanto sempre apenas "Matriz"
 const departmentOptions = computed<FilterOption[]>(() => {
-  // Por enquanto, sempre retorna apenas "Matriz"
+  
   return [{ id: 'Matriz', nome: 'Matriz' }]
 })
 
-// Opções de tipo baseadas no departamento selecionado
 const typeOptions = computed<FilterOption[]>(() => {
   if (!department.value) return []
   
@@ -81,7 +78,6 @@ const typeOptions = computed<FilterOption[]>(() => {
   return Array.from(types).sort().map(t => ({ id: t, nome: t }))
 })
 
-// Verifica se precisa mostrar fluxo de aprovação
 watch([department, type], () => {
   const typeValue = type.value || ''
   const normalizedType = typeValue.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -89,7 +85,6 @@ watch([department, type], () => {
   showFlow.value = normalizedType === transferType
 }, { immediate: true })
 
-// Validação de email
 function isValidEmail(value: string): boolean {
   if (!value) return false
   const normalized = value.toString().trim()
@@ -97,7 +92,6 @@ function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)
 }
 
-// Gerenciamento de anexos
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 function handleAddFile() {
@@ -117,12 +111,11 @@ function handleFileChange(event: Event) {
   
   attachments.value = [...attachments.value, ...newFiles]
   
-  // Limpa o input
   if (input) {
     try {
       input.value = ''
     } catch (err) {
-      // Ignora erros
+      
     }
   }
 }
@@ -143,17 +136,14 @@ function formatFileSize(bytes: number | null): string {
   return `${size.toFixed(size >= 10 || unitIndex === 0 ? 0 : 1)} ${units[unitIndex]}`
 }
 
-// Submit do formulário
 function handleSubmit(event: Event) {
   event.preventDefault()
   
-  // Validação
   if (!department.value || !type.value || !observation.value.trim()) {
     showFeedback('Preencha todos os campos obrigatórios para registrar o chamado.', 'warning')
     return
   }
   
-  // Validação de fluxo se necessário
   if (showFlow.value) {
     if (!flowRequesterName.value.trim() || !flowRequesterEmail.value.trim()) {
       showFeedback('Informe o nome e o e-mail do gerente da agência solicitante para concluir a transferência.', 'warning')
@@ -203,7 +193,6 @@ function handleClose() {
   emit('update:open', false)
 }
 
-// Reset do formulário quando fechar
 watch(() => props.open, (isOpen) => {
   if (!isOpen) {
     department.value = null
@@ -217,16 +206,15 @@ watch(() => props.open, (isOpen) => {
     flowTargetEmail.value = ''
     clearFeedback()
   } else {
-      // Aplica dados iniciais se fornecidos
+      
       nextTick(() => {
-        // Sempre define "Matriz" como departamento padrão
+        
         department.value = 'Matriz'
         
         if (props.initialData) {
-          // Se houver dados iniciais, aplica apenas o tipo e observação
-          // (departamento sempre será Matriz)
+          
           if (props.initialData.type) {
-            // Aguarda o departamento ser definido antes de definir o tipo
+            
             nextTick(() => {
               type.value = props.initialData.type || null
             })
@@ -239,7 +227,6 @@ watch(() => props.open, (isOpen) => {
   }
 }, { immediate: true })
 
-// Reset tipo quando departamento mudar
 watch(department, () => {
   type.value = null
 })

@@ -7,12 +7,11 @@ let loadPromise: Promise<InitData | null> | null = null
 
 export function useInitCache() {
   const loadInit = async (): Promise<InitData | null> => {
-    // Já existe requisição em andamento, aguarda ela
+    
     if (loadPromise) return loadPromise
 
     isLoading.value = true
 
-    // Sempre busca dados frescos do servidor
     loadPromise = getInit()
       .then((data) => {
         if (data) initData.value = data

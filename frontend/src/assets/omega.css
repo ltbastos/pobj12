@@ -1,9 +1,6 @@
-/* =========================================================
-   Omega • módulo de chamados corporativos
-   Usa variáveis CSS do tema Bradesco
-   ========================================================= */
+
 :root{
-  /* Usa cores do tema Bradesco */
+  
   --omega-gradient: linear-gradient(135deg, var(--brad-color-primary-xlight), rgba(255,255,255,0));
   --omega-sidebar-bg: linear-gradient(180deg, rgba(252,231,236,.88) 0%, rgba(255,255,255,.95) 100%);
   --omega-badge-bg: var(--brad-color-primary-xlight);
@@ -13,7 +10,7 @@
   --omega-progress: var(--brad-color-accent);
   --text-muted: var(--brad-color-gray-dark);
   
-  /* Garante que usa fonte Bradesco */
+  
   font-family: var(--brad-font-family, "Bradesco", "BradescoSans", system-ui, sans-serif);
 }
 
@@ -958,7 +955,7 @@ body.has-omega-open{ overflow:hidden; }
   box-shadow:inset 3px 0 0 var(--brad-color-primary, #cc092f); 
 }
 
-/* Ripple effect para linhas da tabela */
+
 .omega-ripple{
   position:absolute;
   border-radius:50%;
@@ -979,7 +976,7 @@ body.has-omega-open{ overflow:hidden; }
   }
 }
 
-/* Skeleton loading */
+
 .omega-skeleton{
   background:linear-gradient(90deg, #f0f0f0 0%, #f8f8f8 50%, #f0f0f0 100%);
   background-size:200% 100%;
@@ -1014,7 +1011,7 @@ body.has-omega-open{ overflow:hidden; }
   pointer-events:none;
 }
 
-/* Empty state melhorado */
+
 .omega-empty-state{
   padding:60px 20px !important;
   text-align:center;

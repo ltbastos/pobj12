@@ -72,7 +72,7 @@ function filtersEqual(f1: DetalhesFilters, f2: DetalhesFilters): boolean {
 }
 
 async function fetchDetalhes(filters: DetalhesFilters): Promise<void> {
-  // Evita requisições duplicadas simultâneas
+  
   if (detalhesLoading.value) {
     return
   }
@@ -82,7 +82,7 @@ async function fetchDetalhes(filters: DetalhesFilters): Promise<void> {
   detalhesError.value = null
 
   try {
-    // Sempre busca dados frescos do servidor
+    
     const data = await getDetalhes(filters)
     if (data) {
       detalhesPayload.value = data
@@ -129,4 +129,3 @@ export function useDetalhesData(
     buildFilters: () => buildFiltersFromState(filterState.value, period.value)
   }
 }
-

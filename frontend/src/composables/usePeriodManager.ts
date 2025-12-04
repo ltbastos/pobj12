@@ -20,7 +20,6 @@ export function usePeriodManager() {
 
   onMounted(() => loadCalendario())
 
-  // Re-renderiza o header do período ao trocar de rota
   watch(() => route.name, () => {})
 
   return {

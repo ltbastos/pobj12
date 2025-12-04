@@ -28,4 +28,3 @@ export async function sendMessage(request: AgentRequest): Promise<AgentResponse 
   console.error('Erro ao enviar mensagem para o agente:', response.error)
   return null
 }
-

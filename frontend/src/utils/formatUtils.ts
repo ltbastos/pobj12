@@ -178,5 +178,3 @@ export function formatDate(isoDate: string | null | undefined): string {
     return isoDate
   }
 }
-
-

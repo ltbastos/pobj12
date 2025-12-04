@@ -51,7 +51,7 @@ function handleClearFilters() {
 async function handleRefresh() {
   isRefreshing.value = true
   emit('refresh')
-  // Aguarda um pouco para mostrar o estado de loading
+  
   setTimeout(() => {
     isRefreshing.value = false
   }, 500)
@@ -65,9 +65,8 @@ function handleBulkStatus() {
   emit('bulk-status')
 }
 
-// Watch para sincronizar busca quando filtros mudarem
 watch(() => props.filters.filters.value, () => {
-  // Se os filtros mudarem, pode precisar atualizar a busca
+  
 }, { deep: true })
 </script>
 

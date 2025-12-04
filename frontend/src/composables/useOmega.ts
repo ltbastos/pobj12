@@ -27,16 +27,13 @@ const OMEGA_ROLE_LABELS = {
   admin: 'Administrador'
 } as const
 
-// Menus diferentes para cada role
 const OMEGA_NAV_ITEMS = [
-  // Menu do usuário
+  
   { id: 'my', label: 'Meus chamados', icon: 'ti ti-user', roles: ['usuario', 'analista', 'supervisor', 'admin'] as OmegaRole[] },
   
-  // Menu do analista
   { id: 'assigned', label: 'Meus atendimentos', icon: 'ti ti-clipboard-check', roles: ['analista', 'supervisor', 'admin'] as OmegaRole[] },
   { id: 'queue', label: 'Fila da equipe', icon: 'ti ti-inbox', roles: ['analista', 'supervisor', 'admin'] as OmegaRole[] },
   
-  // Menu do supervisor
   {
     id: 'team',
     label: 'Visão da supervisão',
@@ -49,7 +46,6 @@ const OMEGA_NAV_ITEMS = [
     ]
   },
   
-  // Menu do admin
   { id: 'admin', label: 'Administração', icon: 'ti ti-shield-lock', roles: ['admin'] as OmegaRole[] }
 ] as const
 
@@ -68,7 +64,6 @@ const OMEGA_DEFAULT_STATUSES: OmegaStatus[] = [
   { id: 'cancelado', label: 'Cancelado', tone: 'danger', order: 5, departmentId: '0' }
 ]
 
-// Status finais que não permitem réplica do usuário
 const OMEGA_FINAL_STATUSES = ['resolvido', 'cancelado', 'finalizado']
 
 function isFinalStatus(statusId: string): boolean {
@@ -91,7 +86,7 @@ let initPromise: Promise<OmegaInitData | null> | null = null
 
 export function useOmega() {
   const loadInit = async (): Promise<OmegaInitData | null> => {
-    // Já existe requisição em andamento, aguarda ela
+    
     if (initPromise) {
       return initPromise
     }
@@ -99,7 +94,6 @@ export function useOmega() {
     isLoading.value = true
     error.value = null
 
-    // Sempre busca dados frescos do servidor
     initPromise = getOmegaInit()
       .then((data) => {
         if (data) {
@@ -150,7 +144,7 @@ export function useOmega() {
     error.value = null
 
     try {
-      // Sempre busca dados frescos do servidor
+      
       const data = await getOmegaUsers()
       if (data) {
         users.value = data
@@ -194,7 +188,7 @@ export function useOmega() {
     error.value = null
 
     try {
-      // Sempre busca dados frescos do servidor
+      
       const data = await getOmegaStatuses()
       if (data) {
         statuses.value = data.length > 0 ? data : OMEGA_DEFAULT_STATUSES
@@ -217,7 +211,7 @@ export function useOmega() {
     error.value = null
 
     try {
-      // Sempre busca dados frescos do servidor
+      
       const data = await getOmegaStructure()
       if (data) {
         structure.value = data
@@ -238,7 +232,7 @@ export function useOmega() {
     error.value = null
 
     try {
-      // Sempre busca dados frescos do servidor
+      
       const data = await getOmegaMesu()
       if (data) {
         mesu.value = data
@@ -284,10 +278,9 @@ export function useOmega() {
     try {
       const response = await updateOmegaTicket(ticketId, updates)
       if (response.success && response.data) {
-        // Recarrega os tickets para garantir que temos a versão mais atualizada
+        
         await loadTickets()
         
-        // Retorna o ticket atualizado da lista
         const updatedTicket = tickets.value.find((t) => t.id === ticketId)
         return updatedTicket || null
       }
@@ -329,7 +322,7 @@ export function useOmega() {
   }
 
   const canUserReply = (ticket: OmegaTicket): boolean => {
-    // Status finais não permitem réplica do usuário
+    
     return !isFinalStatus(ticket.status)
   }
 
@@ -369,4 +362,3 @@ export function useOmega() {
     }
   }
 }
-

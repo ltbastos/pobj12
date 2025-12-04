@@ -22,7 +22,6 @@ const navItems = computed(() => {
   return props.omega.getNavItemsForRole(user.role)
 })
 
-// Watch para garantir que o componente reaja quando os dados forem carregados
 watch(() => props.omega.currentUser.value, (user) => {
   if (user) {
   }
@@ -41,10 +40,9 @@ function handleNavClick(viewId: string) {
   emit('nav-click', viewId)
 }
 
-// Função para converter ícone do formato "ti ti-*" para nome do componente Icon
 function getIconName(iconClass: string): string {
   if (!iconClass) return 'circle'
-  // Remove "ti ti-" do início
+  
   return iconClass.replace(/^ti ti-/, '')
 }
 </script>

@@ -55,4 +55,3 @@ export function useGlobalFilters() {
     triggerFilter
   }
 }
-

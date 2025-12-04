@@ -285,15 +285,13 @@ const treeData = computed(() => {
 const showCards = computed(() => searchTerm.value.trim().length > 0)
 
 function recalculateSummaryFromChildren(node: TreeNode): void {
-  // Primeiro, recalcula recursivamente todos os filhos
+  
   node.children.forEach(child => recalculateSummaryFromChildren(child))
 
-  // Se o nó tem filhos, recalcula pontos e peso somando dos filhos
   if (node.children.length > 0) {
     const pontosFromChildren = node.children.reduce((sum, child) => sum + (child.summary.pontos || 0), 0)
     const pesoFromChildren = node.children.reduce((sum, child) => sum + (child.summary.peso || 0), 0)
 
-    // Atualiza pontos e peso no summary do nó pai
     node.summary.pontos = pontosFromChildren
     node.summary.peso = pesoFromChildren
   }
@@ -422,7 +420,6 @@ function buildTreeHierarchy(items: DetalhesItem[], hierarchy: string[], level: n
     nodes.push(node)
   })
 
-  // Recalcula pontos e peso dos nós pais baseado nos filhos
   nodes.forEach(node => recalculateSummaryFromChildren(node))
 
   return nodes
@@ -468,7 +465,7 @@ const detailOpenRows = ref<Set<string>>(new Set())
 
 function handleAction(payload: { type: 'ticket' | 'opportunities', node: TreeNode }) {
   if (payload.type === 'ticket') {
-    // Abre o Omega em nova aba com dados pré-preenchidos
+    
     const observation = buildTicketObservation(payload.node)
     const params = new URLSearchParams({
       openDrawer: 'true',
@@ -477,11 +474,11 @@ function handleAction(payload: { type: 'ticket' | 'opportunities', node: TreeNod
       queue: 'POBJ',
       observation
     })
-    // Usa o router para construir a URL corretamente
+    
     const omegaRoute = router.resolve({ name: 'Omega', query: Object.fromEntries(params) })
     window.open(omegaRoute.href, '_blank')
   } else if (payload.type === 'opportunities') {
-    // TODO: Implementar abertura de oportunidades
+    
     console.log('Abrir oportunidades para:', payload.node)
   }
 }
@@ -646,7 +643,6 @@ function handleOpenColumnDesigner() {
   showColumnDesigner.value = true
 }
 
-
 function handleSaveView(name: string, columns: string[]) {
   const sanitizedColumns = sanitizeColumns(columns)
   const existingView = detailViews.value.find(v => v.name.toLowerCase() === name.toLowerCase() && v.id !== 'default')
@@ -703,7 +699,6 @@ function handleApplyColumns(columns: string[]) {
   }
   localStorage.setItem('pobj3:detailActiveView', activeDetailViewId.value)
 }
-
 
 onMounted(() => {
   try {
@@ -781,7 +776,7 @@ onMounted(() => {
             @view-change="handleDetailViewChange"
           />
 
-          <!-- Toolbar -->
+          
           <div class="table-toolbar-wrapper">
             <div class="table-toolbar">
               <button
@@ -971,7 +966,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Modal de personalização de colunas -->
+      
       <DetailColumnDesigner
         v-model="showColumnDesigner"
         :selected-columns="activeColumns"

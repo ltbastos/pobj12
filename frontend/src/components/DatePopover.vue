@@ -79,14 +79,12 @@ watch(
       return
     }
 
-    // Atualiza os valores locais quando o popover abre
     localStart.value = props.modelValue.start
     localEnd.value = props.modelValue.end
 
     await nextTick()
     positionPopover()
     
-    // Adiciona listener após um pequeno delay para evitar fechar imediatamente
     setTimeout(() => {
       document.addEventListener('click', handleOutside, { capture: false, once: true })
       document.addEventListener('keydown', handleEscape, { once: true })
@@ -110,7 +108,6 @@ const handleOutside = (e: MouseEvent) => {
 
   const target = e.target as HTMLElement
   
-  // Não fecha se o clique foi dentro do popover, no anchor, ou em elementos relacionados ao date picker
   const isInput = target instanceof HTMLInputElement
   if (
     popover.value.contains(target) ||

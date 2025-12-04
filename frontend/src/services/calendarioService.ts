@@ -31,11 +31,10 @@ export function getDefaultPeriod(): { start: string; end: string } {
 
 export function formatBRDate(dateString: string): string {
   if (!dateString) return ''
-  // Parse manual para evitar problemas de timezone
-  // Formato esperado: YYYY-MM-DD
+  
   const parts = dateString.split('-')
   if (parts.length !== 3) {
-    // Fallback para o método antigo se não for formato ISO
+    
     const date = new Date(dateString)
     const day = String(date.getDate()).padStart(2, '0')
     const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -46,7 +45,7 @@ export function formatBRDate(dateString: string): string {
   const monthStr = parts[1]
   const dayStr = parts[2]
   if (!yearStr || !monthStr || !dayStr) {
-    // Fallback se alguma parte estiver ausente
+    
     const date = new Date(dateString)
     const day = String(date.getDate()).padStart(2, '0')
     const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -58,4 +57,3 @@ export function formatBRDate(dateString: string): string {
   const day = parseInt(dayStr, 10)
   return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`
 }
-

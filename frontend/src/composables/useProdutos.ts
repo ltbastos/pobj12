@@ -153,4 +153,3 @@ export function useProdutos(filters?: Ref<ProdutoFilters | null>) {
     loadProdutos
   }
 }
-

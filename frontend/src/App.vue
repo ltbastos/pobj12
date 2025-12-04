@@ -5,7 +5,6 @@ import Footer from './components/Footer.vue'
 import ChatWidget from './components/ChatWidget.vue'
 import { useRoute, useRouter } from 'vue-router'
 
-
 onMounted(async () => {
   await Promise.all([
     import('./assets/animations.css'),
@@ -19,7 +18,6 @@ const router = useRouter()
 const Filters = defineAsyncComponent(() => import('./components/Filters.vue'))
 const TabsNavigation = defineAsyncComponent(() => import('./components/TabsNavigation.vue'))
 
-// Função para abrir Omega em nova aba
 const openOmegaInNewTab = (detail?: { openDrawer?: boolean; intent?: string; preferredQueue?: string; queue?: string; observation?: string }): void => {
   if (typeof window === 'undefined') return
   
@@ -40,7 +38,6 @@ const openOmegaInNewTab = (detail?: { openDrawer?: boolean; intent?: string; pre
   window.open(omegaRoute.href, '_blank')
 }
 
-// Registra funções globais para compatibilidade
 if (typeof window !== 'undefined') {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const globalAny = window as any
@@ -103,7 +100,7 @@ body {
   font-family: "Bradesco", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
 }
 
-/* Garantir que SVGs dos ícones sejam exibidos */
+
 svg {
   display: inline-block !important;
   vertical-align: middle;
@@ -135,7 +132,7 @@ body {
 .main-content {
   flex: 1;
   width: 100%;
-  padding-top: 66px; /* Altura do header fixo */
+  padding-top: 66px; 
 }
 
 

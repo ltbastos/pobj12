@@ -91,7 +91,6 @@ const localFilters = ref({
   openedTo: ''
 })
 
-// Sincroniza com os filtros do composable
 watch(() => props.filters.filters.value, (newFilters) => {
   localFilters.value = {
     id: newFilters.id || '',
@@ -105,7 +104,6 @@ watch(() => props.filters.filters.value, (newFilters) => {
   }
 }, { immediate: true })
 
-// Quando o departamento muda, limpa o tipo
 watch(() => localFilters.value.department, () => {
   localFilters.value.type = ''
 })
@@ -143,7 +141,7 @@ function handleClear() {
 }
 
 function handleClose() {
-  // Restaura os valores locais para os filtros atuais antes de fechar
+  
   const currentFilters = props.filters.filters.value
   localFilters.value = {
     id: currentFilters.id || '',

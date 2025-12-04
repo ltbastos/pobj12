@@ -60,7 +60,6 @@ function handleApply() {
   emit('apply', selectedStatus.value)
 }
 
-// Watch para resetar status quando o painel fechar
 watch(() => props.bulk.bulkPanelOpen.value, (open) => {
   if (!open) {
     selectedStatus.value = ''
@@ -69,7 +68,6 @@ watch(() => props.bulk.bulkPanelOpen.value, (open) => {
   }
 })
 
-// Inicializa status quando abrir
 watch(isOpen, (open) => {
   if (open && statusOptions.value.length > 0 && !selectedStatus.value) {
     selectedStatus.value = statusOptions.value[0]?.id || ''
