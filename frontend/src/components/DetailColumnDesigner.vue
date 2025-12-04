@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import Icon from './Icon.vue'
 
 export type ColumnMeta = {
   id: string
@@ -153,7 +154,7 @@ watch(() => props.modelValue, (open) => {
             aria-label="Fechar personalização"
             @click="handleClose"
           >
-            <i class="ti ti-x"></i>
+            <Icon name="x" :size="18" />
           </button>
         </header>
 
@@ -187,7 +188,7 @@ watch(() => props.modelValue, (open) => {
                 :aria-label="`Remover visão ${view.name}`"
                 @click.stop="handleDeleteView(view.id)"
               >
-                <i class="ti ti-trash"></i>
+                <Icon name="trash" :size="16" />
               </button>
             </div>
           </div>
@@ -206,7 +207,7 @@ watch(() => props.modelValue, (open) => {
                 class="detail-item detail-item--available"
               >
                 <span class="detail-item__handle" aria-hidden="true">
-                  <i class="ti ti-grip-vertical"></i>
+                  <Icon name="grip-vertical" :size="16" />
                 </span>
                 <span class="detail-item__label">{{ col.label }}</span>
                 <button
@@ -215,7 +216,7 @@ watch(() => props.modelValue, (open) => {
                   :aria-label="`Adicionar ${col.label}`"
                   @click="handleAdd(col.id)"
                 >
-                  <i class="ti ti-plus"></i>
+                  <Icon name="plus" :size="16" />
                 </button>
               </div>
               <p v-if="availableColumns.length === 0" class="detail-designer__empty">
@@ -237,7 +238,7 @@ watch(() => props.modelValue, (open) => {
                 :class="{ 'is-disabled': !canRemove }"
               >
                 <span class="detail-item__handle" aria-hidden="true">
-                  <i class="ti ti-grip-vertical"></i>
+                  <Icon name="grip-vertical" :size="16" />
                 </span>
                 <span class="detail-item__label">
                   {{ DETAIL_COLUMNS.find(c => c.id === colId)?.label || colId }}
@@ -250,7 +251,7 @@ watch(() => props.modelValue, (open) => {
                   :aria-label="`Remover ${DETAIL_COLUMNS.find(c => c.id === colId)?.label || colId}`"
                   @click="handleRemove(colId)"
                 >
-                  <i class="ti ti-x"></i>
+                  <Icon name="x" :size="18" />
                 </button>
               </div>
               <p v-if="selectedCols.length === 0" class="detail-designer__empty">

@@ -3,6 +3,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useGlobalFilters } from '../composables/useGlobalFilters'
 import { formatINT, formatPoints } from '../utils/formatUtils'
+import Icon from '../components/Icon.vue'
 
 const { filterState } = useGlobalFilters()
 
@@ -556,7 +557,7 @@ watch([filterState], () => {
               <div class="camp-hero__info">
                 <p id="camp-cycle">{{ cycleLabel }}</p>
                 <div class="camp-period camp-period--validity">
-                  <i class="ti ti-calendar"></i>
+                  <Icon name="calendar" :size="16" />
                   <span id="camp-validity" class="camp-validity">{{ validityText }}</span>
                 </div>
                 <p id="camp-note" class="muted">{{ noteText }}</p>
@@ -614,7 +615,7 @@ watch([filterState], () => {
                         aria-label="Como funciona o simulador de equipe"
                         title="Ajuste os percentuais de cada indicador entre 0% e 150%. A equipe se torna elegível com todos os indicadores a partir de 90% e somando pelo menos 100 pontos."
                       >
-                        <i class="ti ti-info-circle"></i>
+                        <Icon name="info-circle" :size="18" />
                       </button>
                     </div>
                     <p>Defina o atingimento de cada indicador para estimar a pontuação e a elegibilidade da equipe.</p>
@@ -714,7 +715,7 @@ watch([filterState], () => {
                         aria-label="Como funciona o simulador individual"
                         title="Escolha um perfil, use os presets ou ajuste manualmente. Para elegibilidade é necessário atingir 90% em cada indicador e acumular 100 pontos ou mais."
                       >
-                        <i class="ti ti-info-circle"></i>
+                        <Icon name="info-circle" :size="18" />
                       </button>
                     </div>
                     <p>Simule o desempenho de um gerente considerando os mesmos pesos da campanha.</p>

@@ -222,14 +222,14 @@ const contractId = computed(() => {
           </div>
           <div class="contract-detail-card__header-right">
             <span class="contract-detail-card__date">{{ formatDate(node.summary.data) }}</span>
-            <i class="ti ti-ticket contract-detail-card__icon"></i>
+            <Icon name="ticket" class="contract-detail-card__icon" :size="20" />
           </div>
         </div>
 
         <!-- Aviso de cancelamento -->
         <div v-if="isCanceled" class="contract-detail-card__warning">
           <div class="contract-detail-card__warning-content">
-            <i class="ti ti-alert-triangle contract-detail-card__warning-icon"></i>
+            <Icon name="alert-triangle" class="contract-detail-card__warning-icon" :size="20" />
             <div class="contract-detail-card__warning-text">
               <strong class="contract-detail-card__warning-title">Venda cancelada</strong>
               <p class="contract-detail-card__warning-details">

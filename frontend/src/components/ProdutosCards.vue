@@ -6,6 +6,7 @@ import { useBusinessDays } from '../composables/useBusinessDays'
 import { useCalendarioCache } from '../composables/useCalendarioCache'
 import { formatPoints, formatPeso, formatByMetric, formatMetricFull, formatBRL } from '../utils/formatUtils'
 import type { ProdutoCard } from '../composables/useProdutos'
+import Icon from './Icon.vue'
 
 const { filterState, period } = useGlobalFilters()
 
@@ -251,7 +252,7 @@ const getMetricLabel = (metric: string): string => {
             @keydown.escape="closeTooltip"
           >
             <div class="prod-card__title">
-              <i :class="item.icon || 'ti ti-chart-line'"></i>
+              <Icon name="chart-line" :size="22" color="#b30000" class="prod-card__icon" />
               <span class="prod-card__name has-ellipsis" :title="item.nome">{{ item.nome }}</span>
               <span
                 class="badge"
@@ -495,8 +496,7 @@ const getMetricLabel = (metric: string): string => {
   min-width: 0;
 }
 
-.prod-card__title i {
-  font-size: 22px;
+.prod-card__icon {
   color: #b30000;
   width: 36px;
   height: 36px;
@@ -506,6 +506,10 @@ const getMetricLabel = (metric: string): string => {
   border: 1px solid #ffd7db;
   border-radius: 12px;
   flex-shrink: 0;
+}
+
+.prod-card__icon :deep(svg) {
+  color: #b30000;
 }
 
 .prod-card__name {

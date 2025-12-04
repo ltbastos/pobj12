@@ -436,7 +436,7 @@ watch(department, () => {
                   :data-attachment-id="attachment.id"
                 >
                   <div class="omega-attachments__meta">
-                    <i class="ti ti-paperclip" aria-hidden="true"></i>
+                    <Icon name="paperclip" :size="18" aria-hidden="true" />
                     <span class="omega-attachments__name">{{ attachment.name }}</span>
                     <span v-if="attachment.size" class="omega-attachments__size">
                       {{ formatFileSize(attachment.size) }}
@@ -448,7 +448,7 @@ watch(department, () => {
                     :aria-label="`Remover ${attachment.name}`"
                     @click="handleRemoveAttachment(attachment.id)"
                   >
-                    <i class="ti ti-x" aria-hidden="true"></i>
+                    <Icon name="x" :size="18" aria-hidden="true" />
                   </button>
                 </li>
               </ul>

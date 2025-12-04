@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import Icon from './Icon.vue'
 
 interface Props {
   variant?: 'primary' | 'secondary' | 'link' | 'info'
   type?: 'button' | 'submit' | 'reset'
   disabled?: boolean
   icon?: string
+  iconName?: string
   loading?: boolean
 }
 
@@ -65,6 +67,7 @@ const handleClick = (event: MouseEvent) => {
   >
     <span v-if="loading" class="btn__spinner" aria-hidden="true"></span>
     <i v-if="icon && !loading" :class="icon" aria-hidden="true"></i>
+    <Icon v-else-if="iconName && !loading" :name="iconName" :size="16" aria-hidden="true" />
     <span v-if="!loading"><slot /></span>
     <span v-else class="btn__loading-text" aria-live="polite" aria-atomic="true"><slot /></span>
   </button>

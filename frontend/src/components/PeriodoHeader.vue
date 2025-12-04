@@ -12,7 +12,7 @@
         :disabled="isSimuladoresPage"
         @click="openPopover"
       >
-        <i class="ti ti-chevron-down"></i> Alterar data
+        <Icon name="chevron-down" :size="16" /> Alterar data
       </button>
     </div>
 
@@ -29,6 +29,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import DatePopover from './DatePopover.vue'
+import Icon from './Icon.vue'
 import { usePeriodManager } from '../composables/usePeriodManager'
 
 const {
@@ -109,9 +110,5 @@ const openPopover = (e: Event) => {
   cursor: not-allowed;
 }
 
-.link-action i {
-  font-size: 16px;
-  line-height: 1;
-}
 </style>
 

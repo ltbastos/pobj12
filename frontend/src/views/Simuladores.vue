@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { getSimuladorProducts, type SimuladorProduct } from '../services/simuladorService'
 import { formatPoints, formatByMetric, formatBRLReadable } from '../utils/formatUtils'
 import SelectInput from '../components/SelectInput.vue'
+import Icon from '../components/Icon.vue'
 import type { FilterOption } from '../types'
 
 const selectedIndicatorId = ref<string>('')
@@ -379,7 +380,7 @@ const formatDeltaDisplay = (value: number): string => {
                 <article class="sim-whatif-card sim-whatif-card--var">
                   <header class="sim-whatif-card__head">
                     <span class="sim-whatif-card__icon">
-                      <i class="ti ti-coin"></i>
+                      <Icon name="coin" :size="24" />
                     </span>
                     <h5>Remuneração variável</h5>
                   </header>
@@ -407,7 +408,7 @@ const formatDeltaDisplay = (value: number): string => {
                 <article class="sim-whatif-card sim-whatif-card--points">
                   <header class="sim-whatif-card__head">
                     <span class="sim-whatif-card__icon">
-                      <i class="ti ti-medal"></i>
+                      <Icon name="medal" :size="24" />
                     </span>
                     <h5>Pontuação</h5>
                   </header>
@@ -435,7 +436,7 @@ const formatDeltaDisplay = (value: number): string => {
                 <article class="sim-whatif-card sim-whatif-card--hit">
                   <header class="sim-whatif-card__head">
                     <span class="sim-whatif-card__icon">
-                      <i class="ti ti-target"></i>
+                      <Icon name="target" :size="24" />
                     </span>
                     <h5>Atingimento</h5>
                   </header>
