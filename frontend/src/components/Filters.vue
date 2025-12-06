@@ -7,6 +7,8 @@ import { useHierarchyFilters } from '../composables/useHierarchyFilters'
 import { usePeriodManager } from '../composables/usePeriodManager'
 import { useAccumulatedView, syncPeriodFromAccumulatedView } from '../composables/useAccumulatedView'
 import { useGlobalFilters } from '../composables/useGlobalFilters'
+import { clearResumoData } from '../composables/useResumoData'
+import { clearDetalhesData } from '../composables/useDetalhesData'
 import Button from './Button.vue'
 import SelectSearch from './SelectSearch.vue'
 import SelectInput from './SelectInput.vue'
@@ -20,7 +22,7 @@ const showAdvancedButton = ref(true)
 const { initData, isLoading: initLoading, loadInit } = useInitCache()
 const loading = initLoading
 
-const { updateFilter, updatePeriod, clearFilters, triggerFilter, clearAllData } = useGlobalFilters()
+const { updateFilter, updatePeriod, clearFilters, triggerFilter } = useGlobalFilters()
 
 const {
   segmento,
@@ -267,7 +269,9 @@ const handleClear = (): void => {
   period.value = syncPeriodFromAccumulatedView('mensal', period.value)
   
   clearFilters()
-  clearAllData()
+  // Limpa dados de todos os composables
+  clearResumoData()
+  clearDetalhesData()
   updatePeriod(period.value)
   triggerFilter()
 }

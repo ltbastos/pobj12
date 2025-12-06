@@ -1,8 +1,6 @@
 import { ref, computed } from 'vue'
 import type { Period } from '../types'
 import { getDefaultPeriod } from '../services/calendarioService'
-import { clearResumoData } from './useResumoData'
-import { clearDetalhesData } from './useDetalhesData'
 
 export type FilterState = {
   segmento?: string
@@ -46,13 +44,6 @@ export function useGlobalFilters() {
     filterTrigger.value = Date.now()
   }
 
-  const clearAllData = (): void => {
-    // Limpa dados de todos os composables
-    clearResumoData()
-    clearDetalhesData()
-    // O triggerFilter será chamado depois para recarregar os dados com filtros vazios
-  }
-
   return {
     filterState: computed(() => filterState.value),
     period: computed(() => period.value),
@@ -61,7 +52,6 @@ export function useGlobalFilters() {
     updatePeriod,
     clearFilters,
     clearFilter,
-    triggerFilter,
-    clearAllData
+    triggerFilter
   }
 }
