@@ -107,6 +107,14 @@ onMounted(() => {
 })
 
 watch([filterState, filterTrigger], () => {
+  // Limpa os dados antes de carregar novos
+  const hasFilters = Object.keys(rankingFilters.value).length > 0
+  
+  if (!hasFilters) {
+    rankingData.value = []
+    error.value = null
+  }
+  
   loadRanking()
 }, { deep: true })
 

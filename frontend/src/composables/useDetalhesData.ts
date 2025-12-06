@@ -98,6 +98,12 @@ async function fetchDetalhes(filters: DetalhesFilters): Promise<void> {
   }
 }
 
+export function clearDetalhesData(): void {
+  detalhesPayload.value = null
+  detalhesError.value = null
+  lastFilters.value = null
+}
+
 export function useDetalhesData(
   filterState: Ref<FilterState> | ComputedRef<FilterState>,
   period: Ref<Period> | ComputedRef<Period>
@@ -121,11 +127,18 @@ export function useDetalhesData(
     await fetchDetalhes(filters)
   }
 
+  const clearData = (): void => {
+    detalhesPayload.value = null
+    detalhesError.value = null
+    lastFilters.value = null
+  }
+
   return {
     detalhes: computed(() => detalhesPayload.value ?? []),
     loading: computed(() => detalhesLoading.value),
     error: computed(() => detalhesError.value),
     loadDetalhes,
+    clearData,
     buildFilters: () => buildFiltersFromState(filterState.value, period.value)
   }
 }

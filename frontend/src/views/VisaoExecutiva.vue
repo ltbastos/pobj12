@@ -114,6 +114,19 @@ const loadData = async () => {
 }
 
 watch([execFilters, period], () => {
+  // Limpa os dados se não houver filtros de hierarquia aplicados
+  const hasHierarchyFilters = execFilters.value.segmento || 
+                              execFilters.value.diretoria || 
+                              execFilters.value.regional || 
+                              execFilters.value.agencia || 
+                              execFilters.value.gerenteGestao || 
+                              execFilters.value.gerente
+  
+  if (!hasHierarchyFilters) {
+    execData.value = null
+    error.value = null
+  }
+  
   loadData()
 }, { deep: true })
 

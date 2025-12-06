@@ -116,6 +116,12 @@ async function fetchResumo(filters: ResumoFilters): Promise<void> {
   }
 }
 
+export function clearResumoData(): void {
+  resumoPayload.value = null
+  resumoError.value = null
+  lastFilters.value = null
+}
+
 export function useResumoData(
   filterState: Ref<FilterState> | ComputedRef<FilterState>,
   period: Ref<Period> | ComputedRef<Period>
@@ -142,6 +148,12 @@ export function useResumoData(
     await fetchResumo(filters)
   }
 
+  const clearData = (): void => {
+    resumoPayload.value = null
+    resumoError.value = null
+    lastFilters.value = null
+  }
+
   return {
     resumo: computed(() => resumoPayload.value),
     produtos: computed(() => resumoPayload.value?.cards ?? []),
@@ -151,6 +163,7 @@ export function useResumoData(
     loading: computed(() => resumoLoading.value),
     error: computed(() => resumoError.value),
     loadResumo,
+    clearData,
     buildFilters: () => buildFiltersFromState(filterState.value, period.value)
   }
 }

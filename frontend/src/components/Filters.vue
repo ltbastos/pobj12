@@ -20,7 +20,7 @@ const showAdvancedButton = ref(true)
 const { initData, isLoading: initLoading, loadInit } = useInitCache()
 const loading = initLoading
 
-const { updateFilter, updatePeriod, clearFilters, triggerFilter } = useGlobalFilters()
+const { updateFilter, updatePeriod, clearFilters, triggerFilter, clearAllData } = useGlobalFilters()
 
 const {
   segmento,
@@ -267,7 +267,9 @@ const handleClear = (): void => {
   period.value = syncPeriodFromAccumulatedView('mensal', period.value)
   
   clearFilters()
+  clearAllData()
   updatePeriod(period.value)
+  triggerFilter()
 }
 
 watch(() => period.value, (newPeriod) => {
