@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { formatBRLReadable } from '../../utils/formatUtils'
+import { useGlobalFilters } from '../../composables/useGlobalFilters'
 
 type StatusItem = {
   key: string
@@ -23,56 +25,96 @@ type Status = {
 const props = defineProps<{
   status: Status
 }>()
+
+const { filterState } = useGlobalFilters()
+
+const statusTitle = computed(() => {
+  const f = filterState.value
+  if (f.gerente && f.gerente !== 'Todos') {
+    return 'Status dos Gerentes'
+  }
+  if (f.ggestao && f.ggestao !== 'Todos') {
+    return 'Status dos Gerentes de Gestão'
+  }
+  if (f.agencia && f.agencia !== 'Todas') {
+    return 'Status das Agências'
+  }
+  if (f.gerencia && f.gerencia !== 'Todas') {
+    return 'Status das Regionais'
+  }
+  if (f.diretoria && f.diretoria !== 'Todas') {
+    return 'Status das Diretorias'
+  }
+  return 'Status das Regionais'
+})
 </script>
 
 <template>
   <div class="exec-panel">
     <div class="exec-h">
-      <h3 id="exec-status-title">Status das Regionais</h3>
+      <h3 id="exec-status-title">{{ statusTitle }}</h3>
     </div>
     <div class="exec-status">
       <div class="status-section">
-        <h4>Hit (≥100%)</h4>
+        <h4>Atingidas</h4>
         <div id="exec-status-hit" class="list-mini">
-          <div 
-            v-for="item in status.hit" 
-            :key="item.key"
-            class="list-mini__row"
-          >
-            <div class="list-mini__name">{{ item.label }}</div>
-            <div class="list-mini__val">
-              <span class="att-badge att-ok">{{ item.p_mens.toFixed(1) }}%</span>
+          <template v-for="(item, index) in status.hit" :key="item.key">
+            <div class="list-mini__row">
+              <div class="list-mini__name">{{ item.label }}</div>
+              <div class="list-mini__val">
+                <span class="att-badge att-ok">{{ item.p_mens.toFixed(1) }}%</span>
+              </div>
             </div>
+          </template>
+          <div 
+            v-for="n in Math.max(0, 5 - status.hit.length)" 
+            :key="`empty-hit-${n}`"
+            class="list-mini__empty"
+          >
+            <span>Sem dados disponíveis</span>
+            <span>—</span>
           </div>
         </div>
       </div>
       <div class="status-section">
-        <h4>Quase (90-99%)</h4>
+        <h4>Quase lá</h4>
         <div id="exec-status-quase" class="list-mini">
-          <div 
-            v-for="item in status.quase" 
-            :key="item.key"
-            class="list-mini__row"
-          >
-            <div class="list-mini__name">{{ item.label }}</div>
-            <div class="list-mini__val">
-              <span class="att-badge att-warn">{{ item.p_mens.toFixed(1) }}%</span>
+          <template v-for="(item, index) in status.quase" :key="item.key">
+            <div class="list-mini__row">
+              <div class="list-mini__name">{{ item.label }}</div>
+              <div class="list-mini__val">
+                <span class="att-badge att-warn">{{ item.p_mens.toFixed(1) }}%</span>
+              </div>
             </div>
+          </template>
+          <div 
+            v-for="n in Math.max(0, 5 - status.quase.length)" 
+            :key="`empty-quase-${n}`"
+            class="list-mini__empty"
+          >
+            <span>Sem dados disponíveis</span>
+            <span>—</span>
           </div>
         </div>
       </div>
       <div class="status-section">
-        <h4>Longe (maior defasagem)</h4>
+        <h4>Longe</h4>
         <div id="exec-status-longe" class="list-mini">
-          <div 
-            v-for="item in status.longe" 
-            :key="item.key"
-            class="list-mini__row"
-          >
-            <div class="list-mini__name">{{ item.label }}</div>
-            <div class="list-mini__val">
-              <span class="def-badge def-neg">{{ formatBRLReadable(item.gap || 0) }}</span>
+          <template v-for="(item, index) in status.longe" :key="item.key">
+            <div class="list-mini__row">
+              <div class="list-mini__name">{{ item.label }}</div>
+              <div class="list-mini__val">
+                <span class="def-badge def-neg">{{ formatBRLReadable(item.gap || 0) }}</span>
+              </div>
             </div>
+          </template>
+          <div 
+            v-for="n in Math.max(0, 5 - status.longe.length)" 
+            :key="`empty-longe-${n}`"
+            class="list-mini__empty"
+          >
+            <span>Sem dados disponíveis</span>
+            <span>—</span>
           </div>
         </div>
       </div>
@@ -112,9 +154,21 @@ const props = defineProps<{
 }
 
 .exec-status {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 20px;
+}
+
+@media (max-width: 1024px) {
+  .exec-status {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1400px) {
+  .exec-status {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .status-section h4 {
@@ -193,6 +247,15 @@ const props = defineProps<{
 .def-badge.def-neg {
   background: rgba(254, 202, 202, 0.3);
   color: #991b1b;
+}
+
+.list-mini__empty {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  color: var(--muted);
+  font-size: 13px;
 }
 </style>
 

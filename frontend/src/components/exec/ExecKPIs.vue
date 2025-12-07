@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { formatBRLReadable, formatBRL } from '../../utils/formatUtils'
+import { useBusinessDays } from '../../composables/useBusinessDays'
 
 type KPIs = {
   real_mens: number
@@ -13,6 +14,8 @@ const props = defineProps<{
   kpis: KPIs
 }>()
 
+const { getCurrentMonthBusinessSnapshot } = useBusinessDays()
+
 const atingimento = computed(() => {
   if (props.kpis.meta_mens === 0) return 0
   return (props.kpis.real_mens / props.kpis.meta_mens) * 100
@@ -23,10 +26,17 @@ const defasagem = computed(() => {
 })
 
 const forecast = computed(() => {
-  const diasDecorridos = new Date().getDate()
-  const diasTotais = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate()
-  const mediaDiaria = props.kpis.real_mens / Math.max(diasDecorridos, 1)
-  return mediaDiaria * diasTotais
+  const snapshot = getCurrentMonthBusinessSnapshot.value
+  const { total: diasTotais, elapsed: diasDecorridos } = snapshot
+  
+  if (diasDecorridos <= 0) {
+    return props.kpis.real_mens
+  }
+  
+  const mediaDiariaAtual = props.kpis.real_mens / diasDecorridos
+  const projecaoRitmoAtual = mediaDiariaAtual * diasTotais
+  
+  return projecaoRitmoAtual
 })
 
 const forecastPct = computed(() => {
@@ -66,15 +76,15 @@ const moneyBadgeClass = (v: number): string => {
     </div>
 
     <div class="kpi-card">
-      <div class="kpi-card__title">Defasagem do mês</div>
+      <div class="kpi-card__title">Defasagem</div>
       <div class="kpi-card__value" :class="moneyBadgeClass(defasagem)" :title="formatBRL(defasagem)">
         {{ formatBRLReadable(defasagem) }}
       </div>
-      <div class="kpi-sub muted">Meta – Real (mês)</div>
+      <div class="kpi-sub muted">Meta – Realizado</div>
     </div>
 
     <div class="kpi-card">
-      <div class="kpi-card__title">Forecast x Meta</div>
+      <div class="kpi-card__title">Forecast</div>
       <div class="kpi-card__value">
         <span :title="formatBRL(forecast)">{{ formatBRLReadable(forecast) }}</span>
         <small>/ <span :title="formatBRL(kpis.meta_mens)">{{ formatBRLReadable(kpis.meta_mens) }}</span></small>

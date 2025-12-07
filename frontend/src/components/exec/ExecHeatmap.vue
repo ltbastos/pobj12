@@ -7,43 +7,68 @@ const props = defineProps<{
   heatmap: ExecHeatmap
 }>()
 
-const viewMode = ref<'familia' | 'indicador'>('familia')
-const heatmapMode = ref<'atingimento' | 'variacao'>('atingimento')
+const heatmapMode = ref<'secoes' | 'metas'>('secoes')
 
 const sections = computed(() => {
-  return viewMode.value === 'familia' 
-    ? props.heatmap.sectionsFamilia 
-    : props.heatmap.sectionsIndicador
+  // No modo seções, mostrar todas as famílias (excluir apenas META que é usado no modo metas)
+  return props.heatmap.sectionsFamilia.filter(s => s.id !== 'META')
+})
+
+const hierarchyUnits = computed(() => {
+  // No modo metas, mostrar agregados (DIR_ALL, REG_ALL, etc.) e unidades individuais de hierarquia (REG_*, AG_*, GG_*, G_*)
+  if (heatmapMode.value === 'metas') {
+    return props.heatmap.units.filter(unit => 
+      unit.value === 'DIR_ALL' ||
+      unit.value === 'REG_ALL' ||
+      unit.value === 'AG_ALL' ||
+      unit.value === 'GG_ALL' ||
+      unit.value === 'G_ALL' ||
+      unit.value.startsWith('REG_') || 
+      unit.value.startsWith('AG_') || 
+      unit.value.startsWith('GG_') || 
+      unit.value.startsWith('G_')
+    )
+  }
+  // No modo seções, mostrar todas as unidades retornadas pelo backend (já filtradas corretamente)
+  // Excluir apenas as unidades de hierarquia do modo metas
+  return props.heatmap.units.filter(unit => 
+    unit.value !== 'DIR_ALL' &&
+    unit.value !== 'REG_ALL' &&
+    unit.value !== 'AG_ALL' &&
+    unit.value !== 'GG_ALL' &&
+    unit.value !== 'G_ALL' &&
+    !unit.value.startsWith('REG_') && 
+    !unit.value.startsWith('AG_') && 
+    !unit.value.startsWith('GG_') && 
+    !unit.value.startsWith('G_')
+  )
 })
 
 const getData = (unit: string, section: string): { real: number; meta: number } | null => {
   const key = `${unit}|${section}`
-  if (viewMode.value === 'familia') {
-    return props.heatmap.dataFamilia[key] || null
-  } else {
-    return props.heatmap.dataIndicador[key] || null
-  }
+  return props.heatmap.dataFamilia[key] || null
 }
 
 const getDataMensal = (unit: string, section: string, mes: string): { real: number; meta: number } | null => {
   const key = `${unit}|${section}|${mes}`
-  if (viewMode.value === 'familia') {
-    return props.heatmap.dataFamiliaMensal[key] || null
-  } else {
-    return props.heatmap.dataIndicadorMensal[key] || null
-  }
+  return props.heatmap.dataFamiliaMensal[key] || null
 }
 
 const getAtingimentoValue = (unit: string, section: string): { pct: number | null; text: string } => {
   const bucket = getData(unit, section)
-  if (!bucket) return { pct: null, text: formatBRL(0) }
+  if (!bucket) return { pct: null, text: '—' }
   
   if (bucket.meta > 0) {
     const pct = (bucket.real / bucket.meta) * 100
     return { pct, text: `${Math.round(pct)}%` }
   }
   
-  return { pct: null, text: formatBRL(bucket.real || 0) }
+  // Se não tem meta mas tem realizado, mostrar o realizado
+  if (bucket.real > 0) {
+    return { pct: null, text: formatBRL(bucket.real) }
+  }
+  
+  return { pct: null, text: '—' }
 }
 
 const getAtingimentoMensal = (unit: string, section: string, mes: string): { pct: number | null; text: string } => {
@@ -93,11 +118,62 @@ const getVariacaoValue = (unit: string, section: string, monthIndex: number): { 
   let className = 'hm-ok'
   if (delta < 0) {
     className = 'hm-down'
-  } else if (delta === 0) {
+  } else if (delta >= 0 && delta <= 5) {
     className = 'hm-ok'
-  } else if (delta <= 5) {
+  } else if (delta > 5 && delta <= 10) {
+    className = 'hm-warn'
+  } else {
+    className = 'hm-alert'
+  }
+
+  const sign = delta > 0 ? '+' : ''
+  return { delta, text: `${sign}${delta.toFixed(1)}%`, class: className }
+}
+
+const getDataMetaMensal = (unit: string, mes: string): { real: number; meta: number } | null => {
+  // Para o modo de metas, buscar dados agregados usando seção especial "META"
+  const key = `${unit}|META|${mes}`
+  return props.heatmap.dataFamiliaMensal[key] || null
+}
+
+const getVariacaoMetaValue = (unit: string, monthIndex: number): { delta: number | null; text: string; class: string } => {
+  if (monthIndex === 0) {
+    return { delta: null, text: '—', class: 'hm-empty' }
+  }
+
+  const currentMonth = props.heatmap.months[monthIndex]
+  const prevMonth = props.heatmap.months[monthIndex - 1]
+  
+  if (!currentMonth || !prevMonth) {
+    return { delta: null, text: '—', class: 'hm-empty' }
+  }
+
+  // Buscar dados agregados diretamente (sem seções)
+  const currentData = getDataMetaMensal(unit, currentMonth.key)
+  const prevData = getDataMetaMensal(unit, prevMonth.key)
+
+  if (!currentData || !prevData) {
+    return { delta: null, text: '—', class: 'hm-empty' }
+  }
+
+  const currentMeta = currentData.meta
+  const prevMeta = prevData.meta
+
+  if (prevMeta === 0) {
+    if (currentMeta === 0) {
+      return { delta: 0, text: '0.0%', class: 'hm-ok' }
+    }
+    return { delta: null, text: '—', class: 'hm-empty' }
+  }
+
+  const delta = ((currentMeta - prevMeta) / prevMeta) * 100
+
+  let className = 'hm-ok'
+  if (delta < 0) {
+    className = 'hm-down'
+  } else if (delta >= 0 && delta <= 5) {
     className = 'hm-ok'
-  } else if (delta <= 10) {
+  } else if (delta > 5 && delta <= 10) {
     className = 'hm-warn'
   } else {
     className = 'hm-alert'
@@ -114,37 +190,35 @@ const getHeatmapCellClass = (pct: number | null): string => {
   return 'hm-ok'
 }
 
+const getCellTitleMeta = (unit: string, monthIndex: number): string => {
+  const unitLabel = props.heatmap.units.find(u => u.value === unit)?.label || unit
+  const currentMonth = props.heatmap.months[monthIndex]
+  const prevMonth = monthIndex > 0 ? props.heatmap.months[monthIndex - 1] : null
+  
+  if (!currentMonth) return unitLabel
+  
+  const currentData = getDataMetaMensal(unit, currentMonth.key)
+  const prevData = prevMonth ? getDataMetaMensal(unit, prevMonth.key) : null
+  
+  const currentMeta = currentData?.meta || 0
+  const prevMeta = prevData?.meta || 0
+  
+  let title = `Meta ${currentMonth.label}: ${formatBRL(currentMeta)}`
+  if (prevMonth) {
+    title += `\nAnterior (${prevMonth.label}): ${formatBRL(prevMeta)}`
+    const variacao = getVariacaoMetaValue(unit, monthIndex)
+    if (variacao.delta !== null) {
+      title += `\nVariação: ${variacao.text}`
+    }
+  }
+  return title
+}
+
 const getCellTitle = (unit: string, section: string, monthIndex?: number, monthKey?: string): string => {
   const unitLabel = props.heatmap.units.find(u => u.value === unit)?.label || unit
   const sectionLabel = sections.value.find(s => s.id === section)?.label || section
 
-  if (heatmapMode.value === 'variacao' && monthIndex !== undefined) {
-    const currentMonth = props.heatmap.months[monthIndex]
-    const prevMonth = monthIndex > 0 ? props.heatmap.months[monthIndex - 1] : null
-    
-    if (!currentMonth) return `${unitLabel} × ${sectionLabel}`
-    
-    const currentData = getDataMensal(unit, section, currentMonth.key)
-    const prevData = prevMonth ? getDataMensal(unit, section, prevMonth.key) : null
-    
-    let title = `${sectionLabel} - ${currentMonth.label}\n`
-    title += `Meta: ${formatBRL(currentData?.meta || 0)}`
-    if (currentData?.real !== undefined) {
-      title += `\nReal: ${formatBRL(currentData.real)}`
-    }
-    if (prevMonth && prevData) {
-      title += `\n\nAnterior (${prevMonth.label}):`
-      title += `\nMeta: ${formatBRL(prevData.meta || 0)}`
-      if (prevData.real !== undefined) {
-        title += `\nReal: ${formatBRL(prevData.real)}`
-      }
-      const variacao = getVariacaoValue(unit, section, monthIndex)
-      if (variacao.delta !== null) {
-        title += `\n\nVariação: ${variacao.text}`
-      }
-    }
-    return title
-  } else if (monthKey) {
+  if (monthKey) {
     
     const month = props.heatmap.months.find(m => m.key === monthKey)
     const data = getDataMensal(unit, section, monthKey)
@@ -175,25 +249,14 @@ const getCellTitle = (unit: string, section: string, monthIndex?: number, monthK
 }
 
 const hasData = computed(() => {
-  if (viewMode.value === 'familia') {
-    return props.heatmap.sectionsFamilia.length > 0 && (
-      Object.keys(props.heatmap.dataFamilia).length > 0 || 
-      Object.keys(props.heatmap.dataFamiliaMensal).length > 0
-    )
-  } else {
-    return props.heatmap.sectionsIndicador.length > 0 && (
-      Object.keys(props.heatmap.dataIndicador).length > 0 || 
-      Object.keys(props.heatmap.dataIndicadorMensal).length > 0
-    )
-  }
+  return props.heatmap.sectionsFamilia.length > 0 && (
+    Object.keys(props.heatmap.dataFamilia).length > 0 || 
+    Object.keys(props.heatmap.dataFamiliaMensal).length > 0
+  )
 })
 
 const hasMonthlyData = computed(() => {
-  if (viewMode.value === 'familia') {
-    return Object.keys(props.heatmap.dataFamiliaMensal).length > 0
-  } else {
-    return Object.keys(props.heatmap.dataIndicadorMensal).length > 0
-  }
+  return Object.keys(props.heatmap.dataFamiliaMensal).length > 0
 })
 </script>
 
@@ -201,43 +264,26 @@ const hasMonthlyData = computed(() => {
   <div class="exec-panel">
     <div class="exec-h">
       <h3 id="exec-heatmap-title">
-        Heatmap — Regionais × {{ viewMode === 'familia' ? 'Famílias' : 'Indicadores' }}
+        <span v-if="heatmapMode === 'secoes'">Heatmap — GR × Seções</span>
+        <span v-else>Heatmap — Variação da meta (mês a mês)</span>
       </h3>
       <div class="exec-controls">
-        <div id="exec-heatmap-view-toggle" class="seg-mini segmented">
-          <button 
-            class="seg-btn" 
-            :class="{ 'is-active': viewMode === 'familia' }"
-            @click="viewMode = 'familia'"
-            title="Visualizar por Família"
-          >
-            Família
-          </button>
-          <button 
-            class="seg-btn" 
-            :class="{ 'is-active': viewMode === 'indicador' }"
-            @click="viewMode = 'indicador'"
-            title="Visualizar por Indicador"
-          >
-            Indicador
-          </button>
-        </div>
         <div id="exec-heatmap-mode-toggle" class="seg-mini segmented">
           <button 
             class="seg-btn" 
-            :class="{ 'is-active': heatmapMode === 'atingimento' }"
-            @click="heatmapMode = 'atingimento'"
-            title="Mostrar Atingimento"
+            :class="{ 'is-active': heatmapMode === 'secoes' }"
+            @click="heatmapMode = 'secoes'"
+            title="Visualizar por Seções"
           >
-            Atingimento
+            Seções
           </button>
           <button 
             class="seg-btn" 
-            :class="{ 'is-active': heatmapMode === 'variacao' }"
-            @click="heatmapMode = 'variacao'"
-            title="Mostrar Variação da Meta"
+            :class="{ 'is-active': heatmapMode === 'metas' }"
+            @click="heatmapMode = 'metas'"
+            title="Visualizar Variação de Meta"
           >
-            Variação Meta
+            Meta
           </button>
         </div>
       </div>
@@ -251,41 +297,21 @@ const hasMonthlyData = computed(() => {
       
       <div 
         class="hm-row hm-head" 
-        :style="`--hm-cols: ${heatmapMode === 'variacao' ? sections.length * heatmap.months.length : (heatmapMode === 'atingimento' && heatmap.months.length > 0 && hasMonthlyData ? sections.length * heatmap.months.length : sections.length)}; --hm-first: 200px; --hm-cell: ${heatmapMode === 'variacao' || (heatmapMode === 'atingimento' && heatmap.months.length > 0 && hasMonthlyData) ? '100px' : '140px'}`"
+        :style="`--hm-cols: ${heatmapMode === 'metas' ? heatmap.months.length : sections.length}; --hm-first: 200px; --hm-cell: ${heatmapMode === 'metas' ? '100px' : '140px'}`"
       >
         <div class="hm-cell hm-corner">
-          <span class="hm-corner-label">Regional</span>
-          <span class="hm-corner-sublabel">\ {{ heatmapMode === 'variacao' ? (viewMode === 'familia' ? 'Família × Mês' : 'Indicador × Mês') : (heatmapMode === 'atingimento' && heatmap.months.length > 0 ? (viewMode === 'familia' ? 'Família × Mês' : 'Indicador × Mês') : (viewMode === 'familia' ? 'Família' : 'Indicador')) }}</span>
+          <span class="hm-corner-label">{{ heatmapMode === 'metas' ? 'Hierarquia' : 'GR \\ Família' }}</span>
+          <span class="hm-corner-sublabel">\ {{ heatmapMode === 'metas' ? 'Mês' : 'Seções' }}</span>
         </div>
-        <template v-if="heatmapMode === 'variacao'">
-          <template v-for="section in sections" :key="section.id">
-            <div 
-              v-for="month in heatmap.months" 
-              :key="`${section.id}-${month.key}`"
-              class="hm-cell hm-col"
-              :title="`${section.label} - ${month.label}`"
-            >
-              <div class="hm-col-content">
-                <span class="hm-col-section">{{ section.label }}</span>
-                <span class="hm-col-month">{{ month.label }}</span>
-              </div>
-            </div>
-          </template>
-        </template>
-        <template v-else-if="heatmapMode === 'atingimento' && heatmap.months.length > 0 && hasMonthlyData">
-          <template v-for="section in sections" :key="section.id">
-            <div 
-              v-for="month in heatmap.months" 
-              :key="`${section.id}-${month.key}`"
-              class="hm-cell hm-col"
-              :title="`${section.label} - ${month.label}`"
-            >
-              <div class="hm-col-content">
-                <span class="hm-col-section">{{ section.label }}</span>
-                <span class="hm-col-month">{{ month.label }}</span>
-              </div>
-            </div>
-          </template>
+        <template v-if="heatmapMode === 'metas'">
+          <div 
+            v-for="month in heatmap.months" 
+            :key="month.key"
+            class="hm-cell hm-col"
+            :title="month.label"
+          >
+            {{ month.label }}
+          </div>
         </template>
         <template v-else>
           <div 
@@ -296,45 +322,36 @@ const hasMonthlyData = computed(() => {
           >
             {{ section.label }}
           </div>
+          <div 
+            v-if="sections.length === 0"
+            class="hm-cell hm-col"
+          >
+            Meta Total
+          </div>
         </template>
       </div>
       
       
       <div 
-        v-for="unit in heatmap.units" 
+        v-for="unit in hierarchyUnits" 
         :key="unit.value"
         class="hm-row"
-        :style="`--hm-cols: ${heatmapMode === 'variacao' ? sections.length * heatmap.months.length : (heatmapMode === 'atingimento' && heatmap.months.length > 0 && hasMonthlyData ? sections.length * heatmap.months.length : sections.length)}; --hm-first: 200px; --hm-cell: ${heatmapMode === 'variacao' || (heatmapMode === 'atingimento' && heatmap.months.length > 0 && hasMonthlyData) ? '100px' : '140px'}`"
+        :style="`--hm-cols: ${heatmapMode === 'metas' ? heatmap.months.length : sections.length}; --hm-first: 200px; --hm-cell: ${heatmapMode === 'metas' ? '100px' : '140px'}`"
       >
         <div class="hm-cell hm-rowh" :title="unit.label">
           <span class="hm-rowh-text">{{ unit.label }}</span>
         </div>
         
-        <template v-if="heatmapMode === 'variacao'">
-          <template v-for="section in sections" :key="section.id">
-            <div 
-              v-for="(month, monthIndex) in heatmap.months" 
-              :key="`${section.id}-${month.key}`"
-              class="hm-cell hm-val"
-              :class="getVariacaoValue(unit.value, section.id, monthIndex).class"
-              :title="getCellTitle(unit.value, section.id, monthIndex)"
-            >
-              <span class="hm-val-text">{{ getVariacaoValue(unit.value, section.id, monthIndex).text }}</span>
-            </div>
-          </template>
-        </template>
-        <template v-else-if="heatmapMode === 'atingimento' && heatmap.months.length > 0 && hasMonthlyData">
-          <template v-for="section in sections" :key="section.id">
-            <div 
-              v-for="month in heatmap.months" 
-              :key="`${section.id}-${month.key}`"
-              class="hm-cell hm-val"
-              :class="getHeatmapCellClass(getAtingimentoMensal(unit.value, section.id, month.key).pct)"
-              :title="getCellTitle(unit.value, section.id, undefined, month.key)"
-            >
-              <span class="hm-val-text">{{ getAtingimentoMensal(unit.value, section.id, month.key).text }}</span>
-            </div>
-          </template>
+        <template v-if="heatmapMode === 'metas'">
+          <div 
+            v-for="(month, monthIndex) in heatmap.months" 
+            :key="month.key"
+            class="hm-cell hm-val"
+            :class="getVariacaoMetaValue(unit.value, monthIndex).class"
+            :title="getCellTitleMeta(unit.value, monthIndex)"
+          >
+            <span class="hm-val-text">{{ getVariacaoMetaValue(unit.value, monthIndex).text }}</span>
+          </div>
         </template>
         <template v-else>
           <div 
@@ -544,9 +561,9 @@ const hasMonthlyData = computed(() => {
 }
 
 .hm-cell.hm-down {
-  background: linear-gradient(135deg, rgba(187, 247, 208, 0.5) 0%, rgba(187, 247, 208, 0.3) 100%);
-  color: #065f46;
-  border-left: 3px solid #10b981;
+  background: linear-gradient(135deg, rgba(191, 219, 254, 0.5) 0%, rgba(191, 219, 254, 0.3) 100%);
+  color: #1e40af;
+  border-left: 3px solid #3b82f6;
 }
 
 .hm-cell.hm-alert {

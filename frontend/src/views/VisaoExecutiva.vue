@@ -6,8 +6,8 @@ import { formatDate } from '../utils/formatUtils'
 import { getExecData, type ExecFilters, type ExecData } from '../services/execService'
 import ExecChart from '../components/exec/ExecChart.vue'
 import ExecKPIs from '../components/exec/ExecKPIs.vue'
-import ExecRankings from '../components/exec/ExecRankings.vue'
-import ExecStatus from '../components/exec/ExecStatus.vue'
+import ExecRankingCard from '../components/exec/ExecRankingCard.vue'
+import ExecStatusCard from '../components/exec/ExecStatusCard.vue'
 import ExecHeatmap from '../components/exec/ExecHeatmap.vue'
 import Icon from '../components/Icon.vue'
 import ErrorState from '../components/ErrorState.vue'
@@ -96,6 +96,52 @@ const bottomRanking = computed(() => {
     .reverse()
 })
 
+const rankingTitle = computed(() => {
+  const f = filterState.value
+  if (f.gerente && f.gerente !== 'Todos') {
+    return 'Desempenho por Gerente'
+  }
+  if (f.ggestao && f.ggestao !== 'Todos') {
+    return 'Desempenho por Gerente'
+  }
+  if (f.agencia && f.agencia !== 'Todas') {
+    return 'Desempenho por Gerente de Gestão'
+  }
+  if (f.gerencia && f.gerencia !== 'Todas') {
+    return 'Desempenho por Agência'
+  }
+  if (f.diretoria && f.diretoria !== 'Todas') {
+    return 'Desempenho por Regional'
+  }
+  if (f.segmento && f.segmento !== 'Todos') {
+    return 'Desempenho por Diretoria'
+  }
+  return 'Desempenho por Regional'
+})
+
+const statusTitle = computed(() => {
+  const f = filterState.value
+  if (f.gerente && f.gerente !== 'Todos') {
+    return 'Status por Gerente'
+  }
+  if (f.ggestao && f.ggestao !== 'Todos') {
+    return 'Status por Gerente'
+  }
+  if (f.agencia && f.agencia !== 'Todas') {
+    return 'Status por Gerente de Gestão'
+  }
+  if (f.gerencia && f.gerencia !== 'Todas') {
+    return 'Status por Agência'
+  }
+  if (f.diretoria && f.diretoria !== 'Todas') {
+    return 'Status por Regional'
+  }
+  if (f.segmento && f.segmento !== 'Todos') {
+    return 'Status por Diretoria'
+  }
+  return 'Status por Regional'
+})
+
 const loadData = async () => {
   loading.value = true
   error.value = null
@@ -182,8 +228,18 @@ const downloadPDF = async () => {
             <div class="skeleton skeleton--chart-title" style="height: 24px; width: 250px; margin-bottom: 16px; border-radius: 6px;"></div>
             <div class="skeleton skeleton--chart" style="height: 300px; width: 100%; border-radius: 12px;"></div>
           </div>
-          <div class="exec-panels" style="margin-top: 24px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-            <div class="skeleton skeleton--panel" style="height: 400px; border-radius: 12px;"></div>
+          <div class="exec-panels" style="margin-top: 24px;">
+            <div class="exec-ranking-cards" style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px;">
+              <div class="skeleton skeleton--panel" style="height: 400px; border-radius: 12px;"></div>
+              <div class="skeleton skeleton--panel" style="height: 400px; border-radius: 12px;"></div>
+            </div>
+            <div class="exec-status-cards" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;">
+              <div class="skeleton skeleton--panel" style="height: 350px; border-radius: 12px;"></div>
+              <div class="skeleton skeleton--panel" style="height: 350px; border-radius: 12px;"></div>
+              <div class="skeleton skeleton--panel" style="height: 350px; border-radius: 12px;"></div>
+            </div>
+          </div>
+          <div class="exec-heatmap-skeleton" style="margin-top: 24px;">
             <div class="skeleton skeleton--panel" style="height: 400px; border-radius: 12px;"></div>
           </div>
         </template>
@@ -221,8 +277,33 @@ const downloadPDF = async () => {
 
           
           <div class="exec-panels">
-            <ExecRankings :top-ranking="topRanking" :bottom-ranking="bottomRanking" />
-            <ExecStatus :status="status" />
+            <div class="exec-ranking-cards">
+              <ExecRankingCard 
+                :title="`${rankingTitle} - Top 5`" 
+                :items="topRanking"
+              />
+              <ExecRankingCard 
+                :title="`${rankingTitle} - Bottom 5`" 
+                :items="bottomRanking"
+              />
+            </div>
+            <div class="exec-status-cards">
+              <ExecStatusCard 
+                :title="`${statusTitle} - Atingidas`" 
+                :items="status.hit" 
+                type="hit"
+              />
+              <ExecStatusCard 
+                :title="`${statusTitle} - Quase lá`" 
+                :items="status.quase" 
+                type="quase"
+              />
+              <ExecStatusCard 
+                :title="`${statusTitle} - Longe`" 
+                :items="status.longe" 
+                type="longe"
+              />
+            </div>
           </div>
 
           
@@ -281,9 +362,43 @@ const downloadPDF = async () => {
 }
 
 .exec-panels {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 18px;
+}
+
+.exec-ranking-cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+
+.exec-status-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+@media (max-width: 768px) {
+  .exec-ranking-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .exec-status-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .exec-status-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1400px) {
+  .exec-status-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 

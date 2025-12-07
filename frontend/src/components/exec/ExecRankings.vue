@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { formatBRLReadable, formatBRL } from '../../utils/formatUtils'
+import { useGlobalFilters } from '../../composables/useGlobalFilters'
 
 type RankingItem = {
   key: string
@@ -14,6 +16,28 @@ const props = defineProps<{
   bottomRanking: RankingItem[]
 }>()
 
+const { filterState } = useGlobalFilters()
+
+const rankingTitle = computed(() => {
+  const f = filterState.value
+  if (f.gerente && f.gerente !== 'Todos') {
+    return 'Desempenho por Gerente'
+  }
+  if (f.ggestao && f.ggestao !== 'Todos') {
+    return 'Desempenho por Gerente de Gestão'
+  }
+  if (f.agencia && f.agencia !== 'Todas') {
+    return 'Desempenho por Agência'
+  }
+  if (f.gerencia && f.gerencia !== 'Todas') {
+    return 'Desempenho por Regional'
+  }
+  if (f.diretoria && f.diretoria !== 'Todas') {
+    return 'Desempenho por Diretoria'
+  }
+  return 'Desempenho por Regional'
+})
+
 const pctBadgeClass = (p: number): string => {
   if (p < 50) return 'att-low'
   if (p < 100) return 'att-warn'
@@ -24,54 +48,66 @@ const pctBadgeClass = (p: number): string => {
 <template>
   <div class="exec-panel">
     <div class="exec-h">
-      <h3 id="exec-rank-title">Desempenho por Regional</h3>
+      <h3 id="exec-rank-title">{{ rankingTitle }}</h3>
     </div>
     <div class="exec-rankings">
       <div class="rank-section">
         <h4>Top 5</h4>
         <div id="exec-rank-top" class="rank-mini">
+          <template v-for="(item, index) in topRanking" :key="item.key">
+            <div class="rank-mini__row">
+              <div class="rank-mini__name">
+                <span class="rank-mini__label">{{ item.label }}</span>
+              </div>
+              <div class="rank-mini__bar">
+                <span :style="{ width: `${Math.min(100, Math.max(0, item.p_mens))}%` }"></span>
+              </div>
+              <div class="rank-mini__pct">
+                <span class="att-badge" :class="pctBadgeClass(item.p_mens)">{{ item.p_mens.toFixed(1) }}%</span>
+              </div>
+              <div class="rank-mini__vals">
+                <strong :title="formatBRL(item.real_mens)">{{ formatBRLReadable(item.real_mens) }}</strong>
+                <small :title="formatBRL(item.meta_mens)">/ {{ formatBRLReadable(item.meta_mens) }}</small>
+              </div>
+            </div>
+          </template>
           <div 
-            v-for="item in topRanking" 
-            :key="item.key"
-            class="rank-mini__row"
+            v-for="n in Math.max(0, 5 - topRanking.length)" 
+            :key="`empty-top-${n}`"
+            class="rank-mini__empty"
           >
-            <div class="rank-mini__name">
-              <span class="rank-mini__label">{{ item.label }}</span>
-            </div>
-            <div class="rank-mini__bar">
-              <span :style="{ width: `${Math.min(100, Math.max(0, item.p_mens))}%` }"></span>
-            </div>
-            <div class="rank-mini__pct">
-              <span class="att-badge" :class="pctBadgeClass(item.p_mens)">{{ item.p_mens.toFixed(1) }}%</span>
-            </div>
-            <div class="rank-mini__vals">
-              <strong :title="formatBRL(item.real_mens)">{{ formatBRLReadable(item.real_mens) }}</strong>
-              <small :title="formatBRL(item.meta_mens)">/ {{ formatBRLReadable(item.meta_mens) }}</small>
-            </div>
+            <span>Sem dados disponíveis</span>
+            <span>—</span>
           </div>
         </div>
       </div>
       <div class="rank-section">
         <h4>Bottom 5</h4>
         <div id="exec-rank-bottom" class="rank-mini">
+          <template v-for="(item, index) in bottomRanking" :key="item.key">
+            <div class="rank-mini__row">
+              <div class="rank-mini__name">
+                <span class="rank-mini__label">{{ item.label }}</span>
+              </div>
+              <div class="rank-mini__bar">
+                <span :style="{ width: `${Math.min(100, Math.max(0, item.p_mens))}%` }"></span>
+              </div>
+              <div class="rank-mini__pct">
+                <span class="att-badge" :class="pctBadgeClass(item.p_mens)">{{ item.p_mens.toFixed(1) }}%</span>
+              </div>
+              <div class="rank-mini__vals">
+                <strong :title="formatBRL(item.real_mens)">{{ formatBRLReadable(item.real_mens) }}</strong>
+                <small :title="formatBRL(item.meta_mens)">/ {{ formatBRLReadable(item.meta_mens) }}</small>
+              </div>
+            </div>
+          </template>
           <div 
-            v-for="item in bottomRanking" 
-            :key="item.key"
-            class="rank-mini__row"
+            v-for="n in Math.max(0, 5 - bottomRanking.length)" 
+            :key="`empty-bottom-${n}`"
+            class="rank-mini__empty"
           >
-            <div class="rank-mini__name">
-              <span class="rank-mini__label">{{ item.label }}</span>
-            </div>
-            <div class="rank-mini__bar">
-              <span :style="{ width: `${Math.min(100, Math.max(0, item.p_mens))}%` }"></span>
-            </div>
-            <div class="rank-mini__pct">
-              <span class="att-badge" :class="pctBadgeClass(item.p_mens)">{{ item.p_mens.toFixed(1) }}%</span>
-            </div>
-            <div class="rank-mini__vals">
-              <strong :title="formatBRL(item.real_mens)">{{ formatBRLReadable(item.real_mens) }}</strong>
-              <small :title="formatBRL(item.meta_mens)">/ {{ formatBRLReadable(item.meta_mens) }}</small>
-            </div>
+            <span>Sem dados disponíveis</span>
+            <span>—</span>
           </div>
         </div>
       </div>
@@ -111,9 +147,15 @@ const pctBadgeClass = (p: number): string => {
 }
 
 .exec-rankings {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 20px;
+}
+
+@media (max-width: 768px) {
+  .exec-rankings {
+    grid-template-columns: 1fr;
+  }
 }
 
 .rank-section h4 {
@@ -220,6 +262,15 @@ const pctBadgeClass = (p: number): string => {
 .att-badge.att-ok {
   background: rgba(187, 247, 208, 0.3);
   color: #065f46;
+}
+
+.rank-mini__empty {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  color: var(--muted);
+  font-size: 13px;
 }
 </style>
 
