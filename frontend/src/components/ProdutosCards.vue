@@ -7,6 +7,8 @@ import { useCalendarioCache } from '../composables/useCalendarioCache'
 import { formatPoints, formatPeso, formatByMetric, formatMetricFull, formatBRL } from '../utils/formatUtils'
 import type { ProdutoCard } from '../composables/useProdutos'
 import Icon from './Icon.vue'
+import ErrorState from './ErrorState.vue'
+import EmptyState from './EmptyState.vue'
 
 const { filterState, period } = useGlobalFilters()
 
@@ -212,9 +214,7 @@ const getMetricLabel = (metric: string): string => {
 
     
     <template v-else>
-      <div v-if="error" class="error-state">
-        <p>{{ error }}</p>
-      </div>
+      <ErrorState v-if="error" :message="error" />
 
       <template v-else-if="produtosPorFamilia.length > 0">
       <div
@@ -372,9 +372,11 @@ const getMetricLabel = (metric: string): string => {
       </div>
       </template>
 
-      <div v-else class="empty-state">
-        <p>Nenhum produto encontrado</p>
-      </div>
+      <EmptyState
+        v-else
+        title="Nenhum produto encontrado"
+        message="Nenhum produto encontrado para os filtros selecionados."
+      />
     </template>
   </div>
 </template>
@@ -403,17 +405,6 @@ const getMetricLabel = (metric: string): string => {
   gap: 16px;
 }
 
-.error-state,
-.empty-state {
-  grid-column: 1 / -1;
-  text-align: center;
-  padding: 40px;
-  color: #6b7280;
-}
-
-.error-state {
-  color: #dc2626;
-}
 </style>
 
 <style>

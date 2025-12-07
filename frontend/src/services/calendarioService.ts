@@ -18,7 +18,7 @@ export async function getCalendario(): Promise<CalendarioItem[] | null> {
 export function getDefaultPeriod(): { start: string; end: string } {
   const today = new Date()
   const end = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-  const start = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate())
+  const start = new Date(today.getFullYear(), today.getMonth(), 1)
 
   const startISO = start.toISOString().split('T')[0] || ''
   const endISO = end.toISOString().split('T')[0] || ''

@@ -10,6 +10,8 @@ import ExecRankings from '../components/exec/ExecRankings.vue'
 import ExecStatus from '../components/exec/ExecStatus.vue'
 import ExecHeatmap from '../components/exec/ExecHeatmap.vue'
 import Icon from '../components/Icon.vue'
+import ErrorState from '../components/ErrorState.vue'
+import EmptyState from '../components/EmptyState.vue'
 
 const { filterState, period } = useGlobalFilters()
 
@@ -188,8 +190,10 @@ const downloadPDF = async () => {
 
         
         <template v-else>
-          
-          <div class="exec-header">
+          <ErrorState v-if="error" :message="error" />
+
+          <template v-else>
+            <div class="exec-header">
             <div id="exec-context" class="exec-context">
               <strong>{{ contexto }}</strong>
             </div>
@@ -223,6 +227,7 @@ const downloadPDF = async () => {
 
           
           <ExecHeatmap :heatmap="heatmap" />
+          </template>
         </template>
       </div>
     </div>

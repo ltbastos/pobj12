@@ -83,9 +83,14 @@ export function useAccumulatedView(period: { value: Period }, updatePeriod: (per
     updatePeriod(newPeriod)
   }
   
+  const resetToMensal = (): void => {
+    accumulatedView.value = 'mensal'
+  }
+  
   return {
     accumulatedView,
     handleViewChange,
+    resetToMensal,
     options: ACCUMULATED_VIEW_OPTIONS
   }
 }

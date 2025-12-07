@@ -27,18 +27,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import DatePopover from './DatePopover.vue'
 import Icon from './Icon.vue'
-import { usePeriodManager } from '../composables/usePeriodManager'
+import { useGlobalFilters } from '../composables/useGlobalFilters'
+import { formatBRDate } from '../services/calendarioService'
 
-const {
-  period,
-  startFormatted,
-  endFormatted,
-  isSimuladoresPage,
-  updatePeriod,
-} = usePeriodManager()
+const route = useRoute()
+const isSimuladoresPage = computed(() => route.name === 'Simuladores')
+const { period, updatePeriod } = useGlobalFilters()
+
+const startFormatted = computed(() => formatBRDate(period.value.start))
+const endFormatted = computed(() => formatBRDate(period.value.end))
 
 const popoverOpen = ref(false)
 const anchor = ref<HTMLElement | null>(null)

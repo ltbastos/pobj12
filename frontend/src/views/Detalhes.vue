@@ -12,6 +12,8 @@ import TableViewChips from '../components/TableViewChips.vue'
 import DetailViewBar, { type DetailView } from '../components/DetailViewBar.vue'
 import AppliedFiltersBar from '../components/AppliedFiltersBar.vue'
 import DetailColumnDesigner from '../components/DetailColumnDesigner.vue'
+import ErrorState from '../components/ErrorState.vue'
+import EmptyState from '../components/EmptyState.vue'
 
 const router = useRouter()
 const { filterState } = useGlobalFilters()
@@ -823,17 +825,19 @@ onMounted(() => {
           </template>
 
           <template v-else>
-            <div v-if="error" class="error-state">
-            <p>{{ error }}</p>
-          </div>
+            <ErrorState v-if="error" :message="error" />
 
-          <div v-else-if="showCards && contratosData.length === 0" class="empty-state">
-            <p>Nenhum contrato encontrado para a busca.</p>
-          </div>
+            <EmptyState
+              v-else-if="showCards && contratosData.length === 0"
+              title="Nenhum contrato encontrado"
+              message="Nenhum contrato encontrado para a busca."
+            />
 
-          <div v-else-if="!showCards && treeData.length === 0" class="empty-state">
-            <p>Nenhum dado encontrado para os filtros selecionados.</p>
-          </div>
+            <EmptyState
+              v-else-if="!showCards && treeData.length === 0"
+              title="Nenhum dado encontrado"
+              message="Nenhum dado encontrado para os filtros selecionados."
+            />
 
           <div v-else-if="showCards" class="contratos-grid">
             <div
@@ -1373,17 +1377,6 @@ onMounted(() => {
   padding: 16px;
 }
 
-.error-state,
-.empty-state {
-  padding: 48px 24px;
-  text-align: center;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.error-state {
-  color: var(--omega-danger);
-}
 
 :deep(.tree-row.lvl-0 .tree-cell) {
   padding-left: 8px;

@@ -4,7 +4,6 @@ import { useRoute } from 'vue-router'
 import Icon from './Icon.vue'
 import { useInitCache } from '../composables/useInitCache'
 import { useHierarchyFilters } from '../composables/useHierarchyFilters'
-import { usePeriodManager } from '../composables/usePeriodManager'
 import { useAccumulatedView, syncPeriodFromAccumulatedView } from '../composables/useAccumulatedView'
 import { useGlobalFilters } from '../composables/useGlobalFilters'
 import { clearResumoData } from '../composables/useResumoData'
@@ -12,7 +11,7 @@ import { clearDetalhesData } from '../composables/useDetalhesData'
 import Button from './Button.vue'
 import SelectSearch from './SelectSearch.vue'
 import SelectInput from './SelectInput.vue'
-import type { FilterOption } from '../types'
+import type { FilterOption, Period } from '../types'
  
 const route = useRoute()
 const isSimuladoresPage = computed(() => route.name === 'Simuladores')
@@ -201,11 +200,11 @@ const loadEstrutura = async (): Promise<void> => {
   }
 }
 
-const { period, updatePeriod: updatePeriodLocal } = usePeriodManager()
+const { period: globalPeriod, updatePeriod: updateGlobalPeriod } = useGlobalFilters()
 
-const { accumulatedView, handleViewChange, options: accumulatedViewOptions } = useAccumulatedView(
-  period,
-  updatePeriodLocal
+const { accumulatedView, handleViewChange, resetToMensal, options: accumulatedViewOptions } = useAccumulatedView(
+  globalPeriod,
+  updateGlobalPeriod
 )
 
 const statusKpiOptions = computed<FilterOption[]>(() => [
@@ -235,6 +234,26 @@ onMounted(() => {
   triggerFilter()
 })
 
+// Detecta quando o período é alterado manualmente e reseta a visão acumulada
+let lastCalculatedPeriod: Period | null = null
+watch(
+  () => globalPeriod.value,
+  (newPeriod) => {
+    // Se a visão acumulada não for mensal, calcula o período esperado
+    if (accumulatedView.value !== 'mensal') {
+      const expectedPeriod = syncPeriodFromAccumulatedView(accumulatedView.value, newPeriod, newPeriod.end)
+      
+      // Se o período atual não corresponde ao calculado pela visão acumulada,
+      // significa que foi alterado manualmente
+      if (expectedPeriod.start !== newPeriod.start || expectedPeriod.end !== newPeriod.end) {
+        resetToMensal()
+      }
+    }
+    lastCalculatedPeriod = newPeriod
+  },
+  { deep: true }
+)
+
 const toggleAdvancedFilters = (): void => {
   advancedFiltersOpen.value = !advancedFiltersOpen.value
 }
@@ -255,8 +274,6 @@ const applyFilters = (): void => {
   updateFilter('indicador', selectedIndicador.value)
   updateFilter('subindicador', selectedSubindicador.value)
   updateFilter('status', selectedStatusKpi.value)
-  
-  updatePeriod(period.value)
 }
 
 const handleClear = (): void => {
@@ -266,19 +283,15 @@ const handleClear = (): void => {
   selectedSubindicador.value = ''
   selectedStatusKpi.value = 'todos'
   accumulatedView.value = 'mensal'
-  period.value = syncPeriodFromAccumulatedView('mensal', period.value)
+  const resetPeriod = syncPeriodFromAccumulatedView('mensal', globalPeriod.value)
   
   clearFilters()
   // Limpa dados de todos os composables
   clearResumoData()
   clearDetalhesData()
-  updatePeriod(period.value)
+  updateGlobalPeriod(resetPeriod)
   triggerFilter()
 }
-
-watch(() => period.value, (newPeriod) => {
-  updatePeriod(newPeriod)
-}, { deep: true })
 </script>
 
 <template>

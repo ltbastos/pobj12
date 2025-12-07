@@ -4,6 +4,8 @@ import { getSimuladorProducts, type SimuladorProduct } from '../services/simulad
 import { formatPoints, formatByMetric, formatBRLReadable } from '../utils/formatUtils'
 import SelectInput from '../components/SelectInput.vue'
 import Icon from '../components/Icon.vue'
+import ErrorState from '../components/ErrorState.vue'
+import EmptyState from '../components/EmptyState.vue'
 import type { FilterOption } from '../types'
 
 const selectedIndicatorId = ref<string>('')
@@ -361,19 +363,24 @@ const formatDeltaDisplay = (value: number): string => {
                 </p>
               </div>
 
-              <div v-if="!selectedProduct" class="sim-whatif__empty">
+              <div v-if="!selectedProduct" class="sim-whatif__empty-wrapper">
                 <template v-if="loading">
-                  Carregando indicadores...
+                  <div class="sim-whatif__empty">
+                    Carregando indicadores...
+                  </div>
                 </template>
-                <template v-else-if="error">
-                  {{ error }}
-                </template>
-                <template v-else-if="catalog.length === 0">
-                  Nenhum indicador com meta em valor ou quantidade está disponível.
-                </template>
-                <template v-else>
+                <ErrorState
+                  v-else-if="error"
+                  :message="error"
+                />
+                <EmptyState
+                  v-else-if="catalog.length === 0"
+                  title="Nenhum indicador disponível"
+                  message="Nenhum indicador com meta em valor ou quantidade está disponível."
+                />
+                <div v-else class="sim-whatif__empty">
                   Selecione um indicador com meta em valor ou quantidade para liberar a simulação.
-                </template>
+                </div>
               </div>
 
               <div v-else id="sim-whatif-cards" class="sim-whatif-cards">
@@ -755,6 +762,10 @@ const formatDeltaDisplay = (value: number): string => {
   margin: 0;
   font-size: 14px;
   color: var(--muted);
+}
+
+.sim-whatif__empty-wrapper {
+  width: 100%;
 }
 
 .sim-whatif__empty {

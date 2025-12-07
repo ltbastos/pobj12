@@ -3,6 +3,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { getRanking, type RankingItem, type RankingFilters } from '../services/rankingService'
 import { useGlobalFilters } from '../composables/useGlobalFilters'
 import { formatINT } from '../utils/formatUtils'
+import ErrorState from '../components/ErrorState.vue'
+import EmptyState from '../components/EmptyState.vue'
 
 const { filterState, period, filterTrigger } = useGlobalFilters()
 
@@ -172,18 +174,15 @@ const formatPoints = (value: number | null | undefined): string => {
 
         
         <template v-else>
-          <div v-if="error" class="error-state">
-          <p>{{ error }}</p>
-        </div>
+          <ErrorState v-if="error" :message="error" />
 
-        <div v-else-if="rankingData.length === 0" class="empty-state">
-          <p v-if="filterState.ggestao">
-            Sem dados de ranking disponíveis para o gerente de gestão selecionado.
-          </p>
-          <p v-else>
-            Selecione um gerente de gestão nos filtros para visualizar o ranking.
-          </p>
-        </div>
+          <EmptyState
+            v-else-if="rankingData.length === 0"
+            title="Nenhum ranking disponível"
+            :message="filterState.ggestao
+              ? 'Sem dados de ranking disponíveis para o gerente de gestão selecionado.'
+              : 'Selecione um gerente de gestão nos filtros para visualizar o ranking.'"
+          />
 
         <div v-else class="ranking-content">
           <div class="card card--ranking">
@@ -268,9 +267,7 @@ const formatPoints = (value: number | null | undefined): string => {
   margin-top: 24px;
 }
 
-.loading-state,
-.error-state,
-.empty-state {
+.loading-state {
   padding: 48px 24px;
   text-align: center;
   color: var(--muted);
@@ -278,10 +275,7 @@ const formatPoints = (value: number | null | undefined): string => {
   border: 1px solid var(--stroke);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-}
-
-.error-state {
-  color: var(--brand);
+  margin: 16px;
 }
 
 .ranking-content {

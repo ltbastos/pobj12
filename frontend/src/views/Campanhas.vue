@@ -3,6 +3,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useGlobalFilters } from '../composables/useGlobalFilters'
 import { formatINT, formatPoints } from '../utils/formatUtils'
 import Icon from '../components/Icon.vue'
+import ErrorState from '../components/ErrorState.vue'
+import EmptyState from '../components/EmptyState.vue'
 
 const { filterState } = useGlobalFilters()
 
@@ -517,13 +519,13 @@ watch([filterState], () => {
         </template>
 
         <template v-else>
-          <div v-if="error" class="error-state">
-          <p>{{ error }}</p>
-        </div>
+          <ErrorState v-if="error" :message="error" />
 
-        <div v-else-if="campanhas.length === 0" class="empty-state">
-          <p>Nenhuma campanha disponível.</p>
-        </div>
+          <EmptyState
+            v-else-if="campanhas.length === 0"
+            title="Nenhuma campanha disponível"
+            message="Nenhuma campanha disponível no momento."
+          />
 
         <div v-else class="campanhas-content">
           <section class="card card--campanhas">
@@ -942,20 +944,6 @@ watch([filterState], () => {
   margin-top: 24px;
 }
 
-.error-state,
-.empty-state {
-  padding: 48px 24px;
-  text-align: center;
-  color: var(--muted);
-  background: var(--panel);
-  border: 1px solid var(--stroke);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-}
-
-.error-state {
-  color: var(--brand);
-}
 
 .campanhas-content {
   display: flex;

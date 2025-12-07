@@ -79,6 +79,7 @@
     </div>
 
     <div 
+      v-if="summary.varPossivel > 0"
       class="kpi-pill"
     >
       <div class="kpi-strip__main">
