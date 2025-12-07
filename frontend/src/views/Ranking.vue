@@ -198,15 +198,14 @@ const formatPoints = (value: number | null | undefined): string => {
                     <tr>
                       <th class="pos-col">#</th>
                       <th class="unit-col">Unidade</th>
-                      <th class="grupo-col">Grupo</th>
                       <th class="points-col">Pontos</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr v-for="i in 10" :key="i" class="rk-row">
-                      <td class="pos-col"><div class="skeleton skeleton--text" style="height: 16px; width: 20px; margin: 0 auto;"></div></td>
-                      <td class="unit-col"><div class="skeleton skeleton--text" style="height: 16px; width: 80%;"></div></td>
-                      <td class="points-col"><div class="skeleton skeleton--text" style="height: 16px; width: 60px; margin: 0 auto;"></div></td>
+                    <tr v-for="i in 10" :key="i" class="rk-row" :class="{ 'rk-row--odd': i % 2 === 1 }">
+                      <td class="pos-col"><div class="skeleton skeleton--text" style="height: 14px; width: 24px; margin: 0 auto;"></div></td>
+                      <td class="unit-col"><div class="skeleton skeleton--text" style="height: 14px; width: 80%;"></div></td>
+                      <td class="points-col"><div class="skeleton skeleton--text" style="height: 14px; width: 70px; margin-left: auto;"></div></td>
                     </tr>
                   </tbody>
                 </table>
@@ -514,7 +513,9 @@ const formatPoints = (value: number | null | undefined): string => {
 
 .ranking-table-wrapper {
   overflow-x: auto;
-  padding: 20px 24px;
+  width: 100%;
+  max-width: 100%;
+  padding: 16px;
   box-sizing: border-box;
 }
 
@@ -522,42 +523,60 @@ const formatPoints = (value: number | null | undefined): string => {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: var(--brad-font-size-base, 16px);
-  table-layout: fixed;
+  background: #fff;
+  border: 1px solid var(--stroke, #e5e7eb);
+  border-radius: 14px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .rk-table thead {
-  background: var(--brad-color-gray-light, #ebebeb);
-  border-bottom: 2px solid var(--stroke);
+  background: #fbfcff;
   position: sticky;
   top: 0;
   z-index: 1;
 }
 
 .rk-table th {
-  padding: 14px 20px;
+  padding: 10px 8px;
   text-align: left;
-  font-weight: var(--brad-font-weight-semibold, 600);
-  color: var(--text);
+  font-weight: 800;
+  color: #475569;
   font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.05em;
   white-space: nowrap;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+.rk-table th.pos-col {
+  text-align: center;
+}
+
+.rk-table th.points-col {
+  text-align: right;
+  padding-right: 24px;
 }
 
 .rk-table td {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--stroke);
-  color: var(--text);
+  padding: 10px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #111827;
   vertical-align: middle;
+  font-size: 13px;
 }
 
 .rk-table tbody tr {
   transition: background-color 0.2s ease;
 }
 
+.rk-table tbody tr:nth-child(odd) {
+  background: rgba(248, 250, 252, 0.65);
+}
+
 .rk-table tbody tr:hover {
-  background: var(--brad-color-primary-xlight, rgba(252, 231, 236, 0.15));
+  background: #fcfdff;
 }
 
 .rk-table tbody tr:last-child td {
@@ -565,12 +584,12 @@ const formatPoints = (value: number | null | undefined): string => {
 }
 
 .rk-table tbody tr.rk-row--top {
-  background: var(--brad-color-primary-xlight, rgba(252, 231, 236, 0.3));
+  background: rgba(252, 231, 236, 0.4);
 }
 
 .rk-table tbody tr.rk-row--top td {
   color: var(--brad-color-primary, #cc092f);
-  font-weight: var(--brad-font-weight-semibold, 600);
+  font-weight: 700;
 }
 
 .pos-col {
@@ -578,10 +597,11 @@ const formatPoints = (value: number | null | undefined): string => {
   min-width: 80px;
   max-width: 80px;
   text-align: center;
-  font-weight: var(--brad-font-weight-semibold, 600);
-  color: var(--text);
-  font-size: 15px;
+  font-weight: 700;
+  color: #111827;
+  font-size: 13px;
   position: relative;
+  font-variant-numeric: tabular-nums;
 }
 
 .pos-medal {
@@ -605,15 +625,20 @@ const formatPoints = (value: number | null | undefined): string => {
 .unit-col {
   width: auto;
   min-width: 300px;
-  font-weight: var(--brad-font-weight-medium, 500);
-  color: var(--text);
-  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 13px;
   word-wrap: break-word;
   overflow-wrap: break-word;
+  text-align: left;
 }
 
 .rk-name {
-  color: var(--text);
+  color: #0f172a;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .date-col {
@@ -642,11 +667,12 @@ const formatPoints = (value: number | null | undefined): string => {
   min-width: 140px;
   max-width: 140px;
   text-align: right;
-  font-weight: var(--brad-font-weight-semibold, 600);
-  color: var(--text);
+  font-weight: 800;
+  color: #111827;
   font-variant-numeric: tabular-nums;
-  font-size: 15px;
+  font-size: 13px;
   padding-right: 24px;
+  white-space: nowrap;
 }
 
 
@@ -700,6 +726,30 @@ const formatPoints = (value: number | null | undefined): string => {
     font-size: 14px;
     padding-right: 16px;
   }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton--text {
+  border-radius: 4px;
+}
+
+.rk-row--odd {
+  background: rgba(248, 250, 252, 0.65);
 }
 </style>
 
