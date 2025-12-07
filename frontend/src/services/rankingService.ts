@@ -4,7 +4,7 @@ import type { RankingFilters, RankingItem } from '../types'
 
 export type { RankingFilters, RankingItem } from '../types'
 
-export async function getRanking(filters?: RankingFilters, nivel?: string): Promise<RankingItem[] | null> {
+export async function getRanking(filters?: RankingFilters, nivel?: string, userFuncional?: string): Promise<RankingItem[] | null> {
   const params: Record<string, string> = {}
   
   if (filters) {
@@ -14,12 +14,18 @@ export async function getRanking(filters?: RankingFilters, nivel?: string): Prom
     if (filters.agencia) params.agencia = filters.agencia
     if (filters.gerenteGestao) params.gerenteGestao = filters.gerenteGestao
     if (filters.gerente) params.gerente = filters.gerente
+    if (filters.grupo) params.grupo = filters.grupo
     if (filters.dataInicio) params.dataInicio = filters.dataInicio
     if (filters.dataFim) params.dataFim = filters.dataFim
   }
   
   if (nivel) {
     params.nivel = nivel
+  }
+
+  // Se userFuncional for fornecido, armazena temporariamente para o header
+  if (userFuncional) {
+    localStorage.setItem('userFuncional', userFuncional)
   }
   
   const response = await apiGet<RankingItem[]>(ApiRoutes.RANKING, params)

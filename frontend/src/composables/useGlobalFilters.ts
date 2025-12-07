@@ -13,6 +13,7 @@ export type FilterState = {
   indicador?: string
   subindicador?: string
   status?: string
+  grupo?: string
 }
 
 const filterState = ref<FilterState>({})

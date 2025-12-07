@@ -58,6 +58,12 @@ class DEstrutura
     private $agencia;
 
     /**
+     * @ORM\ManyToOne(targetEntity="App\Entity\Pobj\Grupo")
+     * @ORM\JoinColumn(name="grupo_id", referencedColumnName="id", nullable=true)
+     */
+    private $grupo;
+
+    /**
      * @ORM\Column(type="datetime")
      */
     private $createdAt;
@@ -146,6 +152,17 @@ class DEstrutura
     public function setAgencia(?Agencia $agencia): self
     {
         $this->agencia = $agencia;
+        return $this;
+    }
+
+    public function getGrupo(): ?Grupo
+    {
+        return $this->grupo;
+    }
+
+    public function setGrupo(?Grupo $grupo): self
+    {
+        $this->grupo = $grupo;
         return $this;
     }
 

@@ -27,6 +27,7 @@ class InitUseCase
             'indicadores'     => $this->convertDtosToArray($this->initRepository->findIndicadores()),
             'subindicadores'  => $this->convertDtosToArray($this->initRepository->findSubindicadores()),
             'status_indicadores' => $this->convertDtosToArray($this->initRepository->findStatusIndicadores()),
+            'grupos'          => $this->convertDtosToArray($this->initRepository->findGrupos()),
         ];
     }
 

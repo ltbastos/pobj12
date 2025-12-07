@@ -86,7 +86,15 @@ class RankingController extends ControllerBase
      */
     public function handle(Request $request): JsonResponse
     {
-        $filters = new FilterDTO($request->query->all());
+        $queryParams = $request->query->all();
+        
+        // Obtém o funcional do usuário atual através do header X-User-Funcional
+        $userFuncional = $request->headers->get('X-User-Funcional');
+        if ($userFuncional) {
+            $queryParams['userFuncional'] = $userFuncional;
+        }
+        
+        $filters = new FilterDTO($queryParams);
         $result = $this->rankingUseCase->handle($filters);
         
         return $this->success($result);

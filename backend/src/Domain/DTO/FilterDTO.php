@@ -83,6 +83,7 @@ class FilterDTO
             'familia' => ['familiaId', 'familia'],
             'indicador' => ['indicadorId', 'indicador'],
             'subindicador' => ['subindicadorId', 'subindicador'],
+            'grupo' => ['grupoId', 'grupo'],
             'dataInicio' => ['dataInicio'],
             'dataFim' => ['dataFim'],
         ];
@@ -148,6 +149,11 @@ class FilterDTO
     public function getStatus()
     {
         return $this->get('status');
+    }
+
+    public function getGrupo()
+    {
+        return $this->get('grupo');
     }
     
     public function toArray(): array

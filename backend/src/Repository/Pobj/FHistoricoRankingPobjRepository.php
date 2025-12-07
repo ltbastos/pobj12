@@ -11,6 +11,7 @@ use App\Entity\Pobj\Segmento;
 use App\Entity\Pobj\Diretoria;
 use App\Entity\Pobj\Regional;
 use App\Entity\Pobj\Agencia;
+use App\Entity\Pobj\Grupo;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -65,12 +66,14 @@ class FHistoricoRankingPobjRepository extends ServiceEntityRepository
         $diretoriaTable = $this->getTableName(Diretoria::class);
         $regionalTable = $this->getTableName(Regional::class);
         $agenciaTable = $this->getTableName(Agencia::class);
+        $grupoTable = $this->getTableName(Grupo::class);
 
                 $params = [
             'cargoGerente' => Cargo::GERENTE,
             'cargoGerenteGestao' => Cargo::GERENTE_GESTAO
         ];
         $whereClause = '';
+        $userGrupo = null;
 
         if ($filters) {
                                                             
@@ -86,7 +89,46 @@ class FHistoricoRankingPobjRepository extends ServiceEntityRepository
                 $whereClause .= " AND p.data_realizado <= :dataFim";
                 $params['dataFim'] = $dataFim;
             }
+
+            // Verifica se há um filtro de grupo explícito
+            $grupoFilterValue = $filters->getGrupo();
+            if ($grupoFilterValue !== null && $grupoFilterValue !== '') {
+                // Se o filtro for numérico, assume que é o ID do grupo
+                if (is_numeric($grupoFilterValue)) {
+                    $userGrupo = (int)$grupoFilterValue;
+                } else {
+                    // Se for string, busca o ID do grupo pelo nome
+                    $conn = $this->getEntityManager()->getConnection();
+                    $grupoQuery = "SELECT id FROM {$grupoTable} WHERE nome = :grupoNome LIMIT 1";
+                    $grupoResult = $conn->executeQuery($grupoQuery, ['grupoNome' => $grupoFilterValue]);
+                    $grupoRow = $grupoResult->fetchAssociative();
+                    $grupoResult->free();
+                    if ($grupoRow && isset($grupoRow['id'])) {
+                        $userGrupo = (int)$grupoRow['id'];
+                    }
+                }
+            } else {
+                // Obtém o grupo do usuário atual se o funcional foi fornecido
+                $userFuncional = $filters->get('userFuncional');
+                if ($userFuncional) {
+                    $conn = $this->getEntityManager()->getConnection();
+                    $userGrupoQuery = "SELECT grupo_id FROM {$estruturaTable} WHERE funcional = :userFuncional LIMIT 1";
+                    $userGrupoResult = $conn->executeQuery($userGrupoQuery, ['userFuncional' => $userFuncional]);
+                    $userGrupoRow = $userGrupoResult->fetchAssociative();
+                    $userGrupoResult->free();
+                    if ($userGrupoRow && isset($userGrupoRow['grupo_id']) && $userGrupoRow['grupo_id'] !== null) {
+                        $userGrupo = $userGrupoRow['grupo_id'];
+                    }
+                }
+            }
         }
+
+                // Adiciona filtro por grupo se houver um grupo definido
+                $grupoFilter = '';
+                if ($userGrupo !== null) {
+                    $grupoFilter = " AND est.grupo_id = :userGrupo";
+                    $params['userGrupo'] = $userGrupo;
+                }
 
                 $subquery = "SELECT
                     MAX(p.data_realizado) AS data,
@@ -99,6 +141,8 @@ class FHistoricoRankingPobjRepository extends ServiceEntityRepository
                     reg.nome AS gerencia_nome,
                     CAST(ag.id AS CHAR) AS agencia_id,
                     ag.nome AS agencia_nome,
+                    CAST(grupo.id AS CHAR) AS grupo_id,
+                    grupo.nome AS grupo,
                     CASE 
                         WHEN est.cargo_id = :cargoGerente THEN est.funcional
                         WHEN est.cargo_id = :cargoGerenteGestao THEN NULL
@@ -138,6 +182,8 @@ class FHistoricoRankingPobjRepository extends ServiceEntityRepository
                     ON reg.id = est.regional_id
                 LEFT JOIN {$agenciaTable} AS ag
                     ON ag.id = est.agencia_id
+                LEFT JOIN {$grupoTable} AS grupo
+                    ON grupo.id = est.grupo_id
                 LEFT JOIN (
                     SELECT
                         g1.id,
@@ -155,8 +201,8 @@ class FHistoricoRankingPobjRepository extends ServiceEntityRepository
                     WHERE g1.cargo_id = :cargoGerenteGestao
                 ) AS ggestao
                     ON ggestao.agencia_id = est.agencia_id
-                WHERE 1=1 {$whereClause}
-                GROUP BY est.funcional, seg.id, dir.id, reg.id, ag.id, est.cargo_id, ggestao.funcional, ggestao.nome, ggestao.id, est.id";
+                WHERE 1=1 {$whereClause} {$grupoFilter}
+                GROUP BY est.funcional, seg.id, dir.id, reg.id, ag.id, est.cargo_id, est.grupo_id, grupo.id, grupo.nome, ggestao.funcional, ggestao.nome, ggestao.id, est.id";
 
                         $sql = "SELECT 
                     ranked.*,
@@ -187,6 +233,8 @@ class FHistoricoRankingPobjRepository extends ServiceEntityRepository
                 'gerencia_nome' => $row['gerencia_nome'] ?? null,
                 'agencia_id' => $row['agencia_id'] ?? null,
                 'agencia_nome' => $row['agencia_nome'] ?? null,
+                'grupo_id' => $row['grupo_id'] ?? null,
+                'grupo' => $row['grupo'] ?? null,
                 'gerente_gestao_id' => $row['gerente_gestao_id'] ?? null,
                 'gerente_gestao_id_num' => $row['gerente_gestao_id_num'] ?? null,
                 'gerente_gestao_nome' => $row['gerente_gestao_nome'] ?? null,

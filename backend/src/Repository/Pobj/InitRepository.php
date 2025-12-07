@@ -11,6 +11,7 @@ use App\Entity\Pobj\Familia;
 use App\Entity\Pobj\Indicador;
 use App\Entity\Pobj\Subindicador;
 use App\Entity\Pobj\DStatusIndicador;
+use App\Entity\Pobj\Grupo;
 use App\Domain\Enum\Cargo;
 use App\Domain\DTO\Init\GerenteWithGestorDTO;
 use App\Domain\DTO\Init\GerenteGestaoWithAgenciaDTO;
@@ -22,6 +23,7 @@ use App\Domain\DTO\Init\FamiliaDTO;
 use App\Domain\DTO\Init\IndicadorDTO;
 use App\Domain\DTO\Init\SubindicadorDTO;
 use App\Domain\DTO\Init\StatusIndicadorDTO;
+use App\Domain\DTO\Init\GrupoDTO;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -266,6 +268,27 @@ class InitRepository extends ServiceEntityRepository
             $dtos[] = new StatusIndicadorDTO(
                 $result['id'],
                 $result['status']
+            );
+        }
+
+        return $dtos;
+    }
+    
+    public function findGrupos(): array
+    {
+        $results = $this->getEntityManager()
+                    ->createQueryBuilder()
+                    ->select('g.id, g.nome')
+                    ->from(Grupo::class, 'g')
+                    ->orderBy('g.nome', 'ASC')
+                    ->getQuery()
+                    ->getArrayResult();
+
+        $dtos = [];
+        foreach ($results as $result) {
+            $dtos[] = new GrupoDTO(
+                $result['id'],
+                $result['nome']
             );
         }
 

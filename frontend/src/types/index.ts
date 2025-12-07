@@ -31,6 +31,7 @@ export type InitData = {
   indicadores: any[]
   subindicadores: any[]
   status_indicadores: any[]
+  grupos: any[]
 }
 
 export type SegmentoItem = {
@@ -199,6 +200,7 @@ export type RankingItem = {
   gerencia_nome?: string
   agencia_id?: string
   agencia_nome?: string
+  grupo?: string
   gerente_gestao_id?: string
   gerente_gestao_nome?: string
   gerente_id?: string
@@ -222,6 +224,7 @@ export type RankingFilters = {
   agencia?: string
   gerenteGestao?: string
   gerente?: string
+  grupo?: string
   dataInicio?: string
   dataFim?: string
 }

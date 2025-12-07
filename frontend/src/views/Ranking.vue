@@ -2,15 +2,33 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { getRanking, type RankingItem, type RankingFilters } from '../services/rankingService'
 import { useGlobalFilters } from '../composables/useGlobalFilters'
+import { useInitCache } from '../composables/useInitCache'
 import { formatINT } from '../utils/formatUtils'
 import ErrorState from '../components/ErrorState.vue'
 import EmptyState from '../components/EmptyState.vue'
+import SelectSearch from '../components/SelectSearch.vue'
+import type { FilterOption } from '../types'
 
-const { filterState, period, filterTrigger } = useGlobalFilters()
+const { filterState, period, filterTrigger, updateFilter } = useGlobalFilters()
+const { initData, loadInit } = useInitCache()
 
 const rankingData = ref<RankingItem[]>([])
 const loading = ref(false)
 const error = ref<string | null>(null)
+const grupos = ref<FilterOption[]>([])
+const selectedGrupo = ref<string>('')
+
+// Normaliza opções de grupos
+const normalizeOption = (item: any): FilterOption => {
+  const id = String(item.id || '').trim()
+  const nome = String(item.nome || item.label || id).trim()
+  return { id, nome }
+}
+
+const buildOptions = (data: any[]): FilterOption[] => {
+  if (!Array.isArray(data)) return []
+  return data.map(normalizeOption).filter(opt => opt.id)
+}
 
 const sanitizeFilterValue = (value?: string): string | undefined => {
   if (!value) return undefined
@@ -30,6 +48,7 @@ const rankingFilters = computed<RankingFilters>(() => {
   const agencia = sanitizeFilterValue(filterState.value.agencia)
   const gerenteGestao = sanitizeFilterValue(filterState.value.ggestao)
   const gerente = sanitizeFilterValue(filterState.value.gerente)
+  const grupo = sanitizeFilterValue(filterState.value.grupo)
   
   if (segmento) filters.segmento = segmento
   if (diretoria) filters.diretoria = diretoria
@@ -37,6 +56,7 @@ const rankingFilters = computed<RankingFilters>(() => {
   if (agencia) filters.agencia = agencia
   if (gerenteGestao) filters.gerenteGestao = gerenteGestao
   if (gerente) filters.gerente = gerente
+  if (grupo) filters.grupo = grupo
   
   if (period.value?.start) {
     filters.dataInicio = period.value.start
@@ -104,8 +124,30 @@ const loadRanking = async () => {
   }
 }
 
+const loadGrupos = async (): Promise<void> => {
+  try {
+    const data = await loadInit()
+    if (data && data.grupos) {
+      grupos.value = buildOptions(data.grupos)
+    }
+  } catch (err) {
+    console.error('Erro ao carregar grupos:', err)
+  }
+}
+
+const handleGrupoChange = (value: string): void => {
+  selectedGrupo.value = value
+  updateFilter('grupo', value === '' || value.toLowerCase() === 'todos' ? undefined : value)
+}
+
 onMounted(() => {
+  loadGrupos()
   loadRanking()
+  
+  // Sincroniza o grupo selecionado com o filterState
+  if (filterState.value.grupo) {
+    selectedGrupo.value = filterState.value.grupo
+  }
 })
 
 watch([filterState, filterTrigger], () => {
@@ -156,6 +198,7 @@ const formatPoints = (value: number | null | undefined): string => {
                     <tr>
                       <th class="pos-col">#</th>
                       <th class="unit-col">Unidade</th>
+                      <th class="grupo-col">Grupo</th>
                       <th class="points-col">Pontos</th>
                     </tr>
                   </thead>
@@ -163,6 +206,7 @@ const formatPoints = (value: number | null | undefined): string => {
                     <tr v-for="i in 10" :key="i" class="rk-row">
                       <td class="pos-col"><div class="skeleton skeleton--text" style="height: 16px; width: 20px; margin: 0 auto;"></div></td>
                       <td class="unit-col"><div class="skeleton skeleton--text" style="height: 16px; width: 80%;"></div></td>
+                      <td class="grupo-col"><div class="skeleton skeleton--text" style="height: 16px; width: 60%;"></div></td>
                       <td class="points-col"><div class="skeleton skeleton--text" style="height: 16px; width: 60px; margin: 0 auto;"></div></td>
                     </tr>
                   </tbody>
@@ -201,6 +245,18 @@ const formatPoints = (value: number | null | undefined): string => {
                 <span class="rk-badge">
                   <strong>Quantidade de participantes:</strong> {{ formatINT(groupedRanking.length) }}
                 </span>
+                <span class="rk-badge rk-badge--filter">
+                  <label for="f-grupo-ranking" style="margin-right: 8px; font-weight: 600;">Grupo:</label>
+                  <SelectSearch
+                    id="f-grupo-ranking"
+                    :model-value="selectedGrupo"
+                    :options="[{ id: '', nome: 'Todos' }, ...grupos]"
+                    placeholder="Todos"
+                    label="Grupo"
+                    :disabled="loading"
+                    @update:model-value="handleGrupoChange"
+                  />
+                </span>
               </div>
             </div>
 
@@ -210,6 +266,7 @@ const formatPoints = (value: number | null | undefined): string => {
                   <tr>
                     <th class="pos-col">#</th>
                     <th class="unit-col">Unidade</th>
+                    <th class="grupo-col">Grupo</th>
                     <th class="points-col">Pontos</th>
                   </tr>
                 </thead>
@@ -224,6 +281,7 @@ const formatPoints = (value: number | null | undefined): string => {
                     <td class="unit-col rk-name">
                       {{ item.displayLabel ?? item.label ?? '—' }}
                     </td>
+                    <td class="grupo-col">{{ item.grupo ?? '—' }}</td>
                     <td class="points-col">{{ formatPoints(item.pontos) }}</td>
                   </tr>
                 </tbody>
@@ -438,6 +496,25 @@ const formatPoints = (value: number | null | undefined): string => {
   font-weight: var(--brad-font-weight-semibold, 600);
 }
 
+.rk-badge--filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+}
+
+.rk-badge--filter :deep(.select) {
+  min-width: 150px;
+}
+
+.rk-badge--filter :deep(.select__trigger) {
+  padding: 6px 10px;
+  font-size: 13px;
+  border: 1px solid var(--brad-color-primary, #cc092f);
+  background: var(--panel, #fff);
+  color: var(--text, #000);
+}
+
 .ranking-table-wrapper {
   overflow-x: auto;
   padding: 20px 24px;
@@ -553,6 +630,16 @@ const formatPoints = (value: number | null | undefined): string => {
   color: var(--brad-color-primary, #cc092f);
 }
 
+.grupo-col {
+  width: 150px;
+  min-width: 150px;
+  max-width: 150px;
+  text-align: left;
+  font-weight: var(--brad-font-weight-medium, 500);
+  color: var(--text);
+  font-size: 14px;
+}
+
 .points-col {
   width: 140px;
   min-width: 140px;
@@ -600,6 +687,13 @@ const formatPoints = (value: number | null | undefined): string => {
   .unit-col {
     min-width: 200px;
     font-size: 14px;
+  }
+
+  .grupo-col {
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+    font-size: 13px;
   }
 
   .points-col {

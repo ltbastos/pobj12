@@ -27,6 +27,12 @@ function buildHeaders(customHeaders?: Record<string, string>): Record<string, st
     headers['X-API-Key'] = apiKey
   }
 
+  // Tenta obter o funcional do usuário do localStorage ou sessionStorage
+  const userFuncional = localStorage.getItem('userFuncional') || sessionStorage.getItem('userFuncional')
+  if (userFuncional) {
+    headers['X-User-Funcional'] = userFuncional
+  }
+
   return headers
 }
 
