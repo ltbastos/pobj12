@@ -49,14 +49,77 @@ class RankingUseCase
 
                 $groups = [];
         foreach ($rawData as $item) {
-            $key = $item[$keyField] ?? 'unknown';
-            $label = $item[$labelField] ?? $key ?? '—';
+            // Obtém o valor da chave para o nível selecionado
+            $keyValue = $item[$keyField] ?? null;
+            
+            // Normaliza valores NULL (pode vir como null, string vazia, ou string 'NULL')
+            $isNull = ($keyValue === null || 
+                      $keyValue === '' || 
+                      (is_string($keyValue) && strtoupper(trim($keyValue)) === 'NULL'));
+            
+            // Se o campo necessário for NULL, tenta alternativas baseadas no nível
+            if ($isNull) {
+                if ($nivel === 'gerenteGestao') {
+                    // Para gerenteGestao, se gerente_gestao_id está NULL, tenta usar gerente_gestao_id_num
+                    // Isso acontece quando o cargo é GERENTE mas não tem ggestao associado
+                    $idNum = $item['gerente_gestao_id_num'] ?? null;
+                    if ($idNum !== null && $idNum !== '' && strtoupper(trim((string)$idNum)) !== 'NULL') {
+                        $keyValue = $idNum;
+                    } else {
+                        // Se não tem nem gerente_gestao_id nem gerente_gestao_id_num, pula o registro
+                        // Isso significa que o funcionário não é GERENTE nem GERENTE_GESTAO
+                        continue;
+                    }
+                } else {
+                    // Para outros níveis, pula se não tiver o campo necessário
+                    continue;
+                }
+            }
+            
+            $key = (string)$keyValue;
+            $label = $item[$labelField] ?? null;
+            
+            // Normaliza label NULL
+            $isLabelNull = ($label === null || 
+                           $label === '' || 
+                           (is_string($label) && strtoupper(trim($label)) === 'NULL'));
+            
+            // Se não houver label, tenta usar alternativas baseadas no nível
+            if ($isLabelNull) {
+                if ($nivel === 'gerenteGestao') {
+                    // Tenta usar gerente_gestao_nome
+                    $label = $item['gerente_gestao_nome'] ?? null;
+                    // Se ainda não tiver e usamos id_num como chave, usa a chave como label
+                    if (($label === null || $label === '') && $keyValue === ($item['gerente_gestao_id_num'] ?? null)) {
+                        $label = $key;
+                    }
+                    // Último fallback
+                    if ($label === null || $label === '') {
+                        $label = $key;
+                    }
+                } elseif ($nivel === 'gerente') {
+                    $label = $item['gerente_nome'] ?? $item['nome'] ?? $key;
+                } else {
+                    $label = $key;
+                }
+            }
+            
+            // Garante que o label não seja vazio
+            if ($label === '' || $label === null) {
+                $label = $key ?? '—';
+            }
             
             $idNum = null;
-            if ($nivel === 'gerenteGestao' && isset($item['gerente_gestao_id_num'])) {
-                $idNum = (string)$item['gerente_gestao_id_num'];
-            } elseif ($nivel === 'gerente' && isset($item['gerente_id'])) {
-                $idNum = (string)$item['gerente_id'];
+            if ($nivel === 'gerenteGestao' && isset($item['gerente_gestao_id_num']) && $item['gerente_gestao_id_num'] !== null) {
+                $idNumValue = $item['gerente_gestao_id_num'];
+                if ($idNumValue !== '' && strtoupper(trim((string)$idNumValue)) !== 'NULL') {
+                    $idNum = (string)$idNumValue;
+                }
+            } elseif ($nivel === 'gerente' && isset($item['gerente_id']) && $item['gerente_id'] !== null) {
+                $idNumValue = $item['gerente_id'];
+                if ($idNumValue !== '' && strtoupper(trim((string)$idNumValue)) !== 'NULL') {
+                    $idNum = (string)$idNumValue;
+                }
             }
 
             if (!isset($groups[$key])) {

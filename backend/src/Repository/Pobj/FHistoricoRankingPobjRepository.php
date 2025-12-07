@@ -201,7 +201,7 @@ class FHistoricoRankingPobjRepository extends ServiceEntityRepository
                     WHERE g1.cargo_id = :cargoGerenteGestao
                 ) AS ggestao
                     ON ggestao.agencia_id = est.agencia_id
-                WHERE 1=1 {$whereClause} {$grupoFilter}
+                WHERE est.cargo_id IN (:cargoGerente, :cargoGerenteGestao) {$whereClause} {$grupoFilter}
                 GROUP BY est.funcional, seg.id, dir.id, reg.id, ag.id, est.cargo_id, est.grupo_id, grupo.id, grupo.nome, ggestao.funcional, ggestao.nome, ggestao.id, est.id";
 
                         $sql = "SELECT 

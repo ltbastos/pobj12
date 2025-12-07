@@ -206,7 +206,6 @@ const formatPoints = (value: number | null | undefined): string => {
                     <tr v-for="i in 10" :key="i" class="rk-row">
                       <td class="pos-col"><div class="skeleton skeleton--text" style="height: 16px; width: 20px; margin: 0 auto;"></div></td>
                       <td class="unit-col"><div class="skeleton skeleton--text" style="height: 16px; width: 80%;"></div></td>
-                      <td class="grupo-col"><div class="skeleton skeleton--text" style="height: 16px; width: 60%;"></div></td>
                       <td class="points-col"><div class="skeleton skeleton--text" style="height: 16px; width: 60px; margin: 0 auto;"></div></td>
                     </tr>
                   </tbody>
@@ -266,7 +265,6 @@ const formatPoints = (value: number | null | undefined): string => {
                   <tr>
                     <th class="pos-col">#</th>
                     <th class="unit-col">Unidade</th>
-                    <th class="grupo-col">Grupo</th>
                     <th class="points-col">Pontos</th>
                   </tr>
                 </thead>
@@ -281,7 +279,6 @@ const formatPoints = (value: number | null | undefined): string => {
                     <td class="unit-col rk-name">
                       {{ item.displayLabel ?? item.label ?? '—' }}
                     </td>
-                    <td class="grupo-col">{{ item.grupo ?? '—' }}</td>
                     <td class="points-col">{{ formatPoints(item.pontos) }}</td>
                   </tr>
                 </tbody>
