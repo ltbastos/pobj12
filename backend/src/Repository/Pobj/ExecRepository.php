@@ -16,20 +16,23 @@ class ExecRepository extends ServiceEntityRepository
     private $kpisRepository;
     private $rankingRepository;
     private $chartRepository;
-    private $heatmapRepository;
+    private $heatmapSectionsRepository;
+    private $heatmapMetaRepository;
 
     public function __construct(
         ManagerRegistry $registry,
         ExecKPIsRepository $kpisRepository,
         ExecRankingRepository $rankingRepository,
         ExecChartRepository $chartRepository,
-        ExecHeatmapRepository $heatmapRepository
+        ExecHeatmapSectionsRepository $heatmapSectionsRepository,
+        ExecHeatmapMetaRepository $heatmapMetaRepository
     ) {
         parent::__construct($registry, DProduto::class);
         $this->kpisRepository = $kpisRepository;
         $this->rankingRepository = $rankingRepository;
         $this->chartRepository = $chartRepository;
-        $this->heatmapRepository = $heatmapRepository;
+        $this->heatmapSectionsRepository = $heatmapSectionsRepository;
+        $this->heatmapMetaRepository = $heatmapMetaRepository;
     }
 
     public function findKPIs(?FilterDTO $filters = null): array
@@ -52,8 +55,13 @@ class ExecRepository extends ServiceEntityRepository
         return $this->chartRepository->findChartData($filters);
     }
 
-    public function findHeatmap(?FilterDTO $filters = null): array
+    public function findHeatmapSections(?FilterDTO $filters = null): array
     {
-        return $this->heatmapRepository->findHeatmap($filters);
+        return $this->heatmapSectionsRepository->findHeatmapSections($filters);
+    }
+
+    public function findHeatmapMeta(?FilterDTO $filters = null): array
+    {
+        return $this->heatmapMetaRepository->findHeatmapMeta($filters);
     }
 }

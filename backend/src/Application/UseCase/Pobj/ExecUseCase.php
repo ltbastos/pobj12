@@ -20,14 +20,16 @@ class ExecUseCase
         $ranking = $this->execRepository->findRankingByRegional($filters);
         $status = $this->execRepository->findStatusByRegional($filters);
         $chartData = $this->execRepository->findChartData($filters);
-        $heatmap = $this->execRepository->findHeatmap($filters);
+        $heatmapSections = $this->execRepository->findHeatmapSections($filters);
+        $heatmapMeta = $this->execRepository->findHeatmapMeta($filters);
 
         return [
             'kpis' => $kpis,
             'ranking' => $ranking,
             'status' => $status,
             'chart' => $chartData,
-            'heatmap' => $heatmap
+            'heatmapSections' => $heatmapSections,
+            'heatmapMeta' => $heatmapMeta
         ];
     }
 }
