@@ -56,7 +56,8 @@ class ExecHeatmapRepository extends ServiceEntityRepository
             $indicadorTable,
             $whereClause,
             $params,
-            $months
+            $months,
+            $filters
         );
 
         // Buscar dados para modo "Metas" (hierarquia)
@@ -136,9 +137,12 @@ class ExecHeatmapRepository extends ServiceEntityRepository
         string $indicadorTable,
         string $whereClause,
         array &$params,
-        array $months
+        array $months,
+        ?FilterDTO $filters
     ): array {
         $conn = $this->getEntityManager()->getConnection();
+        $diretoriaTable = $this->getTableName(Diretoria::class);
+        $agenciaTable = $this->getTableName(Agencia::class);
 
         // Buscar todas as famílias
         $allFamiliesSql = "SELECT DISTINCT 
@@ -157,7 +161,41 @@ class ExecHeatmapRepository extends ServiceEntityRepository
         }
         $allFamiliesResult->free();
 
-        // Buscar dados realizados
+        // Se um gerente está filtrado, expandir o filtro para incluir toda a hierarquia acima
+        $expandedWhereClause = $whereClause;
+        if ($filters && $filters->getGerente()) {
+            $gerenteId = $filters->getGerente();
+            $gerenteFuncional = $this->filterBuilder->getFuncionalFromIdOrFuncional($gerenteId, Cargo::GERENTE);
+            
+            if ($gerenteFuncional) {
+                // Buscar informações do gerente para expandir o filtro
+                $gerenteInfoSql = "SELECT segmento_id, diretoria_id, regional_id, agencia_id 
+                                   FROM {$dEstruturaTable} 
+                                   WHERE funcional = :gerenteFuncional 
+                                   AND cargo_id = :cargoGerente 
+                                   LIMIT 1";
+                $gerenteInfoResult = $conn->executeQuery($gerenteInfoSql, [
+                    'gerenteFuncional' => $gerenteFuncional,
+                    'cargoGerente' => Cargo::GERENTE
+                ]);
+                $gerenteInfo = $gerenteInfoResult->fetchAssociative();
+                $gerenteInfoResult->free();
+                
+                if ($gerenteInfo) {
+                    // Expandir o filtro para incluir todos na mesma hierarquia
+                    $expandedWhereClause = " AND est.segmento_id = :segmentoId
+                                             AND est.diretoria_id = :diretoriaId
+                                             AND est.regional_id = :regionalId
+                                             AND est.agencia_id = :agenciaId";
+                    $params['segmentoId'] = $gerenteInfo['segmento_id'];
+                    $params['diretoriaId'] = $gerenteInfo['diretoria_id'];
+                    $params['regionalId'] = $gerenteInfo['regional_id'];
+                    $params['agenciaId'] = $gerenteInfo['agencia_id'];
+                }
+            }
+        }
+
+        // Buscar dados realizados - agora incluindo informações de toda a hierarquia
         $monthKeys = array_column($months, 'key');
         $monthPlaceholders = [];
         foreach ($monthKeys as $index => $key) {
@@ -168,8 +206,27 @@ class ExecHeatmapRepository extends ServiceEntityRepository
         $placeholders = implode(',', $monthPlaceholders);
 
         $sql = "SELECT
+            CAST(dir.id AS CHAR) AS diretoria_id,
+            dir.nome AS diretoria_nome,
             CAST(reg.id AS CHAR) AS regional_id,
             reg.nome AS regional_nome,
+            CAST(ag.id AS CHAR) AS agencia_id,
+            ag.nome AS agencia_nome,
+            CASE 
+                WHEN est.cargo_id = :cargoGerente THEN CAST(est.id AS CHAR)
+                WHEN est.cargo_id = :cargoGerenteGestao THEN CAST(est.id AS CHAR)
+                ELSE NULL
+            END AS gerente_id,
+            CASE 
+                WHEN est.cargo_id = :cargoGerente THEN est.nome
+                WHEN est.cargo_id = :cargoGerenteGestao THEN est.nome
+                ELSE NULL
+            END AS gerente_nome,
+            CASE 
+                WHEN est.cargo_id = :cargoGerente THEN :tipoGerente
+                WHEN est.cargo_id = :cargoGerenteGestao THEN :tipoGerenteGestao
+                ELSE NULL
+            END AS tipo_gerente,
             CAST(fam.id AS CHAR) AS familia_id,
             fam.nm_familia AS familia_nome,
             CAST(ind.id AS CHAR) AS indicador_id,
@@ -177,8 +234,7 @@ class ExecHeatmapRepository extends ServiceEntityRepository
             DATE_FORMAT(c.data, '%Y-%m') AS mes,
             COALESCE(SUM(r.realizado), 0) AS realizado,
             COALESCE(SUM(m.meta_mensal), 0) AS meta
-        FROM {$regionalTable} AS reg
-        INNER JOIN {$dEstruturaTable} AS est ON est.regional_id = reg.id
+        FROM {$dEstruturaTable} AS est
         INNER JOIN {$fRealizadosTable} AS r ON r.funcional = est.funcional
         INNER JOIN {$dCalendarioTable} AS c ON c.data = r.data_realizado
         INNER JOIN {$dProdutosTable} AS prod ON prod.id = r.produto_id
@@ -187,13 +243,25 @@ class ExecHeatmapRepository extends ServiceEntityRepository
         LEFT JOIN {$fMetaTable} AS m ON m.produto_id = prod.id
             AND m.funcional = est.funcional
             AND m.data_meta = c.data
-        WHERE reg.id IS NOT NULL {$whereClause}
+        LEFT JOIN {$diretoriaTable} AS dir ON dir.id = est.diretoria_id
+        LEFT JOIN {$regionalTable} AS reg ON reg.id = est.regional_id
+        LEFT JOIN {$agenciaTable} AS ag ON ag.id = est.agencia_id
+        WHERE 1=1 {$expandedWhereClause}
             AND DATE_FORMAT(c.data, '%Y-%m') IN ({$placeholders})
-        GROUP BY reg.id, reg.nome, fam.id, fam.nm_familia, ind.id, ind.nm_indicador, DATE_FORMAT(c.data, '%Y-%m')
+        GROUP BY dir.id, dir.nome, reg.id, reg.nome, ag.id, ag.nome, 
+                 est.id, est.nome, est.cargo_id,
+                 fam.id, fam.nm_familia, ind.id, ind.nm_indicador, DATE_FORMAT(c.data, '%Y-%m')
         HAVING realizado > 0 OR meta > 0
-        ORDER BY reg.nome, fam.nm_familia, ind.nm_indicador, c.data";
+        ORDER BY dir.nome, reg.nome, ag.nome, est.nome, fam.nm_familia, ind.nm_indicador, c.data";
+        
+        $sectionsParams = array_merge($params, [
+            'cargoGerente' => Cargo::GERENTE,
+            'cargoGerenteGestao' => Cargo::GERENTE_GESTAO,
+            'tipoGerente' => 'gerente',
+            'tipoGerenteGestao' => 'gerenteGestao'
+        ]);
 
-        $result = $conn->executeQuery($sql, $params);
+        $result = $conn->executeQuery($sql, $sectionsParams);
 
         $units = [];
         $sectionsFamilia = [];
@@ -203,9 +271,20 @@ class ExecHeatmapRepository extends ServiceEntityRepository
         $dataFamiliaMensal = [];
         $dataIndicadorMensal = [];
 
+        // Se um gerente está filtrado, criar unidades individuais da hierarquia
+        $isGerenteFiltered = $filters && $filters->getGerente();
+        $gerenteId = $isGerenteFiltered ? $filters->getGerente() : null;
+
         while ($row = $result->fetchAssociative()) {
+            $diretoriaId = $row['diretoria_id'] ?? '';
+            $diretoriaNome = $row['diretoria_nome'] ?? '';
             $regionalId = $row['regional_id'] ?? '';
             $regionalNome = $row['regional_nome'] ?? '';
+            $agenciaId = $row['agencia_id'] ?? '';
+            $agenciaNome = $row['agencia_nome'] ?? '';
+            $gerenteIdRow = $row['gerente_id'] ?? '';
+            $gerenteNome = $row['gerente_nome'] ?? '';
+            $tipoGerente = $row['tipo_gerente'] ?? '';
             $familiaId = $row['familia_id'] ?? '';
             $familiaNome = $row['familia_nome'] ?? '';
             $indicadorId = $row['indicador_id'] ?? '';
@@ -214,11 +293,44 @@ class ExecHeatmapRepository extends ServiceEntityRepository
             $realizado = (float)($row['realizado'] ?? 0);
             $meta = (float)($row['meta'] ?? 0);
 
-            if (!isset($units[$regionalId])) {
-                $units[$regionalId] = [
-                    'value' => $regionalId,
-                    'label' => $regionalNome
-                ];
+            // Determinar qual unidade usar baseado no filtro
+            $unitKey = null;
+            $unitLabel = null;
+            
+            if ($isGerenteFiltered) {
+                // Quando gerente está filtrado, criar unidades individuais da hierarquia
+                if ($tipoGerente === 'gerente' && $gerenteIdRow && (string)$gerenteIdRow === (string)$gerenteId) {
+                    // O gerente filtrado
+                    $unitKey = "G_{$gerenteIdRow}";
+                    $unitLabel = $gerenteNome;
+                } elseif ($tipoGerente === 'gerenteGestao' && $gerenteIdRow) {
+                    // Gerente de gestão responsável
+                    $unitKey = "GG_{$gerenteIdRow}";
+                    $unitLabel = $gerenteNome;
+                } elseif ($agenciaId && $agenciaNome) {
+                    // Agência do gerente
+                    $unitKey = "AG_{$agenciaId}";
+                    $unitLabel = $agenciaNome;
+                } elseif ($regionalId && $regionalNome) {
+                    // Regional do gerente
+                    $unitKey = "REG_{$regionalId}";
+                    $unitLabel = $regionalNome;
+                }
+            } else {
+                // Comportamento padrão: usar regional
+                if ($regionalId && $regionalNome) {
+                    $unitKey = $regionalId;
+                    $unitLabel = $regionalNome;
+                }
+            }
+
+            if ($unitKey && $unitLabel) {
+                if (!isset($units[$unitKey])) {
+                    $units[$unitKey] = [
+                        'value' => $unitKey,
+                        'label' => $unitLabel
+                    ];
+                }
             }
 
             if (!isset($sectionsFamilia[$familiaId])) {
@@ -235,35 +347,145 @@ class ExecHeatmapRepository extends ServiceEntityRepository
                 ];
             }
 
-            $keyFamilia = "{$regionalId}|{$familiaId}";
-            if (!isset($dataFamilia[$keyFamilia])) {
-                $dataFamilia[$keyFamilia] = ['real' => 0, 'meta' => 0];
-            }
-            $dataFamilia[$keyFamilia]['real'] += $realizado;
-            $dataFamilia[$keyFamilia]['meta'] += $meta;
+            // Usar unitKey para as chaves de dados
+            if ($unitKey) {
+                $keyFamilia = "{$unitKey}|{$familiaId}";
+                if (!isset($dataFamilia[$keyFamilia])) {
+                    $dataFamilia[$keyFamilia] = ['real' => 0, 'meta' => 0];
+                }
+                $dataFamilia[$keyFamilia]['real'] += $realizado;
+                $dataFamilia[$keyFamilia]['meta'] += $meta;
 
-            $keyIndicador = "{$regionalId}|{$indicadorId}";
-            if (!isset($dataIndicador[$keyIndicador])) {
-                $dataIndicador[$keyIndicador] = ['real' => 0, 'meta' => 0];
-            }
-            $dataIndicador[$keyIndicador]['real'] += $realizado;
-            $dataIndicador[$keyIndicador]['meta'] += $meta;
+                $keyIndicador = "{$unitKey}|{$indicadorId}";
+                if (!isset($dataIndicador[$keyIndicador])) {
+                    $dataIndicador[$keyIndicador] = ['real' => 0, 'meta' => 0];
+                }
+                $dataIndicador[$keyIndicador]['real'] += $realizado;
+                $dataIndicador[$keyIndicador]['meta'] += $meta;
 
-            $keyFamiliaMensal = "{$regionalId}|{$familiaId}|{$mes}";
-            if (!isset($dataFamiliaMensal[$keyFamiliaMensal])) {
-                $dataFamiliaMensal[$keyFamiliaMensal] = ['real' => 0, 'meta' => 0];
-            }
-            $dataFamiliaMensal[$keyFamiliaMensal]['real'] += $realizado;
-            $dataFamiliaMensal[$keyFamiliaMensal]['meta'] += $meta;
+                $keyFamiliaMensal = "{$unitKey}|{$familiaId}|{$mes}";
+                if (!isset($dataFamiliaMensal[$keyFamiliaMensal])) {
+                    $dataFamiliaMensal[$keyFamiliaMensal] = ['real' => 0, 'meta' => 0];
+                }
+                $dataFamiliaMensal[$keyFamiliaMensal]['real'] += $realizado;
+                $dataFamiliaMensal[$keyFamiliaMensal]['meta'] += $meta;
 
-            $keyIndicadorMensal = "{$regionalId}|{$indicadorId}|{$mes}";
-            if (!isset($dataIndicadorMensal[$keyIndicadorMensal])) {
-                $dataIndicadorMensal[$keyIndicadorMensal] = ['real' => 0, 'meta' => 0];
+                $keyIndicadorMensal = "{$unitKey}|{$indicadorId}|{$mes}";
+                if (!isset($dataIndicadorMensal[$keyIndicadorMensal])) {
+                    $dataIndicadorMensal[$keyIndicadorMensal] = ['real' => 0, 'meta' => 0];
+                }
+                $dataIndicadorMensal[$keyIndicadorMensal]['real'] += $realizado;
+                $dataIndicadorMensal[$keyIndicadorMensal]['meta'] += $meta;
             }
-            $dataIndicadorMensal[$keyIndicadorMensal]['real'] += $realizado;
-            $dataIndicadorMensal[$keyIndicadorMensal]['meta'] += $meta;
         }
         $result->free();
+
+        // Se um gerente está filtrado, garantir que todas as unidades da hierarquia sejam criadas
+        if ($isGerenteFiltered && $gerenteId) {
+            // Buscar informações do gerente para construir a hierarquia completa
+            $gerenteInfoSql = "SELECT segmento_id, diretoria_id, regional_id, agencia_id 
+                              FROM {$dEstruturaTable} 
+                              WHERE id = :gerenteId 
+                              AND cargo_id = :cargoGerente 
+                              LIMIT 1";
+            $gerenteInfoResult = $conn->executeQuery($gerenteInfoSql, [
+                'gerenteId' => $gerenteId,
+                'cargoGerente' => Cargo::GERENTE
+            ]);
+            $gerenteInfo = $gerenteInfoResult->fetchAssociative();
+            $gerenteInfoResult->free();
+            
+            if ($gerenteInfo) {
+                $regionalId = $gerenteInfo['regional_id'] ?? null;
+                $agenciaId = $gerenteInfo['agencia_id'] ?? null;
+                
+                // Buscar informações da regional
+                if ($regionalId) {
+                    $regInfoSql = "SELECT id, nome FROM {$regionalTable} WHERE id = :regionalId LIMIT 1";
+                    $regInfoResult = $conn->executeQuery($regInfoSql, ['regionalId' => $regionalId]);
+                    $regInfo = $regInfoResult->fetchAssociative();
+                    $regInfoResult->free();
+                    
+                    if ($regInfo) {
+                        $unitKey = "REG_{$regionalId}";
+                        if (!isset($units[$unitKey])) {
+                            $units[$unitKey] = [
+                                'value' => $unitKey,
+                                'label' => $regInfo['nome']
+                            ];
+                        }
+                    }
+                }
+                
+                // Buscar informações da agência
+                if ($agenciaId) {
+                    $agInfoSql = "SELECT id, nome FROM {$agenciaTable} WHERE id = :agenciaId LIMIT 1";
+                    $agInfoResult = $conn->executeQuery($agInfoSql, ['agenciaId' => $agenciaId]);
+                    $agInfo = $agInfoResult->fetchAssociative();
+                    $agInfoResult->free();
+                    
+                    if ($agInfo) {
+                        $unitKey = "AG_{$agenciaId}";
+                        if (!isset($units[$unitKey])) {
+                            $units[$unitKey] = [
+                                'value' => $unitKey,
+                                'label' => $agInfo['nome']
+                            ];
+                        }
+                    }
+                }
+                
+                // Buscar gerente de gestão responsável
+                $ggInfoSql = "SELECT id, nome FROM {$dEstruturaTable} 
+                             WHERE cargo_id = :cargoGerenteGestao
+                             AND segmento_id = :segmentoId
+                             AND diretoria_id = :diretoriaId
+                             AND regional_id = :regionalId
+                             AND agencia_id = :agenciaId
+                             LIMIT 1";
+                $ggInfoResult = $conn->executeQuery($ggInfoSql, [
+                    'cargoGerenteGestao' => Cargo::GERENTE_GESTAO,
+                    'segmentoId' => $gerenteInfo['segmento_id'],
+                    'diretoriaId' => $gerenteInfo['diretoria_id'],
+                    'regionalId' => $regionalId,
+                    'agenciaId' => $agenciaId
+                ]);
+                $ggInfo = $ggInfoResult->fetchAssociative();
+                $ggInfoResult->free();
+                
+                if ($ggInfo) {
+                    $unitKey = "GG_{$ggInfo['id']}";
+                    if (!isset($units[$unitKey])) {
+                        $units[$unitKey] = [
+                            'value' => $unitKey,
+                            'label' => $ggInfo['nome']
+                        ];
+                    }
+                }
+                
+                // Adicionar o gerente individual
+                $gerenteInfoSql2 = "SELECT id, nome FROM {$dEstruturaTable} 
+                                    WHERE id = :gerenteId 
+                                    AND cargo_id = :cargoGerente 
+                                    LIMIT 1";
+                $gerenteInfoResult2 = $conn->executeQuery($gerenteInfoSql2, [
+                    'gerenteId' => $gerenteId,
+                    'cargoGerente' => Cargo::GERENTE
+                ]);
+                $gerenteInfo2 = $gerenteInfoResult2->fetchAssociative();
+                $gerenteInfoResult2->free();
+                
+                if ($gerenteInfo2) {
+                    $unitKey = "G_{$gerenteId}";
+                    if (!isset($units[$unitKey])) {
+                        $units[$unitKey] = [
+                            'value' => $unitKey,
+                            'label' => $gerenteInfo2['nome']
+                        ];
+                    }
+                }
+            }
+        }
 
         // Mesclar todas as famílias
         foreach ($allFamilies as $familiaId => $familia) {
@@ -537,17 +759,17 @@ class ExecHeatmapRepository extends ServiceEntityRepository
         $hierarchyUnits = [];
         $hierarchyDataMensal = [];
 
-        // Se um gerente está filtrado, mostrar toda a hierarquia acima dele + o gerente
+        // Se um gerente está filtrado, mostrar apenas as unidades individuais da hierarquia acima dele + o gerente
+        // NÃO mostrar os agregados "TODOS"
         if ($filteredLevel === 'gerente' && $gerente) {
             $gerenteInfo = $gerentesInfo[$gerente] ?? null;
             if ($gerenteInfo) {
                 $agenciaId = $gerenteInfo['agencia_id'] ?? null;
                 $regionalId = $gerenteInfo['regional_id'] ?? null;
+                $diretoriaId = $gerenteInfo['diretoria_id'] ?? null;
                 
-                // Construir agregados para toda a hierarquia (sem restrições de nível)
-                $this->buildAggregatedUnits($tempData, $hierarchyUnits, $hierarchyDataMensal, null, $agenciaId, $gerentesGestaoInfo, $firstDiretoriaNome);
-                
-                // Construir unidades individuais da hierarquia acima
+                // Construir apenas unidades individuais da hierarquia acima (sem agregados)
+                // Regional individual
                 if ($regionalId) {
                     $regInfo = $regionaisInfo[$regionalId] ?? null;
                     if ($regInfo) {
@@ -567,6 +789,7 @@ class ExecHeatmapRepository extends ServiceEntityRepository
                     }
                 }
                 
+                // Agência individual
                 if ($agenciaId) {
                     $agInfo = $agenciasInfo[$agenciaId] ?? null;
                     if ($agInfo) {
@@ -586,11 +809,12 @@ class ExecHeatmapRepository extends ServiceEntityRepository
                     }
                 }
                 
-                // Encontrar o gerente de gestão responsável por este gerente
+                // Gerente de gestão individual responsável por este gerente
                 // Ele deve estar na mesma agência, regional, diretoria e segmento
                 foreach ($gerentesGestaoInfo as $ggId => $ggInfo) {
                     if ((string)$ggInfo['agencia_id'] === (string)$agenciaId &&
-                        (string)$ggInfo['regional_id'] === (string)$regionalId) {
+                        (string)$ggInfo['regional_id'] === (string)$regionalId &&
+                        (string)$ggInfo['diretoria_id'] === (string)$diretoriaId) {
                         $unitKey = "GG_{$ggId}";
                         $hierarchyUnits[$unitKey] = [
                             'value' => $unitKey,
