@@ -1,1 +1,0 @@
-import{a as o,A as l}from"./index.DL3ItD9e.js";import{U as i,r as s}from"./vendor.iNPlSTaR.js";async function u(){return(await o(l.INIT)).data??null}const r=s(null),e=s(!1);let n=null;function p(){const a=async()=>n||(e.value=!0,n=u().then(t=>(t&&(r.value=t),t)).finally(()=>{e.value=!1,n=null}),n);return{initData:i(r),isLoading:i(e),loadInit:a}}export{p as u};
