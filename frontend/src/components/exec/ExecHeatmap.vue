@@ -56,31 +56,18 @@ const getDataMensal = (unit: string, section: string, mes: string): { real: numb
 
 const getAtingimentoValue = (unit: string, section: string): { pct: number | null; text: string } => {
   const bucket = getData(unit, section)
-  if (!bucket) return { pct: null, text: '—' }
-  
-  if (bucket.meta > 0) {
-    const pct = (bucket.real / bucket.meta) * 100
-    return { pct, text: `${Math.round(pct)}%` }
-  }
-  
-  // Se não tem meta mas tem realizado, mostrar o realizado
-  if (bucket.real > 0) {
-    return { pct: null, text: formatBRL(bucket.real) }
-  }
-  
-  return { pct: null, text: '—' }
+  if (!bucket || bucket.meta <= 0) return { pct: null, text: '—' }
+
+  const pct = (bucket.real / bucket.meta) * 100
+  return { pct, text: `${Math.round(pct)}%` }
 }
 
 const getAtingimentoMensal = (unit: string, section: string, mes: string): { pct: number | null; text: string } => {
   const bucket = getDataMensal(unit, section, mes)
-  if (!bucket) return { pct: null, text: formatBRL(0) }
-  
-  if (bucket.meta > 0) {
-    const pct = (bucket.real / bucket.meta) * 100
-    return { pct, text: `${Math.round(pct)}%` }
-  }
-  
-  return { pct: null, text: formatBRL(bucket.real || 0) }
+  if (!bucket || bucket.meta <= 0) return { pct: null, text: '—' }
+
+  const pct = (bucket.real / bucket.meta) * 100
+  return { pct, text: `${Math.round(pct)}%` }
 }
 
 const getVariacaoValue = (unit: string, section: string, monthIndex: number): { delta: number | null; text: string; class: string } => {

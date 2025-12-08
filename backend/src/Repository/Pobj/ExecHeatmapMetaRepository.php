@@ -436,7 +436,21 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
             }
         } else {
             $this->buildAggregatedUnits($tempData, $hierarchyUnits, $hierarchyDataMensal, $filteredLevel, $agencia, $gerentesGestaoInfo, $firstDiretoriaNome);
-            $this->buildIndividualUnits($filteredLevel, $regional, $agencia, $gerenteGestao, $regionaisInfo, $agenciasInfo, $gerentesGestaoInfo, $tempData, $hierarchyUnits, $hierarchyDataMensal);
+            $diretoria = $filters ? $filters->getDiretoria() : null;
+            $this->buildIndividualUnits(
+                $filteredLevel,
+                $diretoria,
+                $regional,
+                $agencia,
+                $gerenteGestao,
+                $regionaisInfo,
+                $agenciasInfo,
+                $gerentesGestaoInfo,
+                $gerentesInfo,
+                $tempData,
+                $hierarchyUnits,
+                $hierarchyDataMensal
+            );
         }
 
         $orderedHierarchyUnits = $this->orderHierarchyUnits($hierarchyUnits);
@@ -499,7 +513,7 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
         if (!empty($tempData['regionais'])) {
             $hierarchyUnits['DIR_ALL'] = [
                 'value' => 'DIR_ALL',
-                'label' => $firstDiretoriaNome ?? 'D.R. VAREJO DIGITAL'
+                'label' => 'Todas Diretorias'
             ];
             foreach ($tempData['regionais'] as $key => $meta) {
                 $parts = explode('|', $key);
@@ -518,7 +532,7 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
         if (!empty($tempData['regionais'])) {
             $hierarchyUnits['REG_ALL'] = [
                 'value' => 'REG_ALL',
-                'label' => 'Todas as Regionais'
+                'label' => 'Todas Regionais'
             ];
             foreach ($tempData['regionais'] as $key => $meta) {
                 $parts = explode('|', $key);
@@ -537,7 +551,7 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
         if ($filteredLevel !== 'regional' && !empty($tempData['agencias'])) {
             $hierarchyUnits['AG_ALL'] = [
                 'value' => 'AG_ALL',
-                'label' => 'Todas as Agências'
+                'label' => 'Todas Agências'
             ];
             foreach ($tempData['agencias'] as $key => $meta) {
                 $parts = explode('|', $key);
@@ -556,7 +570,7 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
         if ($filteredLevel !== 'regional' && !empty($tempData['gerentesGestao'])) {
             $hierarchyUnits['GG_ALL'] = [
                 'value' => 'GG_ALL',
-                'label' => 'Todas as Ger. de Gestão'
+                'label' => 'Todas Ger. de Gestão'
             ];
             foreach ($tempData['gerentesGestao'] as $key => $meta) {
                 $parts = explode('|', $key);
@@ -584,7 +598,7 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
         if ($filteredLevel !== 'regional' && $filteredLevel !== 'agencia' && $filteredLevel !== 'gerenteGestao' && !empty($tempData['gerentes'])) {
             $hierarchyUnits['G_ALL'] = [
                 'value' => 'G_ALL',
-                'label' => 'Todas as Gerentes'
+                'label' => 'Todos Gerentes'
             ];
             foreach ($tempData['gerentes'] as $key => $meta) {
                 $parts = explode('|', $key);
@@ -602,16 +616,109 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
 
     private function buildIndividualUnits(
         ?string $filteredLevel,
+        ?string $diretoria,
         ?string $regional,
         ?string $agencia,
         ?string $gerenteGestao,
         array $regionaisInfo,
         array $agenciasInfo,
         array $gerentesGestaoInfo,
+        array $gerentesInfo,
         array $tempData,
         array &$hierarchyUnits,
         array &$hierarchyDataMensal
     ): void {
+        // Sem filtro: manter apenas agregados (já montados em buildAggregatedUnits)
+        if ($filteredLevel === null) {
+            return;
+        }
+
+        // Filtrou diretoria/segmento: apenas unidades dessa diretoria
+        if (($filteredLevel === 'diretoria' || $filteredLevel === 'segmento') && empty($regional) && empty($agencia) && empty($gerenteGestao)) {
+            foreach ($regionaisInfo as $regId => $regInfo) {
+                if ($diretoria && (string)$regInfo['diretoria_id'] !== (string)$diretoria) {
+                    continue;
+                }
+                $unitKey = "REG_{$regId}";
+                if (!isset($hierarchyUnits[$unitKey])) {
+                    $hierarchyUnits[$unitKey] = [
+                        'value' => $unitKey,
+                        'label' => $regInfo['nome']
+                    ];
+                }
+                foreach ($tempData['regionais'] as $key => $meta) {
+                    if (strpos($key, "REG_{$regId}|") === 0) {
+                        if (!isset($hierarchyDataMensal[$key])) {
+                            $hierarchyDataMensal[$key] = ['real' => 0, 'meta' => 0];
+                        }
+                        $hierarchyDataMensal[$key]['meta'] += $meta;
+                    }
+                }
+            }
+
+            foreach ($agenciasInfo as $agId => $agInfo) {
+                if ($diretoria && (string)$agInfo['diretoria_id'] !== (string)$diretoria) {
+                    continue;
+                }
+                $unitKey = "AG_{$agId}";
+                if (!isset($hierarchyUnits[$unitKey])) {
+                    $hierarchyUnits[$unitKey] = [
+                        'value' => $unitKey,
+                        'label' => $agInfo['nome']
+                    ];
+                }
+                foreach ($tempData['agencias'] as $key => $meta) {
+                    if (strpos($key, "AG_{$agId}|") === 0) {
+                        if (!isset($hierarchyDataMensal[$key])) {
+                            $hierarchyDataMensal[$key] = ['real' => 0, 'meta' => 0];
+                        }
+                        $hierarchyDataMensal[$key]['meta'] += $meta;
+                    }
+                }
+            }
+
+            foreach ($gerentesGestaoInfo as $ggId => $ggInfo) {
+                if ($diretoria && (string)$ggInfo['diretoria_id'] !== (string)$diretoria) {
+                    continue;
+                }
+                $unitKey = "GG_{$ggId}";
+                if (!isset($hierarchyUnits[$unitKey])) {
+                    $hierarchyUnits[$unitKey] = [
+                        'value' => $unitKey,
+                        'label' => $ggInfo['nome']
+                    ];
+                }
+                foreach ($tempData['gerentesGestao'] as $key => $meta) {
+                    if (strpos($key, "GG_{$ggId}|") === 0) {
+                        if (!isset($hierarchyDataMensal[$key])) {
+                            $hierarchyDataMensal[$key] = ['real' => 0, 'meta' => 0];
+                        }
+                        $hierarchyDataMensal[$key]['meta'] += $meta;
+                    }
+                }
+            }
+
+            foreach ($tempData['gerentes'] as $key => $meta) {
+                [$gKey] = explode('|', $key);
+                $gerenteId = str_replace('G_', '', $gKey);
+                $gInfo = $gerentesInfo[$gerenteId] ?? null;
+                if ($diretoria && $gInfo && (string)$gInfo['diretoria_id'] !== (string)$diretoria) {
+                    continue;
+                }
+                if (!isset($hierarchyUnits[$gKey])) {
+                    $hierarchyUnits[$gKey] = [
+                        'value' => $gKey,
+                        'label' => $gInfo['nome'] ?? $gerenteId
+                    ];
+                }
+                if (!isset($hierarchyDataMensal[$key])) {
+                    $hierarchyDataMensal[$key] = ['real' => 0, 'meta' => 0];
+                }
+                $hierarchyDataMensal[$key]['meta'] += $meta;
+            }
+            return;
+        }
+
         if ($filteredLevel === 'regional' && $regional) {
             $regInfo = $regionaisInfo[$regional] ?? null;
             if ($regInfo) {
