@@ -44,37 +44,19 @@ class ExecChartRepository extends ServiceEntityRepository
         );
 
         $today = new \DateTime();
-        $dataInicio = $filters ? $filters->getDataInicio() : null;
-        $dataFim = $filters ? $filters->getDataFim() : null;
-
+        
+        // Evolução mensal por seção sempre mostra mês atual + últimos 5 meses
+        // independente dos filtros de data
         $months = [];
-        if ($dataInicio && $dataFim) {
-            $start = new \DateTime($dataInicio);
-            $end = new \DateTime($dataFim);
-            $current = clone $start;
-            while ($current <= $end) {
-                $months[] = [
-                    'key' => $current->format('Y-m'),
-                    'label' => $current->format('M Y'),
-                    'year' => (int)$current->format('Y'),
-                    'month' => (int)$current->format('m')
-                ];
-                $current->modify('+1 month');
-            }
-            if (count($months) > 6) {
-                $months = array_slice($months, -6);
-            }
-        } else {
-            for ($i = 5; $i >= 0; $i--) {
-                $date = clone $today;
-                $date->modify("-{$i} months");
-                $months[] = [
-                    'key' => $date->format('Y-m'),
-                    'label' => $date->format('M Y'),
-                    'year' => (int)$date->format('Y'),
-                    'month' => (int)$date->format('m')
-                ];
-            }
+        for ($i = 5; $i >= 0; $i--) {
+            $date = clone $today;
+            $date->modify("-{$i} months");
+            $months[] = [
+                'key' => $date->format('Y-m'),
+                'label' => $date->format('M Y'),
+                'year' => (int)$date->format('Y'),
+                'month' => (int)$date->format('m')
+            ];
         }
 
         $monthKeys = array_column($months, 'key');
