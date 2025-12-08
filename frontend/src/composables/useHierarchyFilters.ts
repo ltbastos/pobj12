@@ -156,11 +156,86 @@ export function useHierarchyFilters(estruturaData: Ref<InitDataCompatible | null
   }
 
   const segmentos = computed(() => normalized.value?.segmentos ?? [])
-  const diretorias = computed(() => normalized.value?.diretorias ?? [])
-  const regionais = computed(() => normalized.value?.regionais ?? [])
-  const agencias = computed(() => normalized.value?.agencias ?? [])
-  const gerentesGestao = computed(() => normalized.value?.ggestoes ?? [])
-  const gerentes = computed(() => normalized.value?.gerentes ?? [])
+  
+  const diretorias = computed(() => {
+    const all = normalized.value?.diretorias ?? []
+    if (!state.segmento.value) return all
+    const segmentoId = normalizeId(state.segmento.value)
+    return all.filter(d => normalizeId(d.id_segmento) === segmentoId)
+  })
+  
+  const regionais = computed(() => {
+    const all = normalized.value?.regionais ?? []
+    if (!state.diretoria.value) return all
+    const diretoriaId = normalizeId(state.diretoria.value)
+    return all.filter(r => normalizeId(r.id_diretoria) === diretoriaId)
+  })
+  
+  const agencias = computed(() => {
+    const all = normalized.value?.agencias ?? []
+    if (!state.gerencia.value) return all
+    const gerenciaId = normalizeId(state.gerencia.value)
+    return all.filter(a => normalizeId(a.id_regional) === gerenciaId)
+  })
+  
+  const gerentesGestao = computed(() => {
+    const all = normalized.value?.ggestoes ?? []
+    
+    // Se há agência selecionada, filtra por agência
+    if (state.agencia.value) {
+      const agenciaId = normalizeId(state.agencia.value)
+      return all.filter(g => normalizeId(g.id_agencia) === agenciaId)
+    }
+    
+    // Se há regional selecionada mas não há agência, filtra pelas agências da regional
+    if (state.gerencia.value) {
+      const gerenciaId = normalizeId(state.gerencia.value)
+      const allAgencias = normalized.value?.agencias ?? []
+      const agenciasFiltradas = allAgencias
+        .filter(a => normalizeId(a.id_regional) === gerenciaId)
+        .map(a => a.id)
+      return all.filter(g => {
+        const gAgenciaId = normalizeId(g.id_agencia ?? '')
+        return agenciasFiltradas.includes(gAgenciaId)
+      })
+    }
+    
+    return all
+  })
+  
+  const gerentes = computed(() => {
+    const all = normalized.value?.gerentes ?? []
+    
+    // Se há gerente de gestão selecionado, filtra por gerente de gestão
+    if (state.ggestao.value) {
+      const ggestaoId = normalizeId(state.ggestao.value)
+      return all.filter(g => normalizeId(g.id_gestor) === ggestaoId)
+    }
+    
+    // Se há agência selecionada mas não há gerente de gestão, filtra pelos gerentes de gestão da agência
+    if (state.agencia.value) {
+      const agenciaId = normalizeId(state.agencia.value)
+      const allGgestoes = normalized.value?.ggestoes ?? []
+      const gerentesGestaoFiltrados = allGgestoes
+        .filter(gg => normalizeId(gg.id_agencia) === agenciaId)
+        .map(gg => gg.id)
+      return all.filter(g => {
+        const gGestorId = normalizeId(g.id_gestor ?? '')
+        return gerentesGestaoFiltrados.includes(gGestorId)
+      })
+    }
+    
+    // Se há regional selecionada mas não há agência nem gerente de gestão, filtra pela hierarquia completa
+    if (state.gerencia.value) {
+      const gerentesGestaoFiltrados = gerentesGestao.value.map(gg => gg.id)
+      return all.filter(g => {
+        const gGestorId = normalizeId(g.id_gestor ?? '')
+        return gerentesGestaoFiltrados.includes(gGestorId)
+      })
+    }
+    
+    return all
+  })
 
   const clearAll = () => {
     for (const k of stateOrder) state[k].value = ''

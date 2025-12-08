@@ -1,1 +1,0 @@
-import{u as r}from"./useGlobalFilters.BzbMdXpC.js";import{u}from"./useResumoData.CqGGzpQw.js";import{r as i,e as l}from"./vendor.iNPlSTaR.js";function p(){const o=i([]),{filterState:a,period:e}=r(),s=u(a,e),t=async()=>{await s.loadResumo()},n=l(()=>s.businessSnapshot.value);return{calendario:o,loading:s.loading,loadCalendario:t,getCurrentMonthBusinessSnapshot:n}}export{p as u};
