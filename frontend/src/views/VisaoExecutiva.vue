@@ -108,7 +108,7 @@ const bottomRanking = computed(() => {
 const rankingTitle = computed(() => {
   const f = filterState.value
   if (f.gerente && f.gerente !== 'Todos') {
-    return 'Desempenho por Gerente'
+    return 'Desempenho por Família'
   }
   if (f.ggestao && f.ggestao !== 'Todos') {
     return 'Desempenho por Gerente'
@@ -131,7 +131,7 @@ const rankingTitle = computed(() => {
 const statusTitle = computed(() => {
   const f = filterState.value
   if (f.gerente && f.gerente !== 'Todos') {
-    return 'Status por Gerente'
+    return 'Status por Família'
   }
   if (f.ggestao && f.ggestao !== 'Todos') {
     return 'Status por Gerente'

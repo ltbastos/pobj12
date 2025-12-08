@@ -10,6 +10,8 @@ use App\Entity\Pobj\DEstrutura;
 use App\Entity\Pobj\Regional;
 use App\Entity\Pobj\Diretoria;
 use App\Entity\Pobj\Agencia;
+use App\Entity\Pobj\Familia;
+use App\Entity\Pobj\DProduto;
 use App\Repository\Pobj\Helper\ExecFilterBuilder;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -32,6 +34,8 @@ class ExecRankingRepository extends ServiceEntityRepository
         $regionalTable = $this->getTableName(Regional::class);
         $diretoriaTable = $this->getTableName(Diretoria::class);
         $agenciaTable = $this->getTableName(Agencia::class);
+        $familiaTable = $this->getTableName(Familia::class);
+        $dProdutosTable = $this->getTableName(DProduto::class);
 
         $params = [];
         $whereClause = $this->filterBuilder->buildWhereClause(
@@ -78,8 +82,14 @@ class ExecRankingRepository extends ServiceEntityRepository
                 INNER JOIN {$dEstruturaTable} AS est ON est.regional_id = reg.id";
 
         if ($gerente !== null && $gerente !== '') {
-            // Se gerente está filtrado, não faz sentido agrupar (apenas dados dele)
-            return [];
+            // Agrupar por família (nível abaixo do gerente)
+            $groupByLevel = 'familia';
+            $selectClause = "CAST(fam.id AS CHAR) AS `key`, fam.nm_familia AS label";
+            $groupByClause = "fam.id, fam.nm_familia";
+            $fromClause = "{$dEstruturaTable} AS est
+                INNER JOIN {$fRealizadosTable} AS r ON r.funcional = est.funcional
+                INNER JOIN {$dProdutosTable} AS prod ON prod.id = r.produto_id
+                INNER JOIN {$familiaTable} AS fam ON fam.id = prod.familia_id";
         } elseif ($gerenteGestao !== null && $gerenteGestao !== '') {
             // Agrupar por gerente (nível abaixo do gerente de gestão)
             $groupByLevel = 'gerente';
@@ -131,24 +141,46 @@ class ExecRankingRepository extends ServiceEntityRepository
             $metaDateCondition = " AND YEAR(m.data_meta) = :ano AND MONTH(m.data_meta) = :mes";
         }
 
-        $sql = "SELECT
-                    {$selectClause},
-                    COALESCE(SUM(r.realizado), 0) AS real_mens,
-                    COALESCE(SUM(m.meta_mensal), 0) AS meta_mens,
-                    CASE 
-                        WHEN COALESCE(SUM(m.meta_mensal), 0) > 0 
-                        THEN (COALESCE(SUM(r.realizado), 0) / COALESCE(SUM(m.meta_mensal), 0)) * 100
-                        ELSE 0
-                    END AS p_mens
-                FROM {$fromClause}
-                LEFT JOIN {$fRealizadosTable} AS r ON r.funcional = est.funcional{$realizadoDateCondition}
-                LEFT JOIN {$fMetaTable} AS m ON m.funcional = est.funcional 
-                    AND m.produto_id = r.produto_id 
-                    AND m.data_meta = r.data_realizado{$metaDateCondition}
-                WHERE 1=1 {$whereClause}
-                GROUP BY {$groupByClause}
-                HAVING real_mens > 0 OR meta_mens > 0
-                ORDER BY p_mens DESC";
+        // Se estiver agrupando por família, a query é diferente
+        if ($gerente !== null && $gerente !== '') {
+            $sql = "SELECT
+                        {$selectClause},
+                        COALESCE(SUM(r.realizado), 0) AS real_mens,
+                        COALESCE(SUM(m.meta_mensal), 0) AS meta_mens,
+                        CASE 
+                            WHEN COALESCE(SUM(m.meta_mensal), 0) > 0 
+                            THEN (COALESCE(SUM(r.realizado), 0) / COALESCE(SUM(m.meta_mensal), 0)) * 100
+                            ELSE 0
+                        END AS p_mens
+                    FROM {$fromClause}
+                    LEFT JOIN {$fMetaTable} AS m ON m.funcional = est.funcional 
+                        AND m.produto_id = r.produto_id 
+                        AND m.data_meta = r.data_realizado{$metaDateCondition}
+                    WHERE 1=1 {$whereClause}
+                        {$realizadoDateCondition}
+                    GROUP BY {$groupByClause}
+                    HAVING real_mens > 0 OR meta_mens > 0
+                    ORDER BY p_mens DESC";
+        } else {
+            $sql = "SELECT
+                        {$selectClause},
+                        COALESCE(SUM(r.realizado), 0) AS real_mens,
+                        COALESCE(SUM(m.meta_mensal), 0) AS meta_mens,
+                        CASE 
+                            WHEN COALESCE(SUM(m.meta_mensal), 0) > 0 
+                            THEN (COALESCE(SUM(r.realizado), 0) / COALESCE(SUM(m.meta_mensal), 0)) * 100
+                            ELSE 0
+                        END AS p_mens
+                    FROM {$fromClause}
+                    LEFT JOIN {$fRealizadosTable} AS r ON r.funcional = est.funcional{$realizadoDateCondition}
+                    LEFT JOIN {$fMetaTable} AS m ON m.funcional = est.funcional 
+                        AND m.produto_id = r.produto_id 
+                        AND m.data_meta = r.data_realizado{$metaDateCondition}
+                    WHERE 1=1 {$whereClause}
+                    GROUP BY {$groupByClause}
+                    HAVING real_mens > 0 OR meta_mens > 0
+                    ORDER BY p_mens DESC";
+        }
 
         $conn = $this->getEntityManager()->getConnection();
         $result = $conn->executeQuery($sql, $params);

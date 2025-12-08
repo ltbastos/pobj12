@@ -1,1 +1,0 @@
-import{a as o}from"./useGlobalFilters.DGbadgZS.js";import{r as n}from"./vendor.iNPlSTaR.js";const l=n([]),r=n(!1);let a=null;function s(){return{calendarioData:l,isLoading:r,loadCalendario:async()=>a||(r.value=!0,a=o().then(e=>(e&&(l.value=e),e)).finally(()=>{r.value=!1,a=null}),a)}}export{s as u};
