@@ -71,6 +71,9 @@ export type ExecFilters = {
   agencia?: string
   gerenteGestao?: string
   gerente?: string
+  familia?: string
+  indicador?: string
+  subindicador?: string
   dataInicio?: string
   dataFim?: string
 }
@@ -85,6 +88,9 @@ export async function getExecData(filters?: ExecFilters): Promise<ExecData | nul
     if (filters.agencia) params.agencia = filters.agencia
     if (filters.gerenteGestao) params.gerenteGestao = filters.gerenteGestao
     if (filters.gerente) params.gerente = filters.gerente
+    if (filters.familia) params.familia = filters.familia
+    if (filters.indicador) params.indicador = filters.indicador
+    if (filters.subindicador) params.subindicador = filters.subindicador
     if (filters.dataInicio) params.dataInicio = filters.dataInicio
     if (filters.dataFim) params.dataFim = filters.dataFim
   }

@@ -5,6 +5,7 @@ namespace App\Repository\Pobj\Helper;
 use App\Domain\DTO\FilterDTO;
 use App\Domain\Enum\Cargo;
 use App\Entity\Pobj\DEstrutura;
+use App\Entity\Pobj\DProduto;
 use Doctrine\ORM\EntityManagerInterface;
 
 class ExecFilterBuilder
@@ -17,9 +18,11 @@ class ExecFilterBuilder
     }
 
     /**
-     * Constrói a cláusula WHERE baseada nos filtros
+     * Constrói a cláusula WHERE baseada nos filtros.
+     * $productAliases permite aplicar filtros de produto/família/indicador quando as tabelas estão presentes na query.
+     * Exemplo: ['produto' => 'prod', 'familia' => 'fam', 'indicador' => 'ind', 'subindicador' => 'sub']
      */
-    public function buildWhereClause(?FilterDTO $filters, array &$params, bool $includeDateFilters = true): string
+    public function buildWhereClause(?FilterDTO $filters, array &$params, bool $includeDateFilters = true, array $productAliases = []): string
     {
         $whereClause = '';
 
@@ -34,6 +37,9 @@ class ExecFilterBuilder
         $regional = $filters->getRegional();
         $diretoria = $filters->getDiretoria();
         $segmento = $filters->getSegmento();
+        $familia = $filters->getFamilia();
+        $indicador = $filters->getIndicador();
+        $subindicador = $filters->getSubindicador();
 
         if ($gerente !== null && $gerente !== '') {
             $gerenteFuncional = $this->getFuncionalFromIdOrFuncional($gerente, Cargo::GERENTE);
@@ -85,6 +91,40 @@ class ExecFilterBuilder
                 $whereClause .= " AND c.data <= :dataFim";
                 $params['dataFim'] = $dataFim;
             }
+        }
+
+        // Filtros por produto/família/indicador (somente se aliases foram informados na query)
+        $produtoTable = $this->getTableName(DProduto::class);
+
+        if ($familia !== null && $familia !== '' ) {
+            if (isset($productAliases['familia'])) {
+                $whereClause .= " AND {$productAliases['familia']}.id = :familia";
+                $params['familia'] = $familia;
+            } elseif (isset($productAliases['realizado'])) {
+                $whereClause .= " AND EXISTS (SELECT 1 FROM {$produtoTable} prod_fam WHERE prod_fam.id = {$productAliases['realizado']}.produto_id AND prod_fam.familia_id = :familia)";
+                $params['familia'] = $familia;
+            } elseif (isset($productAliases['meta'])) {
+                $whereClause .= " AND EXISTS (SELECT 1 FROM {$produtoTable} prod_fam WHERE prod_fam.id = {$productAliases['meta']}.produto_id AND prod_fam.familia_id = :familia)";
+                $params['familia'] = $familia;
+            }
+        }
+
+        if ($indicador !== null && $indicador !== '' ) {
+            if (isset($productAliases['indicador'])) {
+                $whereClause .= " AND {$productAliases['indicador']}.id = :indicador";
+                $params['indicador'] = $indicador;
+            } elseif (isset($productAliases['realizado'])) {
+                $whereClause .= " AND EXISTS (SELECT 1 FROM {$produtoTable} prod_ind WHERE prod_ind.id = {$productAliases['realizado']}.produto_id AND prod_ind.indicador_id = :indicador)";
+                $params['indicador'] = $indicador;
+            } elseif (isset($productAliases['meta'])) {
+                $whereClause .= " AND EXISTS (SELECT 1 FROM {$produtoTable} prod_ind WHERE prod_ind.id = {$productAliases['meta']}.produto_id AND prod_ind.indicador_id = :indicador)";
+                $params['indicador'] = $indicador;
+            }
+        }
+
+        if ($subindicador !== null && $subindicador !== '' && isset($productAliases['subindicador'])) {
+            $whereClause .= " AND {$productAliases['subindicador']}.id = :subindicador";
+            $params['subindicador'] = $subindicador;
         }
 
         return $whereClause;

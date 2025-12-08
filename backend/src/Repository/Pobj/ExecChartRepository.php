@@ -33,7 +33,15 @@ class ExecChartRepository extends ServiceEntityRepository
         $familiaTable = $this->getTableName(Familia::class);
 
         $params = [];
-        $whereClause = $this->filterBuilder->buildWhereClause($filters, $params, false);
+        $whereClause = $this->filterBuilder->buildWhereClause(
+            $filters,
+            $params,
+            false,
+            [
+                'produto' => 'prod',
+                'familia' => 'fam'
+            ]
+        );
 
         $today = new \DateTime();
         $dataInicio = $filters ? $filters->getDataInicio() : null;

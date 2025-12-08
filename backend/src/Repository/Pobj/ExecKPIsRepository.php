@@ -27,7 +27,15 @@ class ExecKPIsRepository extends ServiceEntityRepository
         $dEstruturaTable = $this->getTableName(DEstrutura::class);
 
         $params = [];
-        $whereClause = $this->filterBuilder->buildWhereClause($filters, $params, false);
+        $whereClause = $this->filterBuilder->buildWhereClause(
+            $filters,
+            $params,
+            false,
+            [
+                'realizado' => 'r',
+                'meta' => 'm'
+            ]
+        );
 
         $today = new \DateTime();
         $dataInicio = $filters ? $filters->getDataInicio() : null;

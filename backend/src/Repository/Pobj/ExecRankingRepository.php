@@ -34,7 +34,15 @@ class ExecRankingRepository extends ServiceEntityRepository
         $agenciaTable = $this->getTableName(Agencia::class);
 
         $params = [];
-        $whereClause = $this->filterBuilder->buildWhereClause($filters, $params, false);
+        $whereClause = $this->filterBuilder->buildWhereClause(
+            $filters,
+            $params,
+            false,
+            [
+                'realizado' => 'r',
+                'meta' => 'm'
+            ]
+        );
 
         $today = new \DateTime();
         $dataInicio = $filters ? $filters->getDataInicio() : null;

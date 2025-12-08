@@ -40,7 +40,16 @@ class ExecHeatmapSectionsRepository extends ServiceEntityRepository
         $indicadorTable = $this->getTableName(Indicador::class);
 
         $params = [];
-        $whereClause = $this->filterBuilder->buildWhereClause($filters, $params, false);
+        $whereClause = $this->filterBuilder->buildWhereClause(
+            $filters,
+            $params,
+            false,
+            [
+                'produto' => 'prod',
+                'familia' => 'fam',
+                'indicador' => 'ind'
+            ]
+        );
 
         $months = $this->calculateLast12Months();
         

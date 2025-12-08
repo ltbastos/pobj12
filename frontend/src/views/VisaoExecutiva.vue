@@ -73,6 +73,15 @@ const execFilters = computed<ExecFilters>(() => {
   if (filterState.value.gerente && filterState.value.gerente.toLowerCase() !== 'todos') {
     filters.gerente = filterState.value.gerente
   }
+  if (filterState.value.familia && filterState.value.familia.toLowerCase() !== 'todas') {
+    filters.familia = filterState.value.familia
+  }
+  if (filterState.value.indicador && filterState.value.indicador.toLowerCase() !== 'todos') {
+    filters.indicador = filterState.value.indicador
+  }
+  if (filterState.value.subindicador && filterState.value.subindicador.toLowerCase() !== 'todos') {
+    filters.subindicador = filterState.value.subindicador
+  }
   if (period.value?.start) {
     filters.dataInicio = period.value.start
   }
