@@ -80,9 +80,9 @@ const detailViews = ref<DetailView[]>([
 ])
 
 const LEVEL_HIERARCHY: Record<string, string[]> = {
-  diretoria: ['diretoria', 'regional', 'agencia', 'gerente', 'familia', 'indicador', 'subindicador', 'contrato'],
-  gerencia: ['regional', 'agencia', 'gerente', 'familia', 'indicador', 'subindicador', 'contrato'],
-  agencia: ['agencia', 'gerente', 'familia', 'indicador', 'subindicador', 'contrato'],
+  diretoria: ['diretoria', 'regional', 'agencia', 'gGestao', 'gerente', 'familia', 'indicador', 'subindicador', 'contrato'],
+  gerencia: ['regional', 'agencia', 'gGestao', 'gerente', 'familia', 'indicador', 'subindicador', 'contrato'],
+  agencia: ['agencia', 'gGestao', 'gerente', 'familia', 'indicador', 'subindicador', 'contrato'],
   gGestao: ['gGestao', 'gerente', 'familia', 'indicador', 'subindicador', 'contrato'],
   gerente: ['gerente', 'familia', 'indicador', 'subindicador', 'contrato'],
   secao: ['familia', 'indicador', 'subindicador', 'contrato'],
