@@ -335,6 +335,7 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
         $agenciasInfo = $processedData['agenciasInfo'];
         $gerentesGestaoInfo = $processedData['gerentesGestaoInfo'];
         $gerentesInfo = $processedData['gerentesInfo'];
+        $months = $processedData['months'] ?? [];
 
         $gerente = $filters ? $filters->getGerente() : null;
         $gerenteGestao = $filters ? $filters->getGerenteGestao() : null;
@@ -347,7 +348,7 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
         $hierarchyDataMensal = [];
 
         // Sempre construir agregados primeiro (composição de hierarquia)
-        $this->buildAggregatedUnits($tempData, $hierarchyUnits, $hierarchyDataMensal, $filteredLevel, $agencia, $gerentesGestaoInfo, $firstDiretoriaNome);
+        $this->buildAggregatedUnits($tempData, $hierarchyUnits, $hierarchyDataMensal, $filteredLevel, $agencia, $gerentesGestaoInfo, $firstDiretoriaNome, $processedData['months'] ?? []);
         
         // Se um gerente está filtrado, mostrar hierarquia acima + o gerente
         if ($filteredLevel === 'gerente' && $gerente) {
@@ -703,6 +704,7 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
             );
         }
 
+
         $orderedHierarchyUnits = $this->orderHierarchyUnits($hierarchyUnits);
         
         // Mesclar dados mensais com seção META
@@ -757,7 +759,8 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
         ?string $filteredLevel,
         ?string $agencia,
         array $gerentesGestaoInfo,
-        ?string $firstDiretoriaNome
+        ?string $firstDiretoriaNome,
+        array $months = []
     ): void {
         // DIR_ALL
         if (!empty($tempData['regionais'])) {
@@ -818,24 +821,50 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
 
         // GG_ALL - sempre mostrar quando houver dados de gerentes de gestão
         // (não mostrar quando filtrar por regional, pois regional não tem gerentes de gestão diretamente abaixo)
-        // Mas mostrar sempre que houver dados, mesmo com outros filtros
-        if (!empty($tempData['gerentesGestao'])) {
-            $hierarchyUnits['GG_ALL'] = [
-                'value' => 'GG_ALL',
-                'label' => 'Todas Ger. de Gestão'
-            ];
-            foreach ($tempData['gerentesGestao'] as $key => $meta) {
-                $parts = explode('|', $key);
-                if (count($parts) === 2) {
-                    $unitPart = $parts[0];
-                    $mesKey = $parts[1];
-                    $keyGG = "GG_ALL|{$mesKey}";
-                    if (!isset($hierarchyDataMensal[$keyGG])) {
-                        $hierarchyDataMensal[$keyGG] = ['real' => 0, 'meta' => 0];
+        if ($filteredLevel !== 'regional') {
+            if (!empty($tempData['gerentesGestao'])) {
+                $hierarchyUnits['GG_ALL'] = [
+                    'value' => 'GG_ALL',
+                    'label' => 'Todas Ger. de Gestão'
+                ];
+                foreach ($tempData['gerentesGestao'] as $key => $meta) {
+                    $parts = explode('|', $key);
+                    if (count($parts) === 2) {
+                        $unitPart = $parts[0];
+                        $mesKey = $parts[1];
+                        $keyGG = "GG_ALL|{$mesKey}";
+                        if (!isset($hierarchyDataMensal[$keyGG])) {
+                            $hierarchyDataMensal[$keyGG] = ['real' => 0, 'meta' => 0];
+                        }
+                        // Sempre agregar todos os gerentes de gestão para GG_ALL
+                        // (a filtragem já foi feita na query, então todos os dados aqui são válidos)
+                        $hierarchyDataMensal[$keyGG]['meta'] += $meta;
                     }
-                    // Sempre agregar todos os gerentes de gestão para GG_ALL
-                    // (a filtragem já foi feita na query, então todos os dados aqui são válidos)
-                    $hierarchyDataMensal[$keyGG]['meta'] += $meta;
+                }
+            } else {
+                // Se não houver dados no período, verificar se há gerentes de gestão no banco
+                // para criar GG_ALL mesmo sem dados (manter consistência com outros agregados)
+                $conn = $this->getEntityManager()->getConnection();
+                $dEstruturaTable = $this->getTableName(DEstrutura::class);
+                $ggCheckSql = "SELECT COUNT(*) as total FROM {$dEstruturaTable} WHERE cargo_id = :cargoGerenteGestao LIMIT 1";
+                $ggCheckResult = $conn->executeQuery($ggCheckSql, ['cargoGerenteGestao' => Cargo::GERENTE_GESTAO]);
+                $ggCheckRow = $ggCheckResult->fetchAssociative();
+                $ggCheckResult->free();
+                
+                if ($ggCheckRow && (int)$ggCheckRow['total'] > 0) {
+                    // Há gerentes de gestão no banco, criar GG_ALL mesmo sem dados no período
+                    $hierarchyUnits['GG_ALL'] = [
+                        'value' => 'GG_ALL',
+                        'label' => 'Todas Ger. de Gestão'
+                    ];
+                    // Criar entradas vazias para todos os meses
+                    foreach ($months as $month) {
+                        $mesKey = $month['key'];
+                        $keyGG = "GG_ALL|{$mesKey}";
+                        if (!isset($hierarchyDataMensal[$keyGG])) {
+                            $hierarchyDataMensal[$keyGG] = ['real' => 0, 'meta' => 0];
+                        }
+                    }
                 }
             }
         }
