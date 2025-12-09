@@ -1188,7 +1188,7 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
     {
         $ordered = [];
         
-        // Primeiro agregados (sempre na mesma ordem)
+        // Primeiro agregados (sempre na mesma ordem hierárquica)
         $aggregatedOrder = ['DIR_ALL', 'REG_ALL', 'AG_ALL', 'GG_ALL', 'G_ALL'];
         foreach ($aggregatedOrder as $unitKey) {
             if (isset($hierarchyUnits[$unitKey])) {
@@ -1197,16 +1197,26 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
         }
         
         // Depois individuais na ordem hierárquica: DIR -> REG -> AG -> GG -> G
-        // E também unidades especiais de time (G_ALL_GG_*, GG_ALL_AG_*, AG_ALL_REG_*)
+        // E unidades de time devem aparecer logo após o nível hierárquico correspondente
         $dirUnits = [];
         $regUnits = [];
         $agUnits = [];
         $ggUnits = [];
         $gUnits = [];
-        $teamUnits = []; // Unidades de time (agregações de nível abaixo)
+        
+        // Unidades de time separadas por tipo
+        $agAllRegUnits = []; // AG_ALL_REG_* (time de agências de uma regional)
+        $ggAllAgUnits = [];  // GG_ALL_AG_* (time de gerentes de gestão de uma agência)
+        $gAllGgUnits = [];   // G_ALL_GG_* (time de gerentes de um gerente de gestão)
         
         foreach ($hierarchyUnits as $unitKey => $unit) {
-            if (strpos($unitKey, 'DIR_') === 0 && $unitKey !== 'DIR_ALL') {
+            if (strpos($unitKey, 'AG_ALL_REG_') === 0) {
+                $agAllRegUnits[$unitKey] = $unit;
+            } elseif (strpos($unitKey, 'GG_ALL_AG_') === 0) {
+                $ggAllAgUnits[$unitKey] = $unit;
+            } elseif (strpos($unitKey, 'G_ALL_GG_') === 0) {
+                $gAllGgUnits[$unitKey] = $unit;
+            } elseif (strpos($unitKey, 'DIR_') === 0 && $unitKey !== 'DIR_ALL') {
                 $dirUnits[$unitKey] = $unit;
             } elseif (strpos($unitKey, 'REG_') === 0 && $unitKey !== 'REG_ALL') {
                 $regUnits[$unitKey] = $unit;
@@ -1214,36 +1224,37 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
                 $agUnits[$unitKey] = $unit;
             } elseif (strpos($unitKey, 'GG_') === 0 && $unitKey !== 'GG_ALL') {
                 $ggUnits[$unitKey] = $unit;
-            } elseif (strpos($unitKey, 'G_') === 0 && strpos($unitKey, 'GG_') !== 0 && $unitKey !== 'G_ALL') {
-                // Verificar se é unidade de time
-                if (strpos($unitKey, 'G_ALL_GG_') === 0 || strpos($unitKey, 'GG_ALL_AG_') === 0 || strpos($unitKey, 'AG_ALL_REG_') === 0) {
-                    $teamUnits[$unitKey] = $unit;
-                } else {
-                    $gUnits[$unitKey] = $unit;
-                }
+            } elseif (strpos($unitKey, 'G_') === 0 && $unitKey !== 'G_ALL') {
+                $gUnits[$unitKey] = $unit;
             }
         }
         
+        // Função de ordenação alfabética por label
         $sortFn = function($a, $b) {
             return strcmp($a['label'], $b['label']);
         };
         
+        // Ordenar cada grupo alfabeticamente
         uasort($dirUnits, $sortFn);
         uasort($regUnits, $sortFn);
         uasort($agUnits, $sortFn);
         uasort($ggUnits, $sortFn);
         uasort($gUnits, $sortFn);
-        uasort($teamUnits, $sortFn);
+        uasort($agAllRegUnits, $sortFn);
+        uasort($ggAllAgUnits, $sortFn);
+        uasort($gAllGgUnits, $sortFn);
         
-        // Ordem: DIR -> REG -> AG -> GG -> G -> Teams (agregações de time)
+        // Ordem hierárquica: DIR -> REG -> AG_ALL_REG_* (time) -> AG -> GG_ALL_AG_* (time) -> GG -> G_ALL_GG_* (time) -> G
         $ordered = array_merge(
             $ordered, 
             array_values($dirUnits), 
-            array_values($regUnits), 
-            array_values($agUnits), 
-            array_values($ggUnits), 
-            array_values($gUnits),
-            array_values($teamUnits)
+            array_values($regUnits),
+            array_values($agAllRegUnits), // Time de agências após regionais
+            array_values($agUnits),
+            array_values($ggAllAgUnits), // Time de gerentes de gestão após agências
+            array_values($ggUnits),
+            array_values($gAllGgUnits), // Time de gerentes após gerentes de gestão
+            array_values($gUnits)
         );
         
         return $ordered;
