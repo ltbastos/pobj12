@@ -316,7 +316,7 @@ const downloadPDF = async () => {
           </div>
 
           
-          <ExecHeatmap :heatmap="heatmap" />
+          <ExecHeatmap :heatmap="heatmap" :filters="filterState" />
           </template>
         </template>
       </div>

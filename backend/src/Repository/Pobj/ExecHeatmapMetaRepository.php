@@ -346,8 +346,10 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
         $hierarchyUnits = [];
         $hierarchyDataMensal = [];
 
-        // Se um gerente está filtrado, mostrar apenas as unidades individuais da hierarquia acima dele + o gerente
-        // NÃO mostrar os agregados "TODOS"
+        // Sempre construir agregados primeiro (composição de hierarquia)
+        $this->buildAggregatedUnits($tempData, $hierarchyUnits, $hierarchyDataMensal, $filteredLevel, $agencia, $gerentesGestaoInfo, $firstDiretoriaNome);
+        
+        // Se um gerente está filtrado, mostrar hierarquia acima + o gerente
         if ($filteredLevel === 'gerente' && $gerente) {
             $gerenteInfo = $gerentesInfo[$gerente] ?? null;
             if ($gerenteInfo) {
@@ -355,7 +357,43 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
                 $regionalId = $gerenteInfo['regional_id'] ?? null;
                 $diretoriaId = $gerenteInfo['diretoria_id'] ?? null;
                 
-                // Construir apenas unidades individuais da hierarquia acima (sem agregados)
+                // Construir unidades individuais da hierarquia acima (filtradas para a hierarquia dele)
+                // Diretoria individual
+                if ($diretoriaId) {
+                    // Buscar nome da diretoria
+                    $conn = $this->getEntityManager()->getConnection();
+                    $diretoriaTable = $this->getTableName(Diretoria::class);
+                    $dirSql = "SELECT nome FROM {$diretoriaTable} WHERE id = :diretoriaId LIMIT 1";
+                    $dirResult = $conn->executeQuery($dirSql, ['diretoriaId' => $diretoriaId]);
+                    $dirRow = $dirResult->fetchAssociative();
+                    $dirResult->free();
+                    
+                    if ($dirRow) {
+                        // Agregar todas as regionais dessa diretoria
+                        foreach ($tempData['regionais'] as $key => $meta) {
+                            $parts = explode('|', $key);
+                            if (count($parts) === 2) {
+                                $regKey = $parts[0];
+                                $regId = str_replace('REG_', '', $regKey);
+                                $regInfo = $regionaisInfo[$regId] ?? null;
+                                if ($regInfo && (string)$regInfo['diretoria_id'] === (string)$diretoriaId) {
+                                    $mesKey = $parts[1];
+                                    $keyDir = "DIR_{$diretoriaId}|{$mesKey}";
+                                    if (!isset($hierarchyDataMensal[$keyDir])) {
+                                        $hierarchyDataMensal[$keyDir] = ['real' => 0, 'meta' => 0];
+                                    }
+                                    $hierarchyDataMensal[$keyDir]['meta'] += $meta;
+                                }
+                            }
+                        }
+                        $unitKey = "DIR_{$diretoriaId}";
+                        $hierarchyUnits[$unitKey] = [
+                            'value' => $unitKey,
+                            'label' => $dirRow['nome']
+                        ];
+                    }
+                }
+                
                 // Regional individual
                 if ($regionalId) {
                     $regInfo = $regionaisInfo[$regionalId] ?? null;
@@ -397,7 +435,6 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
                 }
                 
                 // Gerente de gestão individual responsável por este gerente
-                // Ele deve estar na mesma agência, regional, diretoria e segmento
                 foreach ($gerentesGestaoInfo as $ggId => $ggInfo) {
                     if ((string)$ggInfo['agencia_id'] === (string)$agenciaId &&
                         (string)$ggInfo['regional_id'] === (string)$regionalId &&
@@ -415,7 +452,7 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
                                 $hierarchyDataMensal[$key]['meta'] += $meta;
                             }
                         }
-                        break; // Apenas o primeiro gerente de gestão encontrado
+                        break;
                     }
                 }
                 
@@ -434,8 +471,221 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
                     }
                 }
             }
+        } elseif ($filteredLevel === 'gerenteGestao' && $gerenteGestao) {
+            // Se filtrar por gerente de gestão: mostrar hierarquia acima + ele + time abaixo (gerentes agregados)
+            // O filtro pode vir como funcional ou ID, então precisamos buscar no banco se necessário
+            $ggInfo = null;
+            $ggIdNormalized = (string)$gerenteGestao;
+            
+            // Tentar encontrar no array primeiro
+            foreach ($gerentesGestaoInfo as $ggId => $ggInfoTemp) {
+                if ((string)$ggId === $ggIdNormalized) {
+                    $ggInfo = $ggInfoTemp;
+                    break;
+                }
+            }
+            
+            // Se não encontrou, pode ser que seja funcional - buscar no banco
+            if (!$ggInfo) {
+                $conn = $this->getEntityManager()->getConnection();
+                $dEstruturaTable = $this->getTableName(DEstrutura::class);
+                $diretoriaTable = $this->getTableName(Diretoria::class);
+                $regionalTable = $this->getTableName(Regional::class);
+                $agenciaTable = $this->getTableName(Agencia::class);
+                
+                // Tentar buscar por funcional ou ID
+                $ggFuncional = $this->filterBuilder->getFuncionalFromIdOrFuncional($gerenteGestao, Cargo::GERENTE_GESTAO);
+                if ($ggFuncional) {
+                    $ggSql = "SELECT est.id, est.nome, est.segmento_id, est.diretoria_id, est.regional_id, est.agencia_id,
+                             dir.nome AS diretoria_nome, reg.nome AS regional_nome, ag.nome AS agencia_nome
+                             FROM {$dEstruturaTable} AS est
+                             LEFT JOIN {$diretoriaTable} AS dir ON dir.id = est.diretoria_id
+                             LEFT JOIN {$regionalTable} AS reg ON reg.id = est.regional_id
+                             LEFT JOIN {$agenciaTable} AS ag ON ag.id = est.agencia_id
+                             WHERE est.funcional = :ggFuncional 
+                             AND est.cargo_id = :cargoGerenteGestao 
+                             LIMIT 1";
+                    $ggResult = $conn->executeQuery($ggSql, [
+                        'ggFuncional' => $ggFuncional,
+                        'cargoGerenteGestao' => Cargo::GERENTE_GESTAO
+                    ]);
+                    $ggRow = $ggResult->fetchAssociative();
+                    $ggResult->free();
+                    
+                    if ($ggRow) {
+                        $ggInfo = [
+                            'id' => (string)$ggRow['id'],
+                            'nome' => $ggRow['nome'],
+                            'diretoria_id' => $ggRow['diretoria_id'],
+                            'diretoria_nome' => $ggRow['diretoria_nome'],
+                            'regional_id' => $ggRow['regional_id'],
+                            'regional_nome' => $ggRow['regional_nome'],
+                            'agencia_id' => $ggRow['agencia_id'],
+                            'agencia_nome' => $ggRow['agencia_nome']
+                        ];
+                        // Adicionar ao array para uso posterior
+                        $gerentesGestaoInfo[$ggRow['id']] = $ggInfo;
+                    }
+                } elseif (is_numeric($gerenteGestao)) {
+                    // Tentar buscar por ID
+                    $ggSql = "SELECT est.id, est.nome, est.segmento_id, est.diretoria_id, est.regional_id, est.agencia_id,
+                             dir.nome AS diretoria_nome, reg.nome AS regional_nome, ag.nome AS agencia_nome
+                             FROM {$dEstruturaTable} AS est
+                             LEFT JOIN {$diretoriaTable} AS dir ON dir.id = est.diretoria_id
+                             LEFT JOIN {$regionalTable} AS reg ON reg.id = est.regional_id
+                             LEFT JOIN {$agenciaTable} AS ag ON ag.id = est.agencia_id
+                             WHERE est.id = :ggId 
+                             AND est.cargo_id = :cargoGerenteGestao 
+                             LIMIT 1";
+                    $ggResult = $conn->executeQuery($ggSql, [
+                        'ggId' => (int)$gerenteGestao,
+                        'cargoGerenteGestao' => Cargo::GERENTE_GESTAO
+                    ]);
+                    $ggRow = $ggResult->fetchAssociative();
+                    $ggResult->free();
+                    
+                    if ($ggRow) {
+                        $ggInfo = [
+                            'id' => (string)$ggRow['id'],
+                            'nome' => $ggRow['nome'],
+                            'diretoria_id' => $ggRow['diretoria_id'],
+                            'diretoria_nome' => $ggRow['diretoria_nome'],
+                            'regional_id' => $ggRow['regional_id'],
+                            'regional_nome' => $ggRow['regional_nome'],
+                            'agencia_id' => $ggRow['agencia_id'],
+                            'agencia_nome' => $ggRow['agencia_nome']
+                        ];
+                        // Adicionar ao array para uso posterior
+                        $gerentesGestaoInfo[$ggRow['id']] = $ggInfo;
+                    }
+                }
+            }
+            
+            if ($ggInfo) {
+                $agenciaId = $ggInfo['agencia_id'] ?? null;
+                $regionalId = $ggInfo['regional_id'] ?? null;
+                $diretoriaId = $ggInfo['diretoria_id'] ?? null;
+                
+                // Hierarquia acima (diretoria, regional, agência)
+                if ($diretoriaId) {
+                    if (!isset($conn)) {
+                        $conn = $this->getEntityManager()->getConnection();
+                    }
+                    $diretoriaTable = $this->getTableName(Diretoria::class);
+                    $dirSql = "SELECT nome FROM {$diretoriaTable} WHERE id = :diretoriaId LIMIT 1";
+                    $dirResult = $conn->executeQuery($dirSql, ['diretoriaId' => $diretoriaId]);
+                    $dirRow = $dirResult->fetchAssociative();
+                    $dirResult->free();
+                    
+                    if ($dirRow) {
+                        $unitKey = "DIR_{$diretoriaId}";
+                        $hierarchyUnits[$unitKey] = [
+                            'value' => $unitKey,
+                            'label' => $dirRow['nome']
+                        ];
+                        // Agregar dados da diretoria
+                        foreach ($tempData['regionais'] as $key => $meta) {
+                            $parts = explode('|', $key);
+                            if (count($parts) === 2) {
+                                $regKey = $parts[0];
+                                $regId = str_replace('REG_', '', $regKey);
+                                $regInfo = $regionaisInfo[$regId] ?? null;
+                                if ($regInfo && (string)$regInfo['diretoria_id'] === (string)$diretoriaId) {
+                                    $mesKey = $parts[1];
+                                    $keyDir = "DIR_{$diretoriaId}|{$mesKey}";
+                                    if (!isset($hierarchyDataMensal[$keyDir])) {
+                                        $hierarchyDataMensal[$keyDir] = ['real' => 0, 'meta' => 0];
+                                    }
+                                    $hierarchyDataMensal[$keyDir]['meta'] += $meta;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if ($regionalId) {
+                    $regInfo = $regionaisInfo[$regionalId] ?? null;
+                    if ($regInfo) {
+                        $unitKey = "REG_{$regionalId}";
+                        $hierarchyUnits[$unitKey] = [
+                            'value' => $unitKey,
+                            'label' => $regInfo['nome']
+                        ];
+                        foreach ($tempData['regionais'] as $key => $meta) {
+                            if (strpos($key, "REG_{$regionalId}|") === 0) {
+                                if (!isset($hierarchyDataMensal[$key])) {
+                                    $hierarchyDataMensal[$key] = ['real' => 0, 'meta' => 0];
+                                }
+                                $hierarchyDataMensal[$key]['meta'] += $meta;
+                            }
+                        }
+                    }
+                }
+                
+                if ($agenciaId) {
+                    $agInfo = $agenciasInfo[$agenciaId] ?? null;
+                    if ($agInfo) {
+                        $unitKey = "AG_{$agenciaId}";
+                        $hierarchyUnits[$unitKey] = [
+                            'value' => $unitKey,
+                            'label' => $agInfo['nome']
+                        ];
+                        foreach ($tempData['agencias'] as $key => $meta) {
+                            if (strpos($key, "AG_{$agenciaId}|") === 0) {
+                                if (!isset($hierarchyDataMensal[$key])) {
+                                    $hierarchyDataMensal[$key] = ['real' => 0, 'meta' => 0];
+                                }
+                                $hierarchyDataMensal[$key]['meta'] += $meta;
+                            }
+                        }
+                    }
+                }
+                
+                // O gerente de gestão (usar o ID do $ggInfo, não do filtro)
+                $ggId = $ggInfo['id'];
+                $unitKey = "GG_{$ggId}";
+                $hierarchyUnits[$unitKey] = [
+                    'value' => $unitKey,
+                    'label' => $ggInfo['nome']
+                ];
+                foreach ($tempData['gerentesGestao'] as $key => $meta) {
+                    if (strpos($key, "GG_{$ggId}|") === 0) {
+                        if (!isset($hierarchyDataMensal[$key])) {
+                            $hierarchyDataMensal[$key] = ['real' => 0, 'meta' => 0];
+                        }
+                        $hierarchyDataMensal[$key]['meta'] += $meta;
+                    }
+                }
+                
+                // Time abaixo: agregar todos os gerentes deste gerente de gestão
+                $unitKey = "G_ALL_GG_{$ggId}";
+                $hierarchyUnits[$unitKey] = [
+                    'value' => $unitKey,
+                    'label' => 'Time do ' . $ggInfo['nome']
+                ];
+                // Agregar metas de todos os gerentes desta agência/regional/diretoria
+                foreach ($tempData['gerentes'] as $key => $meta) {
+                    $parts = explode('|', $key);
+                    if (count($parts) === 2) {
+                        $gKey = $parts[0];
+                        $gerenteId = str_replace('G_', '', $gKey);
+                        $gInfo = $gerentesInfo[$gerenteId] ?? null;
+                        if ($gInfo && 
+                            (string)$gInfo['agencia_id'] === (string)$agenciaId &&
+                            (string)$gInfo['regional_id'] === (string)$regionalId &&
+                            (string)$gInfo['diretoria_id'] === (string)$diretoriaId) {
+                            $mesKey = $parts[1];
+                            $keyTeam = "{$unitKey}|{$mesKey}";
+                            if (!isset($hierarchyDataMensal[$keyTeam])) {
+                                $hierarchyDataMensal[$keyTeam] = ['real' => 0, 'meta' => 0];
+                            }
+                            $hierarchyDataMensal[$keyTeam]['meta'] += $meta;
+                        }
+                    }
+                }
+            }
         } else {
-            $this->buildAggregatedUnits($tempData, $hierarchyUnits, $hierarchyDataMensal, $filteredLevel, $agencia, $gerentesGestaoInfo, $firstDiretoriaNome);
+            // Para outros níveis, construir unidades individuais normalmente
             $diretoria = $filters ? $filters->getDiretoria() : null;
             $this->buildIndividualUnits(
                 $filteredLevel,
@@ -566,8 +816,10 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
             }
         }
 
-        // GG_ALL
-        if ($filteredLevel !== 'regional' && !empty($tempData['gerentesGestao'])) {
+        // GG_ALL - sempre mostrar quando houver dados de gerentes de gestão
+        // (não mostrar quando filtrar por regional, pois regional não tem gerentes de gestão diretamente abaixo)
+        // Mas mostrar sempre que houver dados, mesmo com outros filtros
+        if (!empty($tempData['gerentesGestao'])) {
             $hierarchyUnits['GG_ALL'] = [
                 'value' => 'GG_ALL',
                 'label' => 'Todas Ger. de Gestão'
@@ -581,15 +833,9 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
                     if (!isset($hierarchyDataMensal[$keyGG])) {
                         $hierarchyDataMensal[$keyGG] = ['real' => 0, 'meta' => 0];
                     }
-                    if ($filteredLevel === 'agencia' && $agencia) {
-                        $ggId = str_replace("GG_", "", $unitPart);
-                        $ggInfo = $gerentesGestaoInfo[$ggId] ?? null;
-                        if ($ggInfo && (string)$ggInfo['agencia_id'] === (string)$agencia) {
-                            $hierarchyDataMensal[$keyGG]['meta'] += $meta;
-                        }
-                    } else {
-                        $hierarchyDataMensal[$keyGG]['meta'] += $meta;
-                    }
+                    // Sempre agregar todos os gerentes de gestão para GG_ALL
+                    // (a filtragem já foi feita na query, então todos os dados aqui são válidos)
+                    $hierarchyDataMensal[$keyGG]['meta'] += $meta;
                 }
             }
         }
@@ -722,6 +968,46 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
         if ($filteredLevel === 'regional' && $regional) {
             $regInfo = $regionaisInfo[$regional] ?? null;
             if ($regInfo) {
+                $diretoriaId = $regInfo['diretoria_id'] ?? null;
+                
+                // Hierarquia acima (diretoria)
+                if ($diretoriaId) {
+                    if (!isset($conn)) {
+                        $conn = $this->getEntityManager()->getConnection();
+                    }
+                    $diretoriaTable = $this->getTableName(Diretoria::class);
+                    $dirSql = "SELECT nome FROM {$diretoriaTable} WHERE id = :diretoriaId LIMIT 1";
+                    $dirResult = $conn->executeQuery($dirSql, ['diretoriaId' => $diretoriaId]);
+                    $dirRow = $dirResult->fetchAssociative();
+                    $dirResult->free();
+                    
+                    if ($dirRow) {
+                        $unitKey = "DIR_{$diretoriaId}";
+                        $hierarchyUnits[$unitKey] = [
+                            'value' => $unitKey,
+                            'label' => $dirRow['nome']
+                        ];
+                        // Agregar dados da diretoria
+                        foreach ($tempData['regionais'] as $key => $meta) {
+                            $parts = explode('|', $key);
+                            if (count($parts) === 2) {
+                                $regKey = $parts[0];
+                                $regId = str_replace('REG_', '', $regKey);
+                                $regInfoTemp = $regionaisInfo[$regId] ?? null;
+                                if ($regInfoTemp && (string)$regInfoTemp['diretoria_id'] === (string)$diretoriaId) {
+                                    $mesKey = $parts[1];
+                                    $keyDir = "DIR_{$diretoriaId}|{$mesKey}";
+                                    if (!isset($hierarchyDataMensal[$keyDir])) {
+                                        $hierarchyDataMensal[$keyDir] = ['real' => 0, 'meta' => 0];
+                                    }
+                                    $hierarchyDataMensal[$keyDir]['meta'] += $meta;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // A regional
                 $unitKey = "REG_{$regional}";
                 $hierarchyUnits[$unitKey] = [
                     'value' => $unitKey,
@@ -735,10 +1021,92 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
                         $hierarchyDataMensal[$key]['meta'] += $meta;
                     }
                 }
+                
+                // Time abaixo: agregar todas as agências desta regional
+                $unitKey = "AG_ALL_REG_{$regional}";
+                $hierarchyUnits[$unitKey] = [
+                    'value' => $unitKey,
+                    'label' => 'Todas Agências - ' . $regInfo['nome']
+                ];
+                foreach ($tempData['agencias'] as $key => $meta) {
+                    $parts = explode('|', $key);
+                    if (count($parts) === 2) {
+                        $agKey = $parts[0];
+                        $agId = str_replace('AG_', '', $agKey);
+                        $agInfo = $agenciasInfo[$agId] ?? null;
+                        if ($agInfo && (string)$agInfo['regional_id'] === (string)$regional) {
+                            $mesKey = $parts[1];
+                            $keyTeam = "{$unitKey}|{$mesKey}";
+                            if (!isset($hierarchyDataMensal[$keyTeam])) {
+                                $hierarchyDataMensal[$keyTeam] = ['real' => 0, 'meta' => 0];
+                            }
+                            $hierarchyDataMensal[$keyTeam]['meta'] += $meta;
+                        }
+                    }
+                }
             }
         } elseif ($filteredLevel === 'agencia' && $agencia) {
             $agInfo = $agenciasInfo[$agencia] ?? null;
             if ($agInfo) {
+                $regionalId = $agInfo['regional_id'] ?? null;
+                $diretoriaId = $agInfo['diretoria_id'] ?? null;
+                
+                // Hierarquia acima
+                if ($diretoriaId) {
+                    if (!isset($conn)) {
+                        $conn = $this->getEntityManager()->getConnection();
+                    }
+                    $diretoriaTable = $this->getTableName(Diretoria::class);
+                    $dirSql = "SELECT nome FROM {$diretoriaTable} WHERE id = :diretoriaId LIMIT 1";
+                    $dirResult = $conn->executeQuery($dirSql, ['diretoriaId' => $diretoriaId]);
+                    $dirRow = $dirResult->fetchAssociative();
+                    $dirResult->free();
+                    
+                    if ($dirRow) {
+                        $unitKey = "DIR_{$diretoriaId}";
+                        $hierarchyUnits[$unitKey] = [
+                            'value' => $unitKey,
+                            'label' => $dirRow['nome']
+                        ];
+                        foreach ($tempData['regionais'] as $key => $meta) {
+                            $parts = explode('|', $key);
+                            if (count($parts) === 2) {
+                                $regKey = $parts[0];
+                                $regId = str_replace('REG_', '', $regKey);
+                                $regInfoTemp = $regionaisInfo[$regId] ?? null;
+                                if ($regInfoTemp && (string)$regInfoTemp['diretoria_id'] === (string)$diretoriaId) {
+                                    $mesKey = $parts[1];
+                                    $keyDir = "DIR_{$diretoriaId}|{$mesKey}";
+                                    if (!isset($hierarchyDataMensal[$keyDir])) {
+                                        $hierarchyDataMensal[$keyDir] = ['real' => 0, 'meta' => 0];
+                                    }
+                                    $hierarchyDataMensal[$keyDir]['meta'] += $meta;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                if ($regionalId) {
+                    $regInfo = $regionaisInfo[$regionalId] ?? null;
+                    if ($regInfo) {
+                        $unitKey = "REG_{$regionalId}";
+                        $hierarchyUnits[$unitKey] = [
+                            'value' => $unitKey,
+                            'label' => $regInfo['nome']
+                        ];
+                        foreach ($tempData['regionais'] as $key => $meta) {
+                            if (strpos($key, "REG_{$regionalId}|") === 0) {
+                                if (!isset($hierarchyDataMensal[$key])) {
+                                    $hierarchyDataMensal[$key] = ['real' => 0, 'meta' => 0];
+                                }
+                                $hierarchyDataMensal[$key]['meta'] += $meta;
+                            }
+                        }
+                    }
+                }
+                
+                // A agência
                 $unitKey = "AG_{$agencia}";
                 $hierarchyUnits[$unitKey] = [
                     'value' => $unitKey,
@@ -752,23 +1120,35 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
                         $hierarchyDataMensal[$key]['meta'] += $meta;
                     }
                 }
-            }
-        } elseif ($filteredLevel === 'gerenteGestao' && $gerenteGestao) {
-            foreach ($gerentesGestaoInfo as $ggId => $ggInfo) {
-                if ((string)$ggId === (string)$gerenteGestao) {
-                    $unitKey = "GG_{$ggId}";
-                    $hierarchyUnits[$unitKey] = [
-                        'value' => $unitKey,
-                        'label' => $ggInfo['nome']
-                    ];
-                    foreach ($tempData['gerentesGestao'] as $key => $meta) {
-                        if (strpos($key, "GG_{$ggId}|") === 0) {
-                            if (!isset($hierarchyDataMensal[$key])) {
-                                $hierarchyDataMensal[$key] = ['real' => 0, 'meta' => 0];
+                
+                // Time abaixo: agregar todos os gerentes de gestão desta agência
+                $unitKey = "GG_ALL_AG_{$agencia}";
+                $hierarchyUnits[$unitKey] = [
+                    'value' => $unitKey,
+                    'label' => 'Time - ' . $agInfo['nome']
+                ];
+                foreach ($tempData['gerentesGestao'] as $key => $meta) {
+                    $parts = explode('|', $key);
+                    if (count($parts) === 2) {
+                        $ggKey = $parts[0];
+                        $ggId = str_replace('GG_', '', $ggKey);
+                        $ggInfoTemp = $gerentesGestaoInfo[$ggId] ?? null;
+                        if ($ggInfoTemp && (string)$ggInfoTemp['agencia_id'] === (string)$agencia) {
+                            $mesKey = $parts[1];
+                            $keyTeam = "{$unitKey}|{$mesKey}";
+                            if (!isset($hierarchyDataMensal[$keyTeam])) {
+                                $hierarchyDataMensal[$keyTeam] = ['real' => 0, 'meta' => 0];
                             }
-                            $hierarchyDataMensal[$key]['meta'] += $meta;
+                            $hierarchyDataMensal[$keyTeam]['meta'] += $meta;
                         }
                     }
+                }
+            }
+        } elseif ($filteredLevel === 'gerenteGestao' && $gerenteGestao) {
+            // Esta lógica já foi implementada acima no bloco principal
+            foreach ($gerentesGestaoInfo as $ggId => $ggInfo) {
+                if ((string)$ggId === (string)$gerenteGestao) {
+                    // Já foi processado acima, apenas garantir que está presente
                     break;
                 }
             }
@@ -779,29 +1159,39 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
     {
         $ordered = [];
         
-        // Primeiro agregados
-        $order = ['DIR_ALL', 'REG_ALL', 'AG_ALL', 'GG_ALL', 'G_ALL'];
-        foreach ($order as $unitKey) {
+        // Primeiro agregados (sempre na mesma ordem)
+        $aggregatedOrder = ['DIR_ALL', 'REG_ALL', 'AG_ALL', 'GG_ALL', 'G_ALL'];
+        foreach ($aggregatedOrder as $unitKey) {
             if (isset($hierarchyUnits[$unitKey])) {
                 $ordered[] = $hierarchyUnits[$unitKey];
             }
         }
         
-        // Depois individuais
+        // Depois individuais na ordem hierárquica: DIR -> REG -> AG -> GG -> G
+        // E também unidades especiais de time (G_ALL_GG_*, GG_ALL_AG_*, AG_ALL_REG_*)
+        $dirUnits = [];
         $regUnits = [];
         $agUnits = [];
         $ggUnits = [];
         $gUnits = [];
+        $teamUnits = []; // Unidades de time (agregações de nível abaixo)
         
         foreach ($hierarchyUnits as $unitKey => $unit) {
-            if (strpos($unitKey, 'REG_') === 0 && $unitKey !== 'REG_ALL') {
+            if (strpos($unitKey, 'DIR_') === 0 && $unitKey !== 'DIR_ALL') {
+                $dirUnits[$unitKey] = $unit;
+            } elseif (strpos($unitKey, 'REG_') === 0 && $unitKey !== 'REG_ALL') {
                 $regUnits[$unitKey] = $unit;
             } elseif (strpos($unitKey, 'AG_') === 0 && $unitKey !== 'AG_ALL') {
                 $agUnits[$unitKey] = $unit;
             } elseif (strpos($unitKey, 'GG_') === 0 && $unitKey !== 'GG_ALL') {
                 $ggUnits[$unitKey] = $unit;
             } elseif (strpos($unitKey, 'G_') === 0 && strpos($unitKey, 'GG_') !== 0 && $unitKey !== 'G_ALL') {
-                $gUnits[$unitKey] = $unit;
+                // Verificar se é unidade de time
+                if (strpos($unitKey, 'G_ALL_GG_') === 0 || strpos($unitKey, 'GG_ALL_AG_') === 0 || strpos($unitKey, 'AG_ALL_REG_') === 0) {
+                    $teamUnits[$unitKey] = $unit;
+                } else {
+                    $gUnits[$unitKey] = $unit;
+                }
             }
         }
         
@@ -809,12 +1199,23 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
             return strcmp($a['label'], $b['label']);
         };
         
+        uasort($dirUnits, $sortFn);
         uasort($regUnits, $sortFn);
         uasort($agUnits, $sortFn);
         uasort($ggUnits, $sortFn);
         uasort($gUnits, $sortFn);
+        uasort($teamUnits, $sortFn);
         
-        $ordered = array_merge($ordered, array_values($regUnits), array_values($agUnits), array_values($ggUnits), array_values($gUnits));
+        // Ordem: DIR -> REG -> AG -> GG -> G -> Teams (agregações de time)
+        $ordered = array_merge(
+            $ordered, 
+            array_values($dirUnits), 
+            array_values($regUnits), 
+            array_values($agUnits), 
+            array_values($ggUnits), 
+            array_values($gUnits),
+            array_values($teamUnits)
+        );
         
         return $ordered;
     }

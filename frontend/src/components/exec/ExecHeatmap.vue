@@ -2,9 +2,11 @@
 import { ref, computed } from 'vue'
 import { formatBRL } from '../../utils/formatUtils'
 import type { ExecHeatmap } from '../../services/execService'
+import type { FilterState } from '../../composables/useGlobalFilters'
 
 const props = defineProps<{
   heatmap: ExecHeatmap
+  filters?: FilterState
 }>()
 
 const heatmapMode = ref<'secoes' | 'metas'>('secoes')
@@ -15,7 +17,10 @@ const sections = computed(() => {
 })
 
 const hierarchyUnits = computed(() => {
-  // No modo metas, mostrar agregados (DIR_ALL, REG_ALL, etc.) e unidades individuais de hierarquia (REG_*, AG_*, GG_*, G_*)
+  const filters = props.filters || {}
+  
+  // No modo metas, mostrar agregados (DIR_ALL, REG_ALL, etc.), unidades individuais de hierarquia (REG_*, AG_*, GG_*, G_*)
+  // e unidades de time (G_ALL_GG_*, GG_ALL_AG_*, AG_ALL_REG_*)
   if (heatmapMode.value === 'metas') {
     return props.heatmap.units.filter(unit => 
       unit.value === 'DIR_ALL' ||
@@ -23,14 +28,64 @@ const hierarchyUnits = computed(() => {
       unit.value === 'AG_ALL' ||
       unit.value === 'GG_ALL' ||
       unit.value === 'G_ALL' ||
+      unit.value.startsWith('DIR_') ||
       unit.value.startsWith('REG_') || 
       unit.value.startsWith('AG_') || 
       unit.value.startsWith('GG_') || 
-      unit.value.startsWith('G_')
+      unit.value.startsWith('G_') ||
+      unit.value.startsWith('G_ALL_GG_') ||
+      unit.value.startsWith('GG_ALL_AG_') ||
+      unit.value.startsWith('AG_ALL_REG_')
     )
   }
-  // No modo seções, mostrar todas as unidades retornadas pelo backend (já filtradas corretamente)
-  // Excluir apenas as unidades de hierarquia do modo metas
+  
+  // No modo seções, determinar as linhas baseado nos filtros aplicados
+  // Sem filtro ou filtro por diretoria: linhas são regionais (REG_*)
+  // Filtro por regional: linhas são agências (AG_*)
+  // Filtro por agência: linhas são gerentes de gestão (GG_*)
+  // Filtro por gerente de gestão: linhas são gerentes (G_*)
+  // Filtro por gerente: linhas são indicadores (ou apenas o gerente se não houver indicadores)
+  
+  let prefixToShow: string | null = null
+  
+  if (filters.gerente && filters.gerente.toLowerCase() !== 'todos') {
+    // Quando filtrar por gerente, mostrar indicadores nas linhas
+    // Se não houver indicadores disponíveis, mostrar apenas o gerente filtrado
+    const indicadores = props.heatmap.sectionsIndicador || []
+    if (indicadores.length > 0) {
+      // Retornar unidades vazias aqui e usar indicadores nas linhas (será tratado no template)
+      return []
+    } else {
+      // Se não houver indicadores, mostrar apenas o gerente filtrado
+      prefixToShow = 'G_'
+    }
+  } else if (filters.ggestao && filters.ggestao.toLowerCase() !== 'todos') {
+    // Filtro por gerente de gestão: linhas são gerentes
+    prefixToShow = 'G_'
+  } else if (filters.agencia && filters.agencia.toLowerCase() !== 'todas') {
+    // Filtro por agência: linhas são gerentes de gestão
+    prefixToShow = 'GG_'
+  } else if (filters.gerencia && filters.gerencia.toLowerCase() !== 'todas') {
+    // Filtro por regional: linhas são agências
+    prefixToShow = 'AG_'
+  } else {
+    // Sem filtro ou filtro por diretoria: linhas são regionais
+    prefixToShow = 'REG_'
+  }
+  
+  // Filtrar unidades baseado no prefixo determinado
+  if (prefixToShow) {
+    return props.heatmap.units.filter(unit => 
+      unit.value !== 'DIR_ALL' &&
+      unit.value !== 'REG_ALL' &&
+      unit.value !== 'AG_ALL' &&
+      unit.value !== 'GG_ALL' &&
+      unit.value !== 'G_ALL' &&
+      unit.value.startsWith(prefixToShow!)
+    )
+  }
+  
+  // Fallback: retornar todas as unidades (excluindo agregados)
   return props.heatmap.units.filter(unit => 
     unit.value !== 'DIR_ALL' &&
     unit.value !== 'REG_ALL' &&
@@ -44,26 +99,47 @@ const hierarchyUnits = computed(() => {
   )
 })
 
-const getData = (unit: string, section: string): { real: number; meta: number } | null => {
+// Computed para determinar se deve usar indicadores nas linhas (quando filtrar por gerente)
+const useIndicadoresAsRows = computed(() => {
+  const filters = props.filters || {}
+  if (filters.gerente && filters.gerente.toLowerCase() !== 'todos') {
+    const indicadores = props.heatmap.sectionsIndicador || []
+    return indicadores.length > 0
+  }
+  return false
+})
+
+// Computed para obter os indicadores quando necessário
+const indicadores = computed(() => {
+  return props.heatmap.sectionsIndicador || []
+})
+
+const getData = (unit: string, section: string, isIndicador: boolean = false): { real: number; meta: number } | null => {
   const key = `${unit}|${section}`
+  if (isIndicador) {
+    return props.heatmap.dataIndicador[key] || null
+  }
   return props.heatmap.dataFamilia[key] || null
 }
 
-const getDataMensal = (unit: string, section: string, mes: string): { real: number; meta: number } | null => {
+const getDataMensal = (unit: string, section: string, mes: string, isIndicador: boolean = false): { real: number; meta: number } | null => {
   const key = `${unit}|${section}|${mes}`
+  if (isIndicador) {
+    return props.heatmap.dataIndicadorMensal[key] || null
+  }
   return props.heatmap.dataFamiliaMensal[key] || null
 }
 
-const getAtingimentoValue = (unit: string, section: string): { pct: number | null; text: string } => {
-  const bucket = getData(unit, section)
+const getAtingimentoValue = (unit: string, section: string, isIndicador: boolean = false): { pct: number | null; text: string } => {
+  const bucket = getData(unit, section, isIndicador)
   if (!bucket || bucket.meta <= 0) return { pct: null, text: '—' }
 
   const pct = (bucket.real / bucket.meta) * 100
   return { pct, text: `${Math.round(pct)}%` }
 }
 
-const getAtingimentoMensal = (unit: string, section: string, mes: string): { pct: number | null; text: string } => {
-  const bucket = getDataMensal(unit, section, mes)
+const getAtingimentoMensal = (unit: string, section: string, mes: string, isIndicador: boolean = false): { pct: number | null; text: string } => {
+  const bucket = getDataMensal(unit, section, mes, isIndicador)
   if (!bucket || bucket.meta <= 0) return { pct: null, text: '—' }
 
   const pct = (bucket.real / bucket.meta) * 100
@@ -201,15 +277,17 @@ const getCellTitleMeta = (unit: string, monthIndex: number): string => {
   return title
 }
 
-const getCellTitle = (unit: string, section: string, monthIndex?: number, monthKey?: string): string => {
-  const unitLabel = props.heatmap.units.find(u => u.value === unit)?.label || unit
+const getCellTitle = (unit: string, section: string, monthIndex?: number, monthKey?: string, isIndicador: boolean = false): string => {
+  const unitLabel = isIndicador 
+    ? (indicadores.value.find(i => i.id === unit)?.label || unit)
+    : (props.heatmap.units.find(u => u.value === unit)?.label || unit)
   const sectionLabel = sections.value.find(s => s.id === section)?.label || section
 
   if (monthKey) {
     
     const month = props.heatmap.months.find(m => m.key === monthKey)
-    const data = getDataMensal(unit, section, monthKey)
-    const atingimento = getAtingimentoMensal(unit, section, monthKey)
+    const data = getDataMensal(unit, section, monthKey, isIndicador)
+    const atingimento = getAtingimentoMensal(unit, section, monthKey, isIndicador)
     
     let title = `${unitLabel} × ${sectionLabel}`
     if (month) {
@@ -223,8 +301,8 @@ const getCellTitle = (unit: string, section: string, monthIndex?: number, monthK
     return title
   } else {
     
-    const data = getData(unit, section)
-    const atingimento = getAtingimentoValue(unit, section)
+    const data = getData(unit, section, isIndicador)
+    const atingimento = getAtingimentoValue(unit, section, isIndicador)
     let title = `${unitLabel} × ${sectionLabel}\n\n`
     title += `Atingimento: ${atingimento.text}`
     if (data) {
@@ -287,8 +365,8 @@ const hasMonthlyData = computed(() => {
         :style="`--hm-cols: ${heatmapMode === 'metas' ? heatmap.months.length : sections.length}; --hm-first: 200px; --hm-cell: ${heatmapMode === 'metas' ? '100px' : '140px'}`"
       >
         <div class="hm-cell hm-corner">
-          <span class="hm-corner-label">{{ heatmapMode === 'metas' ? 'Hierarquia' : 'GR \\ Família' }}</span>
-          <span class="hm-corner-sublabel">\ {{ heatmapMode === 'metas' ? 'Mês' : 'Seções' }}</span>
+          <span class="hm-corner-label">{{ heatmapMode === 'metas' ? 'Hierarquia' : (useIndicadoresAsRows ? 'Indicador \\ Família' : 'GR \\ Família') }}</span>
+          <span class="hm-corner-sublabel">\ {{ heatmapMode === 'metas' ? 'Mês' : 'Famílias' }}</span>
         </div>
         <template v-if="heatmapMode === 'metas'">
           <div 
@@ -318,40 +396,74 @@ const hasMonthlyData = computed(() => {
         </template>
       </div>
       
-      
-      <div 
-        v-for="unit in hierarchyUnits" 
-        :key="unit.value"
-        class="hm-row"
-        :style="`--hm-cols: ${heatmapMode === 'metas' ? heatmap.months.length : sections.length}; --hm-first: 200px; --hm-cell: ${heatmapMode === 'metas' ? '100px' : '140px'}`"
-      >
-        <div class="hm-cell hm-rowh" :title="unit.label">
-          <span class="hm-rowh-text">{{ unit.label }}</span>
+      <!-- Linhas com unidades de hierarquia (regionais, agências, gerentes, etc.) -->
+      <template v-if="!useIndicadoresAsRows">
+        <div 
+          v-for="unit in hierarchyUnits" 
+          :key="unit.value"
+          class="hm-row"
+          :style="`--hm-cols: ${heatmapMode === 'metas' ? heatmap.months.length : sections.length}; --hm-first: 200px; --hm-cell: ${heatmapMode === 'metas' ? '100px' : '140px'}`"
+        >
+          <div class="hm-cell hm-rowh" :title="unit.label">
+            <span class="hm-rowh-text">{{ unit.label }}</span>
+          </div>
+          
+          <template v-if="heatmapMode === 'metas'">
+            <div 
+              v-for="(month, monthIndex) in heatmap.months" 
+              :key="month.key"
+              class="hm-cell hm-val"
+              :class="getVariacaoMetaValue(unit.value, monthIndex).class"
+              :title="getCellTitleMeta(unit.value, monthIndex)"
+            >
+              <span class="hm-val-text">{{ getVariacaoMetaValue(unit.value, monthIndex).text }}</span>
+            </div>
+          </template>
+          <template v-else>
+            <div 
+              v-for="section in sections" 
+              :key="section.id"
+              class="hm-cell hm-val"
+              :class="getHeatmapCellClass(getAtingimentoValue(unit.value, section.id).pct)"
+              :title="getCellTitle(unit.value, section.id)"
+            >
+              <span class="hm-val-text">{{ getAtingimentoValue(unit.value, section.id).text }}</span>
+            </div>
+          </template>
         </div>
-        
-        <template v-if="heatmapMode === 'metas'">
-          <div 
-            v-for="(month, monthIndex) in heatmap.months" 
-            :key="month.key"
-            class="hm-cell hm-val"
-            :class="getVariacaoMetaValue(unit.value, monthIndex).class"
-            :title="getCellTitleMeta(unit.value, monthIndex)"
-          >
-            <span class="hm-val-text">{{ getVariacaoMetaValue(unit.value, monthIndex).text }}</span>
+      </template>
+      
+      <!-- Linhas com indicadores (quando filtrar por gerente) -->
+      <template v-else>
+        <div 
+          v-for="indicador in indicadores" 
+          :key="indicador.id"
+          class="hm-row"
+          :style="`--hm-cols: ${heatmapMode === 'metas' ? heatmap.months.length : sections.length}; --hm-first: 200px; --hm-cell: ${heatmapMode === 'metas' ? '100px' : '140px'}`"
+        >
+          <div class="hm-cell hm-rowh" :title="indicador.label">
+            <span class="hm-rowh-text">{{ indicador.label }}</span>
           </div>
-        </template>
-        <template v-else>
-          <div 
-            v-for="section in sections" 
-            :key="section.id"
-            class="hm-cell hm-val"
-            :class="getHeatmapCellClass(getAtingimentoValue(unit.value, section.id).pct)"
-            :title="getCellTitle(unit.value, section.id)"
-          >
-            <span class="hm-val-text">{{ getAtingimentoValue(unit.value, section.id).text }}</span>
-          </div>
-        </template>
-      </div>
+          
+          <template v-if="heatmapMode === 'metas'">
+            <!-- No modo metas com indicadores, não aplicável -->
+            <div class="hm-cell hm-val hm-empty">
+              <span class="hm-val-text">—</span>
+            </div>
+          </template>
+          <template v-else>
+            <div 
+              v-for="section in sections" 
+              :key="section.id"
+              class="hm-cell hm-val"
+              :class="getHeatmapCellClass(getAtingimentoValue(indicador.id, section.id, true).pct)"
+              :title="getCellTitle(indicador.id, section.id, undefined, undefined, true)"
+            >
+              <span class="hm-val-text">{{ getAtingimentoValue(indicador.id, section.id, true).text }}</span>
+            </div>
+          </template>
+        </div>
+      </template>
     </div>
   </div>
 </template>

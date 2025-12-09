@@ -284,33 +284,45 @@ class ExecHeatmapSectionsRepository extends ServiceEntityRepository
             $realizado = (float)($row['realizado'] ?? 0);
             $meta = (float)($row['meta'] ?? 0);
 
-            // Determinar qual unidade usar baseado no filtro
+            // Determinar qual unidade usar baseado no filtro aplicado
             $unitKey = null;
             $unitLabel = null;
             
-            if ($isGerenteFiltered) {
-                // Quando gerente está filtrado, criar unidades individuais da hierarquia
+            // Determinar o nível de filtro aplicado
+            $hasGerenteFilter = $filters && $filters->getGerente();
+            $hasGerenteGestaoFilter = $filters && $filters->getGerenteGestao();
+            $hasAgenciaFilter = $filters && $filters->getAgencia();
+            $hasRegionalFilter = $filters && $filters->getRegional();
+            $hasDiretoriaFilter = $filters && $filters->getDiretoria();
+            
+            if ($hasGerenteFilter) {
+                // Filtro por gerente: mostrar apenas o gerente filtrado (ou indicadores serão usados no frontend)
                 if ($tipoGerente === 'gerente' && $gerenteIdRow && (string)$gerenteIdRow === (string)$gerenteId) {
-                    // O gerente filtrado
                     $unitKey = "G_{$gerenteIdRow}";
                     $unitLabel = $gerenteNome;
-                } elseif ($tipoGerente === 'gerenteGestao' && $gerenteIdRow) {
-                    // Gerente de gestão responsável
+                }
+            } elseif ($hasGerenteGestaoFilter) {
+                // Filtro por gerente de gestão: mostrar gerentes (G_*)
+                if ($tipoGerente === 'gerente' && $gerenteIdRow) {
+                    $unitKey = "G_{$gerenteIdRow}";
+                    $unitLabel = $gerenteNome;
+                }
+            } elseif ($hasAgenciaFilter) {
+                // Filtro por agência: mostrar gerentes de gestão (GG_*)
+                if ($tipoGerente === 'gerenteGestao' && $gerenteIdRow) {
                     $unitKey = "GG_{$gerenteIdRow}";
                     $unitLabel = $gerenteNome;
-                } elseif ($agenciaId && $agenciaNome) {
-                    // Agência do gerente
+                }
+            } elseif ($hasRegionalFilter) {
+                // Filtro por regional: mostrar agências (AG_*)
+                if ($agenciaId && $agenciaNome) {
                     $unitKey = "AG_{$agenciaId}";
                     $unitLabel = $agenciaNome;
-                } elseif ($regionalId && $regionalNome) {
-                    // Regional do gerente
-                    $unitKey = "REG_{$regionalId}";
-                    $unitLabel = $regionalNome;
                 }
             } else {
-                // Comportamento padrão: usar regional
+                // Sem filtro ou filtro por diretoria: mostrar regionais (REG_*)
                 if ($regionalId && $regionalNome) {
-                    $unitKey = $regionalId;
+                    $unitKey = "REG_{$regionalId}";
                     $unitLabel = $regionalNome;
                 }
             }
@@ -371,11 +383,15 @@ class ExecHeatmapSectionsRepository extends ServiceEntityRepository
         }
         $result->free();
 
-        // Se um gerente está filtrado, garantir que todas as unidades da hierarquia sejam criadas
-        if ($isGerenteFiltered && $gerenteId) {
-            // Buscar informações do gerente para construir a hierarquia completa
-            $gerenteInfoSql = "SELECT segmento_id, diretoria_id, regional_id, agencia_id 
-                              FROM {$dEstruturaTable} 
+        // Garantir que as unidades corretas sejam criadas baseado nos filtros aplicados
+        $hasGerenteFilter = $filters && $filters->getGerente();
+        $hasGerenteGestaoFilter = $filters && $filters->getGerenteGestao();
+        $hasAgenciaFilter = $filters && $filters->getAgencia();
+        $hasRegionalFilter = $filters && $filters->getRegional();
+        
+        if ($hasGerenteFilter && $gerenteId) {
+            // Quando filtrar por gerente, garantir que o gerente esteja nas unidades
+            $gerenteInfoSql = "SELECT id, nome FROM {$dEstruturaTable} 
                               WHERE id = :gerenteId 
                               AND cargo_id = :cargoGerente 
                               LIMIT 1";
@@ -387,95 +403,164 @@ class ExecHeatmapSectionsRepository extends ServiceEntityRepository
             $gerenteInfoResult->free();
             
             if ($gerenteInfo) {
-                $regionalId = $gerenteInfo['regional_id'] ?? null;
-                $agenciaId = $gerenteInfo['agencia_id'] ?? null;
-                
-                // Buscar informações da regional
-                if ($regionalId) {
-                    $regInfoSql = "SELECT id, nome FROM {$regionalTable} WHERE id = :regionalId LIMIT 1";
-                    $regInfoResult = $conn->executeQuery($regInfoSql, ['regionalId' => $regionalId]);
-                    $regInfo = $regInfoResult->fetchAssociative();
-                    $regInfoResult->free();
-                    
-                    if ($regInfo) {
-                        $unitKey = "REG_{$regionalId}";
-                        if (!isset($units[$unitKey])) {
-                            $units[$unitKey] = [
-                                'value' => $unitKey,
-                                'label' => $regInfo['nome']
-                            ];
-                        }
-                    }
+                $unitKey = "G_{$gerenteId}";
+                if (!isset($units[$unitKey])) {
+                    $units[$unitKey] = [
+                        'value' => $unitKey,
+                        'label' => $gerenteInfo['nome']
+                    ];
                 }
-                
-                // Buscar informações da agência
-                if ($agenciaId) {
-                    $agInfoSql = "SELECT id, nome FROM {$agenciaTable} WHERE id = :agenciaId LIMIT 1";
-                    $agInfoResult = $conn->executeQuery($agInfoSql, ['agenciaId' => $agenciaId]);
-                    $agInfo = $agInfoResult->fetchAssociative();
-                    $agInfoResult->free();
-                    
-                    if ($agInfo) {
-                        $unitKey = "AG_{$agenciaId}";
-                        if (!isset($units[$unitKey])) {
-                            $units[$unitKey] = [
-                                'value' => $unitKey,
-                                'label' => $agInfo['nome']
-                            ];
-                        }
-                    }
-                }
-                
-                // Buscar gerente de gestão responsável
-                $ggInfoSql = "SELECT id, nome FROM {$dEstruturaTable} 
-                             WHERE cargo_id = :cargoGerenteGestao
-                             AND segmento_id = :segmentoId
-                             AND diretoria_id = :diretoriaId
-                             AND regional_id = :regionalId
-                             AND agencia_id = :agenciaId
+            }
+        } elseif ($hasGerenteGestaoFilter) {
+            // Quando filtrar por gerente de gestão, buscar todos os gerentes dessa agência
+            $ggId = $filters->getGerenteGestao();
+            $ggFuncional = $this->filterBuilder->getFuncionalFromIdOrFuncional($ggId, Cargo::GERENTE_GESTAO);
+            
+            if ($ggFuncional) {
+                // Buscar informações do gerente de gestão
+                $ggInfoSql = "SELECT segmento_id, diretoria_id, regional_id, agencia_id, id, nome
+                             FROM {$dEstruturaTable} 
+                             WHERE funcional = :ggFuncional 
+                             AND cargo_id = :cargoGerenteGestao 
                              LIMIT 1";
                 $ggInfoResult = $conn->executeQuery($ggInfoSql, [
-                    'cargoGerenteGestao' => Cargo::GERENTE_GESTAO,
-                    'segmentoId' => $gerenteInfo['segmento_id'],
-                    'diretoriaId' => $gerenteInfo['diretoria_id'],
-                    'regionalId' => $regionalId,
-                    'agenciaId' => $agenciaId
+                    'ggFuncional' => $ggFuncional,
+                    'cargoGerenteGestao' => Cargo::GERENTE_GESTAO
                 ]);
                 $ggInfo = $ggInfoResult->fetchAssociative();
                 $ggInfoResult->free();
                 
                 if ($ggInfo) {
-                    $unitKey = "GG_{$ggInfo['id']}";
-                    if (!isset($units[$unitKey])) {
-                        $units[$unitKey] = [
-                            'value' => $unitKey,
-                            'label' => $ggInfo['nome']
-                        ];
+                    // Buscar todos os gerentes dessa agência
+                    $gerentesSql = "SELECT id, nome FROM {$dEstruturaTable} 
+                                   WHERE cargo_id = :cargoGerente
+                                   AND segmento_id = :segmentoId
+                                   AND diretoria_id = :diretoriaId
+                                   AND regional_id = :regionalId
+                                   AND agencia_id = :agenciaId";
+                    $gerentesResult = $conn->executeQuery($gerentesSql, [
+                        'cargoGerente' => Cargo::GERENTE,
+                        'segmentoId' => $ggInfo['segmento_id'],
+                        'diretoriaId' => $ggInfo['diretoria_id'],
+                        'regionalId' => $ggInfo['regional_id'],
+                        'agenciaId' => $ggInfo['agencia_id']
+                    ]);
+                    
+                    while ($gerenteRow = $gerentesResult->fetchAssociative()) {
+                        $unitKey = "G_{$gerenteRow['id']}";
+                        if (!isset($units[$unitKey])) {
+                            $units[$unitKey] = [
+                                'value' => $unitKey,
+                                'label' => $gerenteRow['nome']
+                            ];
+                        }
                     }
+                    $gerentesResult->free();
                 }
-                
-                // Adicionar o gerente individual
-                $gerenteInfoSql2 = "SELECT id, nome FROM {$dEstruturaTable} 
-                                    WHERE id = :gerenteId 
-                                    AND cargo_id = :cargoGerente 
-                                    LIMIT 1";
-                $gerenteInfoResult2 = $conn->executeQuery($gerenteInfoSql2, [
-                    'gerenteId' => $gerenteId,
-                    'cargoGerente' => Cargo::GERENTE
+            } elseif (is_numeric($ggId)) {
+                // Se não encontrou por funcional, tentar por ID
+                $ggInfoSql = "SELECT segmento_id, diretoria_id, regional_id, agencia_id, id, nome
+                             FROM {$dEstruturaTable} 
+                             WHERE id = :ggId 
+                             AND cargo_id = :cargoGerenteGestao 
+                             LIMIT 1";
+                $ggInfoResult = $conn->executeQuery($ggInfoSql, [
+                    'ggId' => (int)$ggId,
+                    'cargoGerenteGestao' => Cargo::GERENTE_GESTAO
                 ]);
-                $gerenteInfo2 = $gerenteInfoResult2->fetchAssociative();
-                $gerenteInfoResult2->free();
+                $ggInfo = $ggInfoResult->fetchAssociative();
+                $ggInfoResult->free();
                 
-                if ($gerenteInfo2) {
-                    $unitKey = "G_{$gerenteId}";
-                    if (!isset($units[$unitKey])) {
-                        $units[$unitKey] = [
-                            'value' => $unitKey,
-                            'label' => $gerenteInfo2['nome']
-                        ];
+                if ($ggInfo) {
+                    // Buscar todos os gerentes dessa agência
+                    $gerentesSql = "SELECT id, nome FROM {$dEstruturaTable} 
+                                   WHERE cargo_id = :cargoGerente
+                                   AND segmento_id = :segmentoId
+                                   AND diretoria_id = :diretoriaId
+                                   AND regional_id = :regionalId
+                                   AND agencia_id = :agenciaId";
+                    $gerentesResult = $conn->executeQuery($gerentesSql, [
+                        'cargoGerente' => Cargo::GERENTE,
+                        'segmentoId' => $ggInfo['segmento_id'],
+                        'diretoriaId' => $ggInfo['diretoria_id'],
+                        'regionalId' => $ggInfo['regional_id'],
+                        'agenciaId' => $ggInfo['agencia_id']
+                    ]);
+                    
+                    while ($gerenteRow = $gerentesResult->fetchAssociative()) {
+                        $unitKey = "G_{$gerenteRow['id']}";
+                        if (!isset($units[$unitKey])) {
+                            $units[$unitKey] = [
+                                'value' => $unitKey,
+                                'label' => $gerenteRow['nome']
+                            ];
+                        }
                     }
+                    $gerentesResult->free();
                 }
             }
+        } elseif ($hasAgenciaFilter) {
+            // Quando filtrar por agência, buscar todos os gerentes de gestão dessa agência
+            $agenciaId = $filters->getAgencia();
+            $ggsSql = "SELECT est.id, est.nome FROM {$dEstruturaTable} AS est
+                      INNER JOIN {$agenciaTable} AS ag ON ag.id = est.agencia_id
+                      WHERE est.cargo_id = :cargoGerenteGestao
+                      AND ag.id = :agenciaId";
+            $ggsResult = $conn->executeQuery($ggsSql, [
+                'cargoGerenteGestao' => Cargo::GERENTE_GESTAO,
+                'agenciaId' => $agenciaId
+            ]);
+            
+            while ($ggRow = $ggsResult->fetchAssociative()) {
+                $unitKey = "GG_{$ggRow['id']}";
+                if (!isset($units[$unitKey])) {
+                    $units[$unitKey] = [
+                        'value' => $unitKey,
+                        'label' => $ggRow['nome']
+                    ];
+                }
+            }
+            $ggsResult->free();
+        } elseif ($hasRegionalFilter) {
+            // Quando filtrar por regional, buscar todas as agências dessa regional
+            $regionalId = $filters->getRegional();
+            $agenciasSql = "SELECT id, nome FROM {$agenciaTable} WHERE regional_id = :regionalId";
+            $agenciasResult = $conn->executeQuery($agenciasSql, ['regionalId' => $regionalId]);
+            
+            while ($agRow = $agenciasResult->fetchAssociative()) {
+                $unitKey = "AG_{$agRow['id']}";
+                if (!isset($units[$unitKey])) {
+                    $units[$unitKey] = [
+                        'value' => $unitKey,
+                        'label' => $agRow['nome']
+                    ];
+                }
+            }
+            $agenciasResult->free();
+        } else {
+            // Sem filtro ou filtro por diretoria: buscar todas as regionais
+            $diretoriasFilter = $filters && $filters->getDiretoria() ? $filters->getDiretoria() : null;
+            
+            if ($diretoriasFilter) {
+                // Se há filtro de diretoria, buscar apenas regionais dessa diretoria
+                $regionaisSql = "SELECT id, nome FROM {$regionalTable} WHERE diretoria_id = :diretoriaId";
+                $regionaisResult = $conn->executeQuery($regionaisSql, ['diretoriaId' => $diretoriasFilter]);
+            } else {
+                // Sem filtro, buscar todas as regionais
+                $regionaisSql = "SELECT id, nome FROM {$regionalTable}";
+                $regionaisResult = $conn->executeQuery($regionaisSql);
+            }
+            
+            while ($regRow = $regionaisResult->fetchAssociative()) {
+                $unitKey = "REG_{$regRow['id']}";
+                if (!isset($units[$unitKey])) {
+                    $units[$unitKey] = [
+                        'value' => $unitKey,
+                        'label' => $regRow['nome']
+                    ];
+                }
+            }
+            $regionaisResult->free();
         }
 
         // Mesclar todas as famílias
