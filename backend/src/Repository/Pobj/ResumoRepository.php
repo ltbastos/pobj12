@@ -20,6 +20,7 @@ use App\Entity\Pobj\Regional;
 use App\Entity\Pobj\Agencia;
 use App\Repository\Contract\ResumoRepositoryInterface;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Connection;
 use Doctrine\Persistence\ManagerRegistry;
 
 class ResumoRepository extends ServiceEntityRepository implements ResumoRepositoryInterface
@@ -84,7 +85,8 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
         $indicadorTable = $this->getTableName(Indicador::class);
         $subindicadorTable = $this->getTableName(Subindicador::class);
 
-                $params = [];
+        $params = [];
+        $types = [];
         $metaFilter = '';
         $realizadosFilter = '';
         $pontosFilter = '';
@@ -126,14 +128,17 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
                     $params['gerenteFuncionalPontos'] = $gerenteFuncional;
                 }
             } elseif ($gerenteGestao !== null && $gerenteGestao !== '') {
-                                $gerenteGestaoFuncional = $this->getFuncionalFromIdOrFuncional($gerenteGestao, Cargo::GERENTE_GESTAO);
-                if ($gerenteGestaoFuncional) {
-                                        $metaFilter .= " AND m.funcional = :gerenteGestaoFuncionalMeta";
-                    $realizadosFilter .= " AND r.funcional = :gerenteGestaoFuncionalRealizados";
-                    $pontosFilter .= " AND p.funcional = :gerenteGestaoFuncionalPontos";
-                    $params['gerenteGestaoFuncionalMeta'] = $gerenteGestaoFuncional;
-                    $params['gerenteGestaoFuncionalRealizados'] = $gerenteGestaoFuncional;
-                    $params['gerenteGestaoFuncionalPontos'] = $gerenteGestaoFuncional;
+                                $gerentesFuncionais = $this->getGerentesFuncionaisByGerenteGestao($gerenteGestao);
+                if ($gerentesFuncionais) {
+                                        $metaFilter .= " AND m.funcional IN (:gerenteGestaoFuncionaisMeta)";
+                    $realizadosFilter .= " AND r.funcional IN (:gerenteGestaoFuncionaisRealizados)";
+                    $pontosFilter .= " AND p.funcional IN (:gerenteGestaoFuncionaisPontos)";
+                    $params['gerenteGestaoFuncionaisMeta'] = $gerentesFuncionais;
+                    $params['gerenteGestaoFuncionaisRealizados'] = $gerentesFuncionais;
+                    $params['gerenteGestaoFuncionaisPontos'] = $gerentesFuncionais;
+                    $types['gerenteGestaoFuncionaisMeta'] = Connection::PARAM_STR_ARRAY;
+                    $types['gerenteGestaoFuncionaisRealizados'] = Connection::PARAM_STR_ARRAY;
+                    $types['gerenteGestaoFuncionaisPontos'] = Connection::PARAM_STR_ARRAY;
                 }
             } else {
                                                 $estruturaFiltersMeta = $this->buildEstruturaFilters($filters, $params, 'e1', 'meta');
@@ -199,7 +204,11 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
                     COALESCE(fr.total_realizado, 0) AS realizado,
                     COALESCE(fp.total_pontos, 0) AS pontos,
                     COALESCE(fp.total_meta_pontos, 0) AS pontos_meta,
-                    COALESCE(fr.total_realizado / NULLIF(fm.total_meta, 0), 0) AS ating,
+                    CASE
+                        WHEN LOWER(dp.metrica) IN ('perc', 'percentual', 'percent')
+                        THEN COALESCE(fr.total_realizado / NULLIF(fm.total_meta, 0), 0) * 100
+                        ELSE COALESCE(fr.total_realizado / NULLIF(fm.total_meta, 0), 0)
+                    END AS ating,
                     CASE 
                         WHEN COALESCE(fm.total_meta, 0) > 0 
                         THEN CASE 
@@ -227,7 +236,7 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
                 ORDER BY f.nm_familia ASC, i.nm_indicador ASC, s.nm_subindicador ASC";
 
         $connection = $this->getEntityManager()->getConnection();
-        $result = $connection->executeQuery($sql, $params);
+        $result = $connection->executeQuery($sql, $params, $types);
         
                 $rows = [];
         while ($row = $result->fetchAssociative()) {
@@ -251,7 +260,8 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
         $indicadorTable = $this->getTableName(Indicador::class);
         $subindicadorTable = $this->getTableName(Subindicador::class);
 
-                $params = [];
+        $params = [];
+        $types = [];
         $metaFilter = '';
         $realizadosFilter = '';
         $pontosFilter = '';
@@ -293,14 +303,17 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
                     $params['gerenteFuncionalPontos'] = $gerenteFuncional;
                 }
             } elseif ($gerenteGestao !== null && $gerenteGestao !== '') {
-                                $gerenteGestaoFuncional = $this->getFuncionalFromIdOrFuncional($gerenteGestao, Cargo::GERENTE_GESTAO);
-                if ($gerenteGestaoFuncional) {
-                                        $metaFilter .= " AND m.funcional = :gerenteGestaoFuncionalMeta";
-                    $realizadosFilter .= " AND r.funcional = :gerenteGestaoFuncionalRealizados";
-                    $pontosFilter .= " AND p.funcional = :gerenteGestaoFuncionalPontos";
-                    $params['gerenteGestaoFuncionalMeta'] = $gerenteGestaoFuncional;
-                    $params['gerenteGestaoFuncionalRealizados'] = $gerenteGestaoFuncional;
-                    $params['gerenteGestaoFuncionalPontos'] = $gerenteGestaoFuncional;
+                                $gerentesFuncionais = $this->getGerentesFuncionaisByGerenteGestao($gerenteGestao);
+                if ($gerentesFuncionais) {
+                                        $metaFilter .= " AND m.funcional IN (:gerenteGestaoFuncionaisMeta)";
+                    $realizadosFilter .= " AND r.funcional IN (:gerenteGestaoFuncionaisRealizados)";
+                    $pontosFilter .= " AND p.funcional IN (:gerenteGestaoFuncionaisPontos)";
+                    $params['gerenteGestaoFuncionaisMeta'] = $gerentesFuncionais;
+                    $params['gerenteGestaoFuncionaisRealizados'] = $gerentesFuncionais;
+                    $params['gerenteGestaoFuncionaisPontos'] = $gerentesFuncionais;
+                    $types['gerenteGestaoFuncionaisMeta'] = Connection::PARAM_STR_ARRAY;
+                    $types['gerenteGestaoFuncionaisRealizados'] = Connection::PARAM_STR_ARRAY;
+                    $types['gerenteGestaoFuncionaisPontos'] = Connection::PARAM_STR_ARRAY;
                 }
             } else {
                                                 $estruturaFiltersMeta = $this->buildEstruturaFilters($filters, $params, 'e1', 'meta');
@@ -394,7 +407,7 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
                 ORDER BY f.nm_familia ASC, i.nm_indicador ASC, s.nm_subindicador ASC";
 
         $connection = $this->getEntityManager()->getConnection();
-        $result = $connection->executeQuery($sql, $params);
+        $result = $connection->executeQuery($sql, $params, $types);
         
                 $produtos = [];
         while ($row = $result->fetchAssociative()) {
@@ -432,6 +445,7 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
         $agenciaTable = $this->getTableName(Agencia::class);
 
         $params = [];
+        $types = [];
         $whereClause = '';
 
         if ($filters) {
@@ -460,17 +474,18 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
                 $params['dataFim'] = $dataFim;
             }
 
-                                    if ($gerente !== null && $gerente !== '') {
+            if ($gerente !== null && $gerente !== '') {
                                 $gerenteFuncional = $this->getFuncionalFromIdOrFuncional($gerente, Cargo::GERENTE);
                 if ($gerenteFuncional) {
                     $whereClause .= " AND v.funcional = :gerenteFuncional";
                     $params['gerenteFuncional'] = $gerenteFuncional;
                 }
             } elseif ($gerenteGestao !== null && $gerenteGestao !== '') {
-                                $gerenteGestaoFuncional = $this->getFuncionalFromIdOrFuncional($gerenteGestao, Cargo::GERENTE_GESTAO);
-                if ($gerenteGestaoFuncional) {
-                                                            $whereClause .= " AND v.funcional = :gerenteGestaoFuncional";
-                    $params['gerenteGestaoFuncional'] = $gerenteGestaoFuncional;
+                                $gerentesFuncionais = $this->getGerentesFuncionaisByGerenteGestao($gerenteGestao);
+                if ($gerentesFuncionais) {
+                                                            $whereClause .= " AND v.funcional IN (:gerenteGestaoFuncionais)";
+                    $params['gerenteGestaoFuncionais'] = $gerentesFuncionais;
+                    $types['gerenteGestaoFuncionais'] = Connection::PARAM_STR_ARRAY;
                 }
             }
         }
@@ -503,7 +518,7 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
                 ORDER BY c.data DESC";
 
         $connection = $this->getEntityManager()->getConnection();
-        $result = $connection->executeQuery($sql, $params);
+        $result = $connection->executeQuery($sql, $params, $types);
         
                 $rows = [];
         while ($row = $result->fetchAssociative()) {
@@ -716,18 +731,20 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
         
         foreach ($produtos as $produto) {
             $produtoId = (string)($produto['id'] ?? '');
-            
+
             $realizadoData = $realizados[$produtoId] ?? null;
             $metaTotal = $metas[$produtoId] ?? 0;
             $pontosData = $pontos[$produtoId] ?? null;
             $variavelData = $variavel[$produtoId] ?? null;
-            
+
             $realizadoTotal = $realizadoData['realizado'] ?? 0;
             $pontosRealizado = $pontosData['pontos'] ?? 0;
             $pontosMeta = $pontosData['pontos_meta'] ?? ($produto['peso'] ?? 0);
-            
-                        $ating = $metaTotal > 0 ? ($realizadoTotal / $metaTotal) : 0;
-            $atingido = $ating >= 1 || ($pontosMeta > 0 && ($pontosRealizado / $pontosMeta) >= 1);
+
+                        $percentualMetric = $this->isPercentualMetric($produto['metrica'] ?? '');
+            $atingRatio = $metaTotal > 0 ? ($realizadoTotal / $metaTotal) : 0;
+            $ating = $percentualMetric ? $atingRatio * 100 : $atingRatio;
+            $atingido = $atingRatio >= 1 || ($pontosMeta > 0 && ($pontosRealizado / $pontosMeta) >= 1);
             
             $result[] = [
                 'id' => $produtoId,
@@ -960,7 +977,9 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
             
                         $realizadoTotal = array_sum($realizadosMes);
             $metaTotal = array_sum($metasMes);
-            $ating = $metaTotal > 0 ? ($realizadoTotal / $metaTotal) : 0;
+            $percentualMetric = $this->isPercentualMetric($produto['metrica'] ?? '');
+            $atingRatio = $metaTotal > 0 ? ($realizadoTotal / $metaTotal) : 0;
+            $ating = $percentualMetric ? $atingRatio * 100 : $atingRatio;
             
                         $meses = array_unique(array_merge(array_keys($realizadosMes), array_keys($metasMes)));
             $dadosMensais = [];
@@ -969,12 +988,13 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
                 $meta = $metasMes[$mes] ?? 0;
                 $realizado = $realizadosMes[$mes] ?? 0;
                 $atingMes = $meta > 0 ? ($realizado / $meta) : 0;
-                
+
                 $dadosMensais[] = [
                     'mes' => $mes,
                     'meta' => $meta,
                     'realizado' => $realizado,
-                    'atingimento' => $atingMes * 100                 ];
+                    'atingimento' => $atingMes * 100
+                ];
             }
             
                         $peso = $produto['peso'] ?? null;
@@ -1012,7 +1032,7 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
                 'pontos' => $pontos,
                 'pontos_meta' => $pontosMeta,
                 'ating' => $ating,
-                'atingido' => $ating >= 1,
+                'atingido' => $atingRatio >= 1,
                 'ultima_atualizacao' => $ultimaAtualizacao,
                 'meses' => $dadosMensais
             ];
@@ -1021,7 +1041,19 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
         return $result;
     }
 
-    
+
+    private function isPercentualMetric(?string $metric): bool
+    {
+        if ($metric === null || $metric === '') {
+            return false;
+        }
+
+        $metricLower = strtolower(trim($metric));
+
+        return in_array($metricLower, ['perc', 'percentual', 'percent', '%'], true);
+    }
+
+
     private function getTableName(string $entityClass): string
     {
         return $this->getEntityManager()
@@ -1115,8 +1147,46 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
         
         $row = $result->fetchAssociative();
         $result->free();
-        
+
         return $row ? ($row['funcional'] ?? null) : null;
+    }
+
+    private function getGerentesFuncionaisByGerenteGestao($gerenteGestao): array
+    {
+        if ($gerenteGestao === null || $gerenteGestao === '') {
+            return [];
+        }
+
+        $dEstruturaTable = $this->getTableName(DEstrutura::class);
+        $conn = $this->getEntityManager()->getConnection();
+
+        $gestaoFilterField = is_numeric($gerenteGestao) ? 'id' : 'funcional';
+        $gestaoFilterValue = is_numeric($gerenteGestao) ? (int)$gerenteGestao : (string)$gerenteGestao;
+
+        $gestaoRow = $conn->executeQuery(
+            "SELECT agencia_id FROM {$dEstruturaTable} WHERE {$gestaoFilterField} = :value AND cargo_id = :cargoId LIMIT 1",
+            [
+                'value' => $gestaoFilterValue,
+                'cargoId' => Cargo::GERENTE_GESTAO
+            ]
+        )->fetchAssociative();
+
+        if (!$gestaoRow || empty($gestaoRow['agencia_id'])) {
+            return [];
+        }
+
+        $result = $conn->executeQuery(
+            "SELECT funcional FROM {$dEstruturaTable} WHERE cargo_id = :cargoId AND agencia_id = :agenciaId AND funcional IS NOT NULL",
+            [
+                'cargoId' => Cargo::GERENTE,
+                'agenciaId' => $gestaoRow['agencia_id']
+            ]
+        );
+
+        $rows = $result->fetchAllAssociative();
+        $result->free();
+
+        return array_values(array_filter(array_column($rows, 'funcional')));
     }
 }
 
