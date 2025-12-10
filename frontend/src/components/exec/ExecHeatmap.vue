@@ -45,32 +45,13 @@ const hierarchyUnits = computed(() => {
   // No modo metas, mostrar agregados (DIR_ALL, REG_ALL, etc.), unidades individuais de hierarquia (REG_*, AG_*, GG_*, G_*)
   // e unidades de time (G_ALL_GG_*, GG_ALL_AG_*, AG_ALL_REG_*)
   if (heatmapMode.value === 'metas') {
-    return props.heatmap.units.filter(unit => {
-      // Quando houver filtro aplicado, exibir apenas a hierarquia correspondente (sem agregados "Todos")
-      if (hasHierarchyFilters.value) {
-        return unit.value.startsWith(hierarchyPrefix.value) &&
-          unit.value !== 'DIR_ALL' &&
-          unit.value !== 'REG_ALL' &&
-          unit.value !== 'AG_ALL' &&
-          unit.value !== 'GG_ALL' &&
-          unit.value !== 'G_ALL'
-      }
-
-      // Sem filtros, mostrar visão completa de metas
-      return unit.value === 'DIR_ALL' ||
-        unit.value === 'REG_ALL' ||
-        unit.value === 'AG_ALL' ||
-        unit.value === 'GG_ALL' ||
-        unit.value === 'G_ALL' ||
-        unit.value.startsWith('DIR_') ||
-        unit.value.startsWith('REG_') ||
-        unit.value.startsWith('AG_') ||
-        unit.value.startsWith('GG_') ||
-        unit.value.startsWith('G_') ||
-        unit.value.startsWith('G_ALL_GG_') ||
-        unit.value.startsWith('GG_ALL_AG_') ||
-        unit.value.startsWith('AG_ALL_REG_')
-    })
+    return props.heatmap.units.filter(unit =>
+      unit.value === 'DIR_ALL' ||
+      unit.value === 'REG_ALL' ||
+      unit.value === 'AG_ALL' ||
+      unit.value === 'GG_ALL' ||
+      unit.value === 'G_ALL'
+    )
   }
 
   // No modo seções, determinar as linhas baseado nos filtros aplicados
