@@ -176,8 +176,11 @@ month_names = {
 }
 weekday_names = ['segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo']
 
+start_date = datetime.date(2025, 8, 1)
+end_date = datetime.date(2025, 12, 9)
+
 cal_rows = []
-for d in daterange(datetime.date(2025, 8, 1), datetime.date(2025, 12, 31)):
+for d in daterange(start_date, end_date):
     cal_rows.append(
         (
             d,
@@ -193,7 +196,17 @@ for d in daterange(datetime.date(2025, 8, 1), datetime.date(2025, 12, 31)):
         )
     )
 
-months = [datetime.date(2025, m, 1) for m in range(8, 13)]
+def month_starts(start: datetime.date, end: datetime.date):
+    cur = datetime.date(start.year, start.month, 1)
+    while cur <= end:
+        yield cur
+        if cur.month == 12:
+            cur = datetime.date(cur.year + 1, 1, 1)
+        else:
+            cur = datetime.date(cur.year, cur.month + 1, 1)
+
+
+months = list(month_starts(start_date, end_date))
 products = [6, 7, 8, 9, 10]
 
 meta_rows = []
