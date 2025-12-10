@@ -16,36 +16,70 @@ const sections = computed(() => {
   return props.heatmap.sectionsFamilia.filter(s => s.id !== 'META')
 })
 
+const hasHierarchyFilters = computed(() => {
+  const filters = props.filters || {}
+  return Boolean(
+    filters.segmento ||
+    filters.diretoria ||
+    filters.gerencia ||
+    filters.agencia ||
+    filters.ggestao ||
+    filters.gerente
+  )
+})
+
+const hierarchyPrefix = computed<string>(() => {
+  const filters = props.filters || {}
+
+  if (filters.gerente && filters.gerente.toLowerCase() !== 'todos') return 'G_'
+  if (filters.ggestao && filters.ggestao.toLowerCase() !== 'todos') return 'G_'
+  if (filters.agencia && filters.agencia.toLowerCase() !== 'todas') return 'GG_'
+  if (filters.gerencia && filters.gerencia.toLowerCase() !== 'todas') return 'AG_'
+
+  return 'REG_'
+})
+
 const hierarchyUnits = computed(() => {
   const filters = props.filters || {}
-  
+
   // No modo metas, mostrar agregados (DIR_ALL, REG_ALL, etc.), unidades individuais de hierarquia (REG_*, AG_*, GG_*, G_*)
   // e unidades de time (G_ALL_GG_*, GG_ALL_AG_*, AG_ALL_REG_*)
   if (heatmapMode.value === 'metas') {
-    return props.heatmap.units.filter(unit => 
-      unit.value === 'DIR_ALL' ||
-      unit.value === 'REG_ALL' ||
-      unit.value === 'AG_ALL' ||
-      unit.value === 'GG_ALL' ||
-      unit.value === 'G_ALL' ||
-      unit.value.startsWith('DIR_') ||
-      unit.value.startsWith('REG_') || 
-      unit.value.startsWith('AG_') || 
-      unit.value.startsWith('GG_') || 
-      unit.value.startsWith('G_') ||
-      unit.value.startsWith('G_ALL_GG_') ||
-      unit.value.startsWith('GG_ALL_AG_') ||
-      unit.value.startsWith('AG_ALL_REG_')
-    )
+    return props.heatmap.units.filter(unit => {
+      // Quando houver filtro aplicado, exibir apenas a hierarquia correspondente (sem agregados "Todos")
+      if (hasHierarchyFilters.value) {
+        return unit.value.startsWith(hierarchyPrefix.value) &&
+          unit.value !== 'DIR_ALL' &&
+          unit.value !== 'REG_ALL' &&
+          unit.value !== 'AG_ALL' &&
+          unit.value !== 'GG_ALL' &&
+          unit.value !== 'G_ALL'
+      }
+
+      // Sem filtros, mostrar visão completa de metas
+      return unit.value === 'DIR_ALL' ||
+        unit.value === 'REG_ALL' ||
+        unit.value === 'AG_ALL' ||
+        unit.value === 'GG_ALL' ||
+        unit.value === 'G_ALL' ||
+        unit.value.startsWith('DIR_') ||
+        unit.value.startsWith('REG_') ||
+        unit.value.startsWith('AG_') ||
+        unit.value.startsWith('GG_') ||
+        unit.value.startsWith('G_') ||
+        unit.value.startsWith('G_ALL_GG_') ||
+        unit.value.startsWith('GG_ALL_AG_') ||
+        unit.value.startsWith('AG_ALL_REG_')
+    })
   }
-  
+
   // No modo seções, determinar as linhas baseado nos filtros aplicados
   // Sem filtro ou filtro por diretoria: linhas são regionais (REG_*)
   // Filtro por regional: linhas são agências (AG_*)
   // Filtro por agência: linhas são gerentes de gestão (GG_*)
   // Filtro por gerente de gestão: linhas são gerentes (G_*)
   // Filtro por gerente: linhas são indicadores (ou apenas o gerente se não houver indicadores)
-  
+
   let prefixToShow: string | null = null
   
   if (filters.gerente && filters.gerente.toLowerCase() !== 'todos') {
@@ -64,13 +98,13 @@ const hierarchyUnits = computed(() => {
     prefixToShow = 'G_'
   } else if (filters.agencia && filters.agencia.toLowerCase() !== 'todas') {
     // Filtro por agência: linhas são gerentes de gestão
-    prefixToShow = 'GG_'
+    prefixToShow = hierarchyPrefix.value
   } else if (filters.gerencia && filters.gerencia.toLowerCase() !== 'todas') {
     // Filtro por regional: linhas são agências
-    prefixToShow = 'AG_'
+    prefixToShow = hierarchyPrefix.value
   } else {
     // Sem filtro ou filtro por diretoria: linhas são regionais
-    prefixToShow = 'REG_'
+    prefixToShow = hierarchyPrefix.value
   }
   
   // Filtrar unidades baseado no prefixo determinado
