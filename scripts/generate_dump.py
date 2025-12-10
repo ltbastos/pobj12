@@ -152,7 +152,7 @@ for agency_id, regional_id, agency_name, _, _ in agencias:
         gerentes.append(new_entry)
         next_id += 1
 
-# Calendar Aug-Dec 2025
+# Calendar Jan-Dec 2025
 def daterange(start, end):
     cur = start
     while cur <= end:
@@ -176,7 +176,7 @@ month_names = {
 }
 weekday_names = ['segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo']
 
-start_date = datetime.date(2025, 8, 1)
+start_date = datetime.date(2025, 1, 1)
 end_date = datetime.date(2025, 12, 9)
 
 cal_rows = []
