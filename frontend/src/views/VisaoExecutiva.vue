@@ -102,7 +102,6 @@ const bottomRanking = computed(() => {
   return [...ranking.value]
     .sort((a, b) => a.p_mens - b.p_mens)
     .slice(0, 5)
-    .reverse()
 })
 
 const rankingTitle = computed(() => {
