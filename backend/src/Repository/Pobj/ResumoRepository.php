@@ -204,7 +204,11 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
                     COALESCE(fr.total_realizado, 0) AS realizado,
                     COALESCE(fp.total_pontos, 0) AS pontos,
                     COALESCE(fp.total_meta_pontos, 0) AS pontos_meta,
-                    COALESCE(fr.total_realizado / NULLIF(fm.total_meta, 0), 0) AS ating,
+                    CASE
+                        WHEN LOWER(dp.metrica) IN ('perc', 'percentual', 'percent')
+                        THEN COALESCE(fr.total_realizado / NULLIF(fm.total_meta, 0), 0) * 100
+                        ELSE COALESCE(fr.total_realizado / NULLIF(fm.total_meta, 0), 0)
+                    END AS ating,
                     CASE 
                         WHEN COALESCE(fm.total_meta, 0) > 0 
                         THEN CASE 
@@ -727,18 +731,20 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
         
         foreach ($produtos as $produto) {
             $produtoId = (string)($produto['id'] ?? '');
-            
+
             $realizadoData = $realizados[$produtoId] ?? null;
             $metaTotal = $metas[$produtoId] ?? 0;
             $pontosData = $pontos[$produtoId] ?? null;
             $variavelData = $variavel[$produtoId] ?? null;
-            
+
             $realizadoTotal = $realizadoData['realizado'] ?? 0;
             $pontosRealizado = $pontosData['pontos'] ?? 0;
             $pontosMeta = $pontosData['pontos_meta'] ?? ($produto['peso'] ?? 0);
-            
-                        $ating = $metaTotal > 0 ? ($realizadoTotal / $metaTotal) : 0;
-            $atingido = $ating >= 1 || ($pontosMeta > 0 && ($pontosRealizado / $pontosMeta) >= 1);
+
+                        $percentualMetric = $this->isPercentualMetric($produto['metrica'] ?? '');
+            $atingRatio = $metaTotal > 0 ? ($realizadoTotal / $metaTotal) : 0;
+            $ating = $percentualMetric ? $atingRatio * 100 : $atingRatio;
+            $atingido = $atingRatio >= 1 || ($pontosMeta > 0 && ($pontosRealizado / $pontosMeta) >= 1);
             
             $result[] = [
                 'id' => $produtoId,
@@ -971,7 +977,9 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
             
                         $realizadoTotal = array_sum($realizadosMes);
             $metaTotal = array_sum($metasMes);
-            $ating = $metaTotal > 0 ? ($realizadoTotal / $metaTotal) : 0;
+            $percentualMetric = $this->isPercentualMetric($produto['metrica'] ?? '');
+            $atingRatio = $metaTotal > 0 ? ($realizadoTotal / $metaTotal) : 0;
+            $ating = $percentualMetric ? $atingRatio * 100 : $atingRatio;
             
                         $meses = array_unique(array_merge(array_keys($realizadosMes), array_keys($metasMes)));
             $dadosMensais = [];
@@ -980,12 +988,13 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
                 $meta = $metasMes[$mes] ?? 0;
                 $realizado = $realizadosMes[$mes] ?? 0;
                 $atingMes = $meta > 0 ? ($realizado / $meta) : 0;
-                
+
                 $dadosMensais[] = [
                     'mes' => $mes,
                     'meta' => $meta,
                     'realizado' => $realizado,
-                    'atingimento' => $atingMes * 100                 ];
+                    'atingimento' => $atingMes * 100
+                ];
             }
             
                         $peso = $produto['peso'] ?? null;
@@ -1023,7 +1032,7 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
                 'pontos' => $pontos,
                 'pontos_meta' => $pontosMeta,
                 'ating' => $ating,
-                'atingido' => $ating >= 1,
+                'atingido' => $atingRatio >= 1,
                 'ultima_atualizacao' => $ultimaAtualizacao,
                 'meses' => $dadosMensais
             ];
@@ -1032,7 +1041,19 @@ class ResumoRepository extends ServiceEntityRepository implements ResumoReposito
         return $result;
     }
 
-    
+
+    private function isPercentualMetric(?string $metric): bool
+    {
+        if ($metric === null || $metric === '') {
+            return false;
+        }
+
+        $metricLower = strtolower(trim($metric));
+
+        return in_array($metricLower, ['perc', 'percentual', 'percent', '%'], true);
+    }
+
+
     private function getTableName(string $entityClass): string
     {
         return $this->getEntityManager()
