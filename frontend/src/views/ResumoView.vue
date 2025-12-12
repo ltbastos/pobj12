@@ -17,7 +17,9 @@ const { loading } = useResumoData(filterState, period)
     <template v-if="loading">
       <div class="resumo-skeleton">
         <ResumoModeToggle v-model="resumoMode" />
-        
+
+        <p class="resumo-mode__hint">Troque para “Visão clássica” para usar o simulador.</p>
+
         <div id="resumo-summary" class="resumo-summary">
           <div class="kpi-summary">
             <div class="skeleton skeleton--kpi-card" style="height: 140px; border-radius: 12px;"></div>
@@ -54,6 +56,10 @@ const { loading } = useResumoData(filterState, period)
 
     <template v-else>
       <ResumoModeToggle v-model="resumoMode" />
+
+      <p v-if="resumoMode !== 'legacy'" class="resumo-mode__hint">
+        Para simular metas e realizados, altere para “Visão clássica”.
+      </p>
 
       <div id="resumo-summary" class="resumo-summary">
         <ResumoKPI />
@@ -104,6 +110,12 @@ const { loading } = useResumoData(filterState, period)
 
 .resumo-mode__view.hidden {
   display: none;
+}
+
+.resumo-mode__hint {
+  margin: -6px 0 10px;
+  font-size: 13px;
+  color: #4b5563;
 }
 
 .cards-grid {

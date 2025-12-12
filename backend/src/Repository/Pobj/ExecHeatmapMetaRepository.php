@@ -36,6 +36,15 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
 
         $months = $this->calculateLast12Months();
 
+        $gerentesGestaoBase = $this->fetchGerentesGestaoInfo(
+            $dEstruturaTable,
+            $regionalTable,
+            $diretoriaTable,
+            $agenciaTable,
+            $whereClause,
+            $params
+        );
+
         $hierarchyData = $this->fetchHierarchyData(
             $fMetaTable,
             $dEstruturaTable,
@@ -45,7 +54,8 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
             $whereClause,
             $params,
             $months,
-            $filters
+            $filters,
+            $gerentesGestaoBase
         );
 
         return [
@@ -101,7 +111,8 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
         string $whereClause,
         array &$params,
         array $months,
-        ?FilterDTO $filters
+        ?FilterDTO $filters,
+        array $gerentesGestaoBase
     ): array {
         $conn = $this->getEntityManager()->getConnection();
 
@@ -200,13 +211,62 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
 
         $hierarchyResult = $conn->executeQuery($hierarchySql, $hierarchyParams);
 
-        $tempData = $this->processHierarchyData($hierarchyResult);
+        $tempData = $this->processHierarchyData($hierarchyResult, $gerentesGestaoBase, $months);
         $hierarchyResult->free();
 
         return $this->buildHierarchyUnits($tempData, $filters);
     }
 
-    private function processHierarchyData($result): array
+    private function fetchGerentesGestaoInfo(
+        string $dEstruturaTable,
+        string $regionalTable,
+        string $diretoriaTable,
+        string $agenciaTable,
+        string $whereClause,
+        array $params
+    ): array {
+        $conn = $this->getEntityManager()->getConnection();
+
+        $sql = "SELECT
+                    CAST(est.id AS CHAR) AS id,
+                    est.nome AS nome,
+                    est.segmento_id,
+                    est.diretoria_id,
+                    est.regional_id,
+                    est.agencia_id,
+                    dir.nome AS diretoria_nome,
+                    reg.nome AS regional_nome,
+                    ag.nome AS agencia_nome
+                FROM {$dEstruturaTable} AS est
+                LEFT JOIN {$diretoriaTable} AS dir ON dir.id = est.diretoria_id
+                LEFT JOIN {$regionalTable} AS reg ON reg.id = est.regional_id
+                LEFT JOIN {$agenciaTable} AS ag ON ag.id = est.agencia_id
+                WHERE est.cargo_id = :cargoGerenteGestao {$whereClause}";
+
+        $params['cargoGerenteGestao'] = Cargo::GERENTE_GESTAO;
+
+        $result = $conn->executeQuery($sql, $params);
+        $rows = $result->fetchAllAssociative();
+        $result->free();
+
+        $gerentesGestaoInfo = [];
+        foreach ($rows as $row) {
+            $gerentesGestaoInfo[$row['id']] = [
+                'id' => $row['id'],
+                'nome' => $row['nome'] ?? '',
+                'diretoria_id' => $row['diretoria_id'] ?? null,
+                'diretoria_nome' => $row['diretoria_nome'] ?? null,
+                'regional_id' => $row['regional_id'] ?? null,
+                'regional_nome' => $row['regional_nome'] ?? null,
+                'agencia_id' => $row['agencia_id'] ?? null,
+                'agencia_nome' => $row['agencia_nome'] ?? null,
+            ];
+        }
+
+        return $gerentesGestaoInfo;
+    }
+
+    private function processHierarchyData($result, array $gerentesGestaoBase, array $months): array
     {
         $tempData = [
             'regionais' => [],
@@ -218,7 +278,7 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
         $firstDiretoriaNome = null;
         $regionaisInfo = [];
         $agenciasInfo = [];
-        $gerentesGestaoInfo = [];
+        $gerentesGestaoInfo = $gerentesGestaoBase;
         $gerentesInfo = [];
 
         while ($hRow = $result->fetchAssociative()) {
@@ -302,6 +362,18 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
                 }
                 $tempData['gerentes'][$key] += $meta;
 
+                foreach ($gerentesGestaoInfo as $ggId => $ggInfo) {
+                    if ((string)$ggInfo['agencia_id'] === (string)$agenciaId &&
+                        (string)$ggInfo['regional_id'] === (string)$regionalId &&
+                        (string)$ggInfo['diretoria_id'] === (string)$diretoriaId) {
+                        $ggKey = "GG_{$ggId}|{$mes}";
+                        if (!isset($tempData['gerentesGestao'][$ggKey])) {
+                            $tempData['gerentesGestao'][$ggKey] = 0;
+                        }
+                        $tempData['gerentesGestao'][$ggKey] += $meta;
+                    }
+                }
+
                 if (!isset($gerentesInfo[$gerenteId])) {
                     $gerentesInfo[$gerenteId] = [
                         'id' => $gerenteId,
@@ -323,7 +395,8 @@ class ExecHeatmapMetaRepository extends ServiceEntityRepository
             'regionaisInfo' => $regionaisInfo,
             'agenciasInfo' => $agenciasInfo,
             'gerentesGestaoInfo' => $gerentesGestaoInfo,
-            'gerentesInfo' => $gerentesInfo
+            'gerentesInfo' => $gerentesInfo,
+            'months' => $months
         ];
     }
 
