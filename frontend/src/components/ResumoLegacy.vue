@@ -1,19 +1,27 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import Icon from './Icon.vue'
 import { useProdutosLegacy } from '../composables/useProdutosLegacy'
 import { useGlobalFilters } from '../composables/useGlobalFilters'
 import { useFilteredProdutos } from '../composables/useFilteredProdutos'
 import { formatByMetric, formatMetricFull, formatPoints, formatINT } from '../utils/formatUtils'
 import { formatBRDate } from '../services/calendarioService'
+import { useBusinessDays } from '../composables/useBusinessDays'
 import type { LegacySection } from '../composables/useProdutosLegacy'
 
 const { filterState, period } = useGlobalFilters()
 useFilteredProdutos(filterState, period)
 const { produtosPorFamilia, loading, error } = useProdutosLegacy()
+const { getCurrentMonthBusinessSnapshot } = useBusinessDays()
 
 const expandedRows = ref<Set<string>>(new Set())
 const expandedSections = ref<Set<string>>(new Set())
+const simulationMode = ref(false)
+const simulatedValues = reactive<Record<string, { meta?: number; realizado?: number }>>({})
+
+const hasSimulatedChanges = computed(() =>
+  Object.values(simulatedValues).some(entry => entry.meta !== undefined || entry.realizado !== undefined)
+)
 
 const toggleRow = (rowId: string) => {
   if (expandedRows.value.has(rowId)) {
@@ -34,6 +42,123 @@ const toggleSection = (sectionId: string) => {
 const sectionHasExpandableRows = (section: LegacySection): boolean => {
   return section.items.some(item => item.children && item.children.length > 0)
 }
+
+const updateSimulatedValue = (
+  itemId: string,
+  key: 'meta' | 'realizado',
+  value: number | null
+) => {
+  if (value === null || Number.isNaN(value)) {
+    if (simulatedValues[itemId]) {
+      delete simulatedValues[itemId][key]
+
+      if (!simulatedValues[itemId].meta && !simulatedValues[itemId].realizado) {
+        delete simulatedValues[itemId]
+      }
+    }
+
+    return
+  }
+
+  if (!simulatedValues[itemId]) {
+    simulatedValues[itemId] = {}
+  }
+
+  simulatedValues[itemId][key] = value
+}
+
+const clearSimulation = () => {
+  Object.keys(simulatedValues).forEach(key => delete simulatedValues[key])
+}
+
+const handleSimulationInput = (itemId: string, key: 'meta' | 'realizado', event: Event) => {
+  const target = event.target as HTMLInputElement
+  const raw = target.value
+  const parsed = raw === '' ? null : Number(raw)
+
+  updateSimulatedValue(itemId, key, parsed)
+}
+
+const getSimulatedValue = (itemId: string, key: 'meta' | 'realizado', original: number) => {
+  if (!simulationMode.value) return original
+
+  const entry = simulatedValues[itemId]
+  return entry && entry[key] !== undefined ? entry[key]! : original
+}
+
+const recalculateItem = (item: LegacySection['items'][number]) => {
+  const snapshot = getCurrentMonthBusinessSnapshot.value
+  const diasTotais = snapshot.total || 1
+  const diasDecorridos = snapshot.elapsed || 0
+  const diasRestantes = snapshot.remaining || 0
+
+  const metaVal = getSimulatedValue(item.id, 'meta', item.meta || 0)
+  const realVal = getSimulatedValue(item.id, 'realizado', item.realizado || 0)
+  const pesoVal = item.pontosMeta || item.peso || 0
+
+  const referenciaHoje = diasTotais > 0 ? (metaVal / diasTotais) * diasDecorridos : 0
+  const faltaParaMeta = Math.max(0, metaVal - realVal)
+  const metaDiariaNecessaria = diasRestantes > 0 ? faltaParaMeta / diasRestantes : 0
+  const projecao = diasDecorridos > 0 ? realVal + (realVal / diasDecorridos) * diasRestantes : realVal
+
+  let pontos: number
+  let pontosBrutos: number
+  if (item.pontosBackend !== undefined) {
+    pontos = item.pontosBackend
+    pontosBrutos = pontos
+  } else {
+    pontosBrutos = Math.min(pesoVal, realVal)
+    pontos = Math.max(0, Math.min(pesoVal, pontosBrutos))
+  }
+
+  const ating = metaVal > 0 ? realVal / metaVal : 0
+
+  const enriched = {
+    ...item,
+    meta: metaVal,
+    realizado: realVal,
+    referenciaHoje,
+    projecao,
+    metaDiariaNecessaria,
+    pontos,
+    pontosBrutos,
+    ating
+  }
+
+  if (item.children && item.children.length > 0) {
+    enriched.children = item.children.map(child => recalculateItem(child))
+  }
+
+  return enriched
+}
+
+const simulatedSections = computed<LegacySection[]>(() => {
+  if (!simulationMode.value) {
+    return produtosPorFamilia.value
+  }
+
+  return produtosPorFamilia.value.map(section => {
+    const items = section.items.map(recalculateItem)
+
+    const pontosTotal = items.reduce((acc, item) => acc + (item.pontosMeta || 0), 0)
+    const pontosHit = items.reduce((acc, item) => acc + (item.pontos || 0), 0)
+    const metaTotal = items.reduce((acc, item) => acc + (item.meta || 0), 0)
+    const realizadoTotal = items.reduce((acc, item) => acc + (item.realizado || 0), 0)
+    const atingPct = metaTotal > 0 ? (realizadoTotal / metaTotal) * 100 : 0
+
+    return {
+      ...section,
+      items,
+      totals: {
+        pontosTotal,
+        pontosHit,
+        metaTotal,
+        realizadoTotal,
+        atingPct
+      }
+    }
+  })
+})
 </script>
 
 <template>
@@ -51,8 +176,29 @@ const sectionHasExpandableRows = (section: LegacySection): boolean => {
     </div>
 
     <template v-else>
+      <div class="resumo-legacy__simulator">
+        <div class="resumo-legacy__simulator-main">
+          <label class="resumo-legacy__simulator-toggle">
+            <input v-model="simulationMode" type="checkbox" />
+            <span class="resumo-legacy__simulator-label">
+              Ativar simulação rápida
+              <small>Faça ajustes locais sem salvar; ao recarregar, tudo volta ao original.</small>
+            </span>
+          </label>
+
+          <button
+            type="button"
+            class="resumo-legacy__simulator-reset"
+            :disabled="!hasSimulatedChanges"
+            @click="clearSimulation"
+          >
+            Limpar ajustes
+          </button>
+        </div>
+      </div>
+
       <section
-        v-for="section in produtosPorFamilia"
+        v-for="section in simulatedSections"
         :key="section.id"
         class="resumo-legacy__section resumo-legacy__section--annual card card--legacy"
       >
@@ -169,10 +315,38 @@ const sectionHasExpandableRows = (section: LegacySection): boolean => {
                     </span>
                   </td>
                   <td class="resumo-legacy__col--meta" :title="formatMetricFull(item.metrica, item.meta)">
-                    {{ formatByMetric(item.metrica, item.meta) }}
+                    <div v-if="simulationMode" class="resumo-legacy__sim-field">
+                      <input
+                        class="resumo-legacy__sim-input"
+                        type="number"
+                        inputmode="decimal"
+                        :value="getSimulatedValue(item.id, 'meta', item.meta)"
+                        @input="handleSimulationInput(item.id, 'meta', $event)"
+                      />
+                      <span class="resumo-legacy__sim-preview">
+                        {{ formatByMetric(item.metrica, getSimulatedValue(item.id, 'meta', item.meta)) }}
+                      </span>
+                    </div>
+                    <template v-else>
+                      {{ formatByMetric(item.metrica, item.meta) }}
+                    </template>
                   </td>
                   <td class="resumo-legacy__col--real" :title="formatMetricFull(item.metrica, item.realizado)">
-                    {{ formatByMetric(item.metrica, item.realizado) }}
+                    <div v-if="simulationMode" class="resumo-legacy__sim-field">
+                      <input
+                        class="resumo-legacy__sim-input"
+                        type="number"
+                        inputmode="decimal"
+                        :value="getSimulatedValue(item.id, 'realizado', item.realizado)"
+                        @input="handleSimulationInput(item.id, 'realizado', $event)"
+                      />
+                      <span class="resumo-legacy__sim-preview">
+                        {{ formatByMetric(item.metrica, getSimulatedValue(item.id, 'realizado', item.realizado)) }}
+                      </span>
+                    </div>
+                    <template v-else>
+                      {{ formatByMetric(item.metrica, item.realizado) }}
+                    </template>
                   </td>
                   <td class="resumo-legacy__col--ref" :title="formatMetricFull(item.metrica, item.referenciaHoje)">
                     {{ item.referenciaHoje != null ? formatByMetric(item.metrica, item.referenciaHoje) : '—' }}
@@ -278,6 +452,123 @@ const sectionHasExpandableRows = (section: LegacySection): boolean => {
 <style scoped>
 .resumo-legacy {
   width: 100%;
+}
+
+.resumo-legacy__simulator {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border: 1px dashed #d7def3;
+  border-radius: 14px;
+  background: #f9fafb;
+}
+
+.resumo-legacy__simulator-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.resumo-legacy__simulator-toggle {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  color: #111827;
+}
+
+.resumo-legacy__simulator-toggle input {
+  margin-top: 4px;
+  accent-color: var(--brand, #b30000);
+}
+
+.resumo-legacy__simulator-label {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.resumo-legacy__simulator-label small {
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.resumo-legacy__simulator-reset {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid #d7def3;
+  background: #fff;
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.resumo-legacy__simulator-reset:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.resumo-legacy__simulator-reset:not(:disabled):hover {
+  background: #f3f4f6;
+  border-color: #cdd5ee;
+}
+
+.resumo-legacy__sim-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.resumo-legacy__sim-input {
+  width: 140px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid #d7def3;
+  background: #fff;
+  font-weight: 700;
+  color: #111827;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.resumo-legacy__sim-input:focus {
+  outline: 2px solid #fbe8eb;
+  border-color: var(--brand, #b30000);
+}
+
+.resumo-legacy__sim-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 12px;
+  color: #4b5563;
+}
+
+.resumo-legacy__sim-preview::before {
+  content: 'Prévia';
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+@media (max-width: 768px) {
+  .resumo-legacy__simulator-main {
+    align-items: flex-start;
+  }
+
+  .resumo-legacy__sim-input {
+    width: 100%;
+  }
 }
 
 .resumo-legacy__loading,
