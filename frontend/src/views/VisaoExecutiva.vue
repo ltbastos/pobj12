@@ -92,17 +92,18 @@ const execFilters = computed<ExecFilters>(() => {
   return filters
 })
 
+const getScore = (item: (typeof ranking.value)[number]) => Number(item.p_mens) || 0
+
 const topRanking = computed(() => {
   return [...ranking.value]
-    .sort((a, b) => b.p_mens - a.p_mens)
+    .sort((a, b) => getScore(b) - getScore(a))
     .slice(0, 5)
 })
 
 const bottomRanking = computed(() => {
   return [...ranking.value]
-    .sort((a, b) => a.p_mens - b.p_mens)
+    .sort((a, b) => getScore(a) - getScore(b))
     .slice(0, 5)
-    .reverse()
 })
 
 const rankingTitle = computed(() => {
